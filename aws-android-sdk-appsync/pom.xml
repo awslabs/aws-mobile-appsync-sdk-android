@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.amazonaws</groupId>
+  <artifactId>aws-android-sdk-appsync</artifactId>
+  <version>2.6.15</version>
+  <packaging>aar</packaging>
+  <name>AWS AppSync GraphQL Android Support</name>
+  <description>AWS AppSync GraphQL Android Support</description>
+  <url>http://aws.amazon.com/sdkforandroid</url>
+
+  <parent>
+    <groupId>com.amazonaws</groupId>
+    <artifactId>aws-android-sdk-appsync-pom</artifactId>
+    <version>2.6.15</version>
+  </parent>
+
+  <licenses>
+    <license>
+      <name>Amazon Software License</name>
+      <url>http://aws.amazon.com/asl/</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>amazonwebservices</id>
+      <organization>Amazon Web Services</organization>
+      <organizationUrl>http://aws.amazon.com</organizationUrl>
+      <roles>
+        <role>developer</role>
+      </roles>
+    </developer>
+  </developers>
+
+  <repositories>
+    <repository>
+      <id>google-maven</id>
+      <url>https://maven.google.com</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+      <version>3.0.1</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-android-sdk-core</artifactId>
+      <version>2.6.15</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-android-sdk-cognitoidentityprovider</artifactId>
+      <version>2.6.15</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-android-sdk-appsync-runtime</artifactId>
+      <version>2.6.15</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.android.support</groupId>
+      <artifactId>support-annotations</artifactId>
+      <version>24.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.android</groupId>
+      <artifactId>android</artifactId>
+      <version>4.1.1.4</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+       <plugin>
+         <groupId>com.simpligility.maven.plugins</groupId>
+         <artifactId>android-maven-plugin</artifactId>
+         <version>4.5.0</version>
+         <extensions>true</extensions>
+         <configuration>
+           <sdk>
+             <platform>16</platform>
+           </sdk>
+         </configuration>
+       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <source>1.7</source>
+            <target>1.7</target>
+            <encoding>UTF-8</encoding>
+            <forceJavacCompilerUse>true</forceJavacCompilerUse>
+          </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>
