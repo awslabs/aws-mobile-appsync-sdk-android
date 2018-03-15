@@ -17,6 +17,7 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
@@ -25,11 +26,11 @@ import org.json.JSONObject;
 
 public class PersistentMutationsResponse {
     private JSONObject data;
-    private JSONObject errors;
+    private JSONArray errors;
     private String mutationClassName;
     private String recordIdentifier;
 
-    public PersistentMutationsResponse(JSONObject data, JSONObject errors, String mutationClassName, String recordIdentifier) {
+    public PersistentMutationsResponse(JSONObject data, JSONArray errors, String mutationClassName, String recordIdentifier) {
         this.data = data;
         this.errors = errors;
         this.mutationClassName = mutationClassName;
@@ -40,7 +41,7 @@ public class PersistentMutationsResponse {
         return this.data;
     }
 
-    public JSONObject getErrorsJSONObject() {
+    public JSONArray getErrorsJSONObject() {
         return this.errors;
     }
 

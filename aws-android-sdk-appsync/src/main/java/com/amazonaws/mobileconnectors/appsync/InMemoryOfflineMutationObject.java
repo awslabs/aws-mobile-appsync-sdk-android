@@ -18,6 +18,7 @@
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.Message;
 import android.util.Log;
 
@@ -42,6 +43,8 @@ class InMemoryOfflineMutationObject {
     final ApolloInterceptorChain chain;
     final Executor dispatcher;
     final ApolloInterceptor.CallBack callBack;
+    private HandlerThread queueHandlerThread;
+    private Handler queueHandler;
 
     public InMemoryOfflineMutationObject(String recordIdentifier,
                                          @Nonnull ApolloInterceptor.InterceptorRequest request,
@@ -64,8 +67,8 @@ class InMemoryOfflineMutationObject {
         @Override
         public void handleMessage(Message msg) {
             if (msg.what == MSG_EXEC) {
-                // start executing the mutation
-                Log.d("AppSync", "Handling offline mutation.");
+                // start executing the originalMutation
+                Log.d("AppSync", "Handling offline originalMutation.");
                 chain.proceedAsync(request, dispatcher, callBack);
 
             } else {

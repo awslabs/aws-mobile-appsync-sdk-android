@@ -28,14 +28,22 @@ public class AppSyncMutationsSqlHelper extends SQLiteOpenHelper {
     public static final String COLUMN_RECORD = "record";
     public static final String RECORD_IDENTIFIER = "record_id";
     public static final String RESPONSE_CLASS = "response_class";
+    public static final String COLUMN_BUCKET = "bucket";
+    public static final String COLUMN_KEY = "key";
+    public static final String COLUMN_REGION = "region";
+    public static final String COLUMN_LOCAL_URI = "local_uri";
+    public static final String COLUMN_MIME_TYPE= "mime_type";
+    public static final String COLUMN_CLIENT_STATE = "client_state";
 
-    private static final String DATABASE_NAME = "appsync.mutations.db1";
-    private static final int DATABASE_VERSION = 1;
+    private static final String DATABASE_NAME = "appsync.mutations.db";
+    private static final int DATABASE_VERSION = 2;
 
     // Database creation sql statement
     private static final String DATABASE_CREATE = String.format(
-            "create table %s( %s integer primary key autoincrement, %s text not null, %s text not null, %s text not null);",
-            TABLE_MUTATION_RECORDS, COLUMN_ID, RECORD_IDENTIFIER, COLUMN_RECORD, RESPONSE_CLASS);
+            "create table %s( %s integer primary key autoincrement, %s text not null, %s text not null, %s text not null," +
+                    " %s text not null, %s text, %s text, %s text, %s text, %s text);",
+            TABLE_MUTATION_RECORDS, COLUMN_ID, RECORD_IDENTIFIER, COLUMN_RECORD, RESPONSE_CLASS, COLUMN_CLIENT_STATE,
+            COLUMN_BUCKET, COLUMN_KEY, COLUMN_REGION, COLUMN_LOCAL_URI, COLUMN_MIME_TYPE);
 
     public static final String IDX_RECORDS_KEY = "idx_records_key";
     private static final String CREATE_KEY_INDEX =

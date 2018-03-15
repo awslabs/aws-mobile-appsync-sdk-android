@@ -17,6 +17,7 @@
 
 package com.apollographql.apollo.internal.interceptor;
 
+import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
 import com.apollographql.apollo.api.Operation;
@@ -32,10 +33,18 @@ import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.ApolloLogger;
 
 import java.io.Closeable;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
+
+import okhttp3.ResponseBody;
+import okio.Buffer;
+import okio.BufferedSource;
+
+import static okhttp3.internal.Util.UTF_8;
 
 /**
  * ApolloParseInterceptor is a concrete {@link ApolloInterceptor} responsible for inflating the http responses into
@@ -63,12 +72,17 @@ public final class ApolloParseInterceptor implements ApolloInterceptor {
   public void interceptAsync(@Nonnull final InterceptorRequest request, @Nonnull ApolloInterceptorChain chain,
       @Nonnull Executor dispatcher, @Nonnull final CallBack callBack) {
     if (disposed) return;
+//    if (request.operation instanceof Subscription) chain.proceedAsync(request, dispatcher, callBack);
     chain.proceedAsync(request, dispatcher, new CallBack() {
       @Override public void onResponse(@Nonnull InterceptorResponse response) {
         try {
           if (disposed) return;
-          InterceptorResponse result = parse(request.operation, response.httpResponse.get());
-          callBack.onResponse(result);
+          if (response.parsedResponse.isPresent()) {
+            callBack.onResponse(response);
+          } else {
+            InterceptorResponse result = parse(request.operation, response.httpResponse.get());
+            callBack.onResponse(result);
+          }
           callBack.onCompleted();
         } catch (ApolloException e) {
           onFailure(e);
@@ -97,6 +111,17 @@ public final class ApolloParseInterceptor implements ApolloInterceptor {
   @SuppressWarnings("unchecked") private InterceptorResponse parse(Operation operation, okhttp3.Response httpResponse)
       throws ApolloHttpException, ApolloParseException {
     String cacheKey = httpResponse.request().header(HttpCache.CACHE_KEY_HEADER);
+
+    String cloneString = null;
+    ResponseBody responseBody = httpResponse.body();
+    BufferedSource source = responseBody.source();
+    try {
+      source.request(Long.MAX_VALUE); // request the entire body.
+      Buffer buffer = source.buffer();
+      cloneString = buffer.clone().readString(Charset.forName("UTF-8"));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
     if (httpResponse.isSuccessful()) {
       try {
         OperationResponseParser parser = new OperationResponseParser(operation, responseFieldMapper, scalarTypeAdapters,
@@ -108,7 +133,7 @@ public final class ApolloParseInterceptor implements ApolloInterceptor {
         if (parsedResponse.hasErrors() && httpCache != null) {
           httpCache.removeQuietly(cacheKey);
         }
-        return new InterceptorResponse(httpResponse, parsedResponse, normalizer.records());
+        return new InterceptorResponse(httpResponse, parsedResponse, normalizer.records(), cloneString);
       } catch (Exception rethrown) {
         logger.e(rethrown, "Failed to parse network response for operation: %s", operation);
         closeQuietly(httpResponse);

@@ -35,6 +35,7 @@ object ClassNames {
   val GRAPHQL_OPERATION: ClassName = ClassName.get(Operation::class.java)
   val GRAPHQL_QUERY: ClassName = ClassName.get(Query::class.java)
   val GRAPHQL_MUTATION: ClassName = ClassName.get(Mutation::class.java)
+  val GRAPHQL_SUBSCRIPTION: ClassName = ClassName.get(Subscription::class.java)
   val GRAPHQL_OPERATION_VARIABLES: ClassName = ClassName.get("", "${GRAPHQL_OPERATION.simpleName()}.Variables")
   val ILLEGAL_STATE_EXCEPTION: TypeName = ClassName.get(IllegalStateException::class.java)
   val MAP: ClassName = ClassName.get(Map::class.java)
@@ -48,6 +49,8 @@ object ClassNames {
   val INPUT_TYPE: ClassName = ClassName.get(Input::class.java)
   val BUILDER: ClassName = ClassName.get("", "Builder")
   val MUTATOR: ClassName = ClassName.get(Mutator::class.java)
+  var S3ObjectInput: ClassName = ClassName.get(S3InputObjectInterface::class.java)
+  var S3Object: ClassName = ClassName.get(S3ObjectInterface::class.java)
 
   fun <K : Any> parameterizedListOf(type: Class<K>): TypeName =
       ParameterizedTypeName.get(LIST, ClassName.get(type))

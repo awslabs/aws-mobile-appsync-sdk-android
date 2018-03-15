@@ -19,30 +19,38 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.util.Log;
 
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
-
-import static com.amazonaws.mobileconnectors.appsync.AppSyncOfflineMutationManager.MSG_EXEC;
+import java.util.Map;
+import android.os.Handler;
 
 /**
  * PersistentOfflineMutationManager.
  */
-
 public class PersistentOfflineMutationManager {
 
     final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
     final AppSyncCustomNetworkInvoker networkInvoker;
-
+    Handler queueHandler;
     List<PersistentOfflineMutationObject> persistentOfflineMutationObjects;
+    Map<String, PersistentOfflineMutationObject> persistentOfflineMutationObjectMap;
 
     public PersistentOfflineMutationManager(AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
                                             AppSyncCustomNetworkInvoker networkInvoker) {
         this.mutationSqlCacheOperations = mutationSqlCacheOperations;
         this.networkInvoker = networkInvoker;
         persistentOfflineMutationObjects = fetchPersistentMutationsList();
+        persistentOfflineMutationObjectMap = new HashMap<>();
+        for (PersistentOfflineMutationObject object: persistentOfflineMutationObjects) {
+            persistentOfflineMutationObjectMap.put(object.recordIdentifier, object);
+        }
         Log.d("AppSync", "There these many records in persistent cache: " + persistentOfflineMutationObjects.size());
     }
 
+    void updateQueueHandler(Handler queueHandler) {
+        this.queueHandler = queueHandler;
+        networkInvoker.updateQueueHandler(queueHandler);
+    }
 
     public boolean removePersistentMutationObject(final String recordId) {
         mutationSqlCacheOperations.deleteRecord(recordId);
@@ -51,12 +59,18 @@ public class PersistentOfflineMutationManager {
 
     public void addPersistentMutationObject(PersistentOfflineMutationObject mutationObject) {
         Log.d("AppSync","Adding object: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
-        mutationSqlCacheOperations.createRecord(mutationObject.recordIdentifier, mutationObject.requestString, mutationObject.responseClassName);
-        // TODO: Persist ONLY here. Do not add in queue.
+        mutationSqlCacheOperations.createRecord(mutationObject.recordIdentifier,
+                mutationObject.requestString,
+                mutationObject.responseClassName,
+                mutationObject.clientState,
+                mutationObject.bucket,
+                mutationObject.key,
+                mutationObject.region,
+                mutationObject.localURI,
+                mutationObject.mimeType);
     }
 
     public List<PersistentOfflineMutationObject> fetchPersistentMutationsList() {
-        // TODO: Load in the queue here. InMemory ones will be processed from separate queue.
         return mutationSqlCacheOperations.fetchAllRecords();
     }
 
@@ -66,8 +80,8 @@ public class PersistentOfflineMutationManager {
 
     public PersistentOfflineMutationObject processNextMutationObject() {
         PersistentOfflineMutationObject offlineMutationObject = removeAndGetLastInQueue();
+        // kick off originalMutation here through custom flow
         networkInvoker.executeRequest(offlineMutationObject);
-        // kick off mutation here through custom flow
         return offlineMutationObject;
     }
 

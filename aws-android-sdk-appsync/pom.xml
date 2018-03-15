@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.amazonaws</groupId>
   <artifactId>aws-android-sdk-appsync</artifactId>
-  <version>2.6.15</version>
+  <version>2.6.16</version>
   <packaging>aar</packaging>
   <name>AWS AppSync GraphQL Android Support</name>
   <description>AWS AppSync GraphQL Android Support</description>
@@ -12,7 +12,7 @@
   <parent>
     <groupId>com.amazonaws</groupId>
     <artifactId>aws-android-sdk-appsync-pom</artifactId>
-    <version>2.6.15</version>
+    <version>2.6.16</version>
   </parent>
 
   <licenses>
@@ -51,20 +51,41 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-android-sdk-core</artifactId>
-      <version>2.6.15</version>
+      <version>2.6.16</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-android-sdk-cognitoidentityprovider</artifactId>
-      <version>2.6.15</version>
+      <version>2.6.16</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-android-sdk-s3</artifactId>
+      <version>2.6.16</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.paho</groupId>
+      <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+      <version>1.2.0</version>
+      <scope>compile</scope>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.paho</groupId>
+      <artifactId>org.eclipse.paho.android.service</artifactId>
+      <version>1.1.1</version>
       <scope>compile</scope>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-android-sdk-appsync-runtime</artifactId>
-      <version>2.6.15</version>
+      <version>2.6.16</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

@@ -27,11 +27,17 @@ import java.util.List;
 
 public final class AppSyncMutationSqlCacheOperations {
     private static final String INSERT_STATEMENT =
-            String.format("INSERT INTO %s (%s,%s,%s) VALUES (?,?,?)",
+            String.format("INSERT INTO %s (%s,%s,%s,%s,%s,%s,%s,%s,%s) VALUES (?,?,?,?,?,?,?,?,?)",
                     AppSyncMutationsSqlHelper.TABLE_MUTATION_RECORDS,
                     AppSyncMutationsSqlHelper.RECORD_IDENTIFIER,
                     AppSyncMutationsSqlHelper.COLUMN_RECORD,
-                    AppSyncMutationsSqlHelper.RESPONSE_CLASS);
+                    AppSyncMutationsSqlHelper.RESPONSE_CLASS,
+                    AppSyncMutationsSqlHelper.COLUMN_CLIENT_STATE,
+                    AppSyncMutationsSqlHelper.COLUMN_BUCKET,
+                    AppSyncMutationsSqlHelper.COLUMN_KEY,
+                    AppSyncMutationsSqlHelper.COLUMN_REGION,
+                    AppSyncMutationsSqlHelper.COLUMN_LOCAL_URI,
+                    AppSyncMutationsSqlHelper.COLUMN_MIME_TYPE);
 
     private static final String DELETE_STATEMENT =
             String.format("DELETE FROM %s WHERE %s=?",
@@ -43,7 +49,13 @@ public final class AppSyncMutationSqlCacheOperations {
     private final String[] allColumns = {AppSyncMutationsSqlHelper.COLUMN_ID,
             AppSyncMutationsSqlHelper.RECORD_IDENTIFIER,
             AppSyncMutationsSqlHelper.COLUMN_RECORD,
-            AppSyncMutationsSqlHelper.RESPONSE_CLASS};
+            AppSyncMutationsSqlHelper.RESPONSE_CLASS,
+            AppSyncMutationsSqlHelper.COLUMN_CLIENT_STATE,
+            AppSyncMutationsSqlHelper.COLUMN_BUCKET,
+            AppSyncMutationsSqlHelper.COLUMN_KEY,
+            AppSyncMutationsSqlHelper.COLUMN_REGION,
+            AppSyncMutationsSqlHelper.COLUMN_LOCAL_URI,
+            AppSyncMutationsSqlHelper.COLUMN_MIME_TYPE};
 
     private final SQLiteStatement insertStatement;
     private final SQLiteStatement deleteStatement;
@@ -61,10 +73,18 @@ public final class AppSyncMutationSqlCacheOperations {
         dbHelper.close();
     }
 
-    long createRecord(String recordIdentifier, String record, String responseClass) {
+    long createRecord(String recordIdentifier, String record, String responseClass,
+                      String clientState, String bucket, String key, String region,
+                      String localUri, String mimeType) {
         insertStatement.bindString(1, recordIdentifier);
         insertStatement.bindString(2, record);
         insertStatement.bindString(3, responseClass);
+        insertStatement.bindString(4, clientState);
+        insertStatement.bindString(5, bucket != null ? bucket : "");
+        insertStatement.bindString(6, key != null ? key : "");
+        insertStatement.bindString(7, region != null ? region : "");
+        insertStatement.bindString(8, localUri != null ? localUri : "");
+        insertStatement.bindString(9, mimeType != null ? mimeType : "");
         long recordId = insertStatement.executeInsert();
         return recordId;
     }
@@ -88,7 +108,21 @@ public final class AppSyncMutationSqlCacheOperations {
                 String recordIdentifier = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.RECORD_IDENTIFIER));
                 String record = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_RECORD));
                 String responseClass = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.RESPONSE_CLASS));
-                PersistentOfflineMutationObject mutationObject = new PersistentOfflineMutationObject(recordIdentifier, record, responseClass);
+                String clientState = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_CLIENT_STATE));
+                String bucket = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_BUCKET));
+                String key = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_KEY));
+                String region = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_REGION));
+                String localUri = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_LOCAL_URI));
+                String mimeType = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_MIME_TYPE));
+                PersistentOfflineMutationObject mutationObject = new PersistentOfflineMutationObject(recordIdentifier,
+                        record,
+                        responseClass,
+                        clientState,
+                        bucket,
+                        key,
+                        region,
+                        localUri,
+                        mimeType);
                 mutationObjects.add(mutationObject);
                 cursor.moveToNext();
             }

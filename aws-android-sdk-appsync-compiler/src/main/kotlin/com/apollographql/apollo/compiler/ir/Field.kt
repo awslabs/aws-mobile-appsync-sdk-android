@@ -22,6 +22,7 @@ import com.apollographql.apollo.compiler.*
 import com.squareup.javapoet.*
 import java.util.*
 import javax.lang.model.element.Modifier
+import com.apollographql.apollo.compiler.ClassNames.S3Object
 
 data class Field(
     val responseName: String,
@@ -40,22 +41,38 @@ data class Field(
 
   override fun toTypeSpec(context: CodeGenerationContext): TypeSpec {
     val fields = if (isNonScalar()) fields!! else emptyList()
-    return SchemaTypeSpecBuilder(
-        typeName = formatClassName(),
-        schemaType = type,
-        fields = fields,
-        fragmentSpreads = fragmentSpreads ?: emptyList(),
-        inlineFragments = inlineFragments ?: emptyList(),
-        context = context
+    var s3ParameterCount = 0
+    for (field in fields) {
+      if (field.fieldName.equals("bucket")
+              || field.fieldName.equals("key")
+              || field.fieldName.equals("region")) {
+        s3ParameterCount += 1
+      }
+    }
+
+    var schemaTypeBuilder = SchemaTypeSpecBuilder(
+            typeName = formatClassName(),
+            schemaType = type,
+            fields = fields,
+            fragmentSpreads = fragmentSpreads ?: emptyList(),
+            inlineFragments = inlineFragments ?: emptyList(),
+            context = context
     )
-        .build(Modifier.PUBLIC, Modifier.STATIC)
-        .let {
-          if (context.generateModelBuilder) {
-            it.withBuilder()
-          } else {
-            it
-          }
-        }
+            .build(Modifier.PUBLIC, Modifier.STATIC)
+            .let {
+              if (context.generateModelBuilder) {
+                it.withBuilder()
+              } else {
+                it
+              }
+            }
+
+    // if we identify the object to be S3Object type, we implement the S3ObjectInterface
+    if (s3ParameterCount == 3) {
+      schemaTypeBuilder = schemaTypeBuilder.toBuilder().addSuperinterface(S3Object).build()
+    }
+
+    return schemaTypeBuilder
   }
 
   fun accessorMethodSpec(context: CodeGenerationContext): MethodSpec {

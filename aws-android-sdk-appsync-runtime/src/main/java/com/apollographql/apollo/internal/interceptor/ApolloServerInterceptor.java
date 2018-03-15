@@ -90,7 +90,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
       @Override public void run() {
         callBack.onFetch(FetchSourceType.NETWORK);
 
-        try {
+          try {
           httpCall = httpCall(request.operation);
         } catch (IOException e) {
           logger.e(e, "Failed to prepare http call for operation %s", request.operation.name().name());

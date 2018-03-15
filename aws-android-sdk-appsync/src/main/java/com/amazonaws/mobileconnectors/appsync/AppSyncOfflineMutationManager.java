@@ -31,10 +31,14 @@ import android.util.Log;
 
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.api.Operation;
+import com.apollographql.apollo.api.S3InputObjectInterface;
+import com.apollographql.apollo.api.S3ObjectInterface;
 import com.apollographql.apollo.api.ScalarType;
 import com.apollographql.apollo.internal.json.InputFieldJsonWriter;
 import com.apollographql.apollo.internal.json.JsonWriter;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+
+import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Map;
@@ -57,10 +61,16 @@ class AppSyncOfflineMutationManager {
     private NetworkUpdateHandler networkUpdateHandler;
     private HandlerThread handlerThread;
     private boolean shouldProcess;
-    private InMemoryOfflineMutationManager inMemoryOfflineMutationManager;
-    private PersistentOfflineMutationManager persistentOfflineMutationManager;
+    InMemoryOfflineMutationManager inMemoryOfflineMutationManager;
+    PersistentOfflineMutationManager persistentOfflineMutationManager;
     private ScalarTypeAdapters scalarTypeAdapters;
     private AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
+    private Handler queueHandler;
+
+    void updateQueueHandler(Handler queueHandler) {
+        this.queueHandler = queueHandler;
+        this.persistentOfflineMutationManager.updateQueueHandler(queueHandler);
+    }
 
     /*
      * Registers a BroadcastReceiver to receive network status change events. It
@@ -76,11 +86,67 @@ class AppSyncOfflineMutationManager {
 
         inMemoryOfflineMutationManager.addMutationObjectInQueue(mutationObject);
 
-        persistentOfflineMutationManager.addPersistentMutationObject(
-                new PersistentOfflineMutationObject(
-                    mutationObject.recordIdentifier,
-                        httpRequestBody(mutationObject.request.operation),
-                        mutationObject.request.operation.getClass().getSimpleName()));
+        S3InputObjectInterface s3InputObjectInterface = getS3ComplexObject(mutationObject.request.operation.variables().valueMap());
+        if (s3InputObjectInterface == null) {
+            persistentOfflineMutationManager.addPersistentMutationObject(
+                    new PersistentOfflineMutationObject(
+                            mutationObject.recordIdentifier,
+                            httpRequestBody(mutationObject.request.operation),
+                            mutationObject.request.operation.getClass().getSimpleName(),
+                            new JSONObject(mutationObject.request.operation.variables().valueMap()).toString())
+            );
+        } else {
+            persistentOfflineMutationManager.addPersistentMutationObject(
+                    new PersistentOfflineMutationObject(
+                            mutationObject.recordIdentifier,
+                            httpRequestBody(mutationObject.request.operation),
+                            mutationObject.request.operation.getClass().getSimpleName(),
+                            new JSONObject(mutationObject.request.operation.variables().valueMap()).toString(),
+                            s3InputObjectInterface.bucket(),
+                            s3InputObjectInterface.key(),
+                            s3InputObjectInterface.region(),
+                            s3InputObjectInterface.localUri(),
+                            s3InputObjectInterface.mimeType()));
+        }
+        Log.d("AppSync", "Created both in-memory and persistent records. Now checking queue.");
+        processNextInQueueMutation();
+
+    }
+
+    private S3InputObjectInterface getS3ComplexObject(Map<String, Object> variablesMap) {
+        for (String key: variablesMap.keySet()) {
+            if (variablesMap.get(key) instanceof S3InputObjectInterface) {
+                S3InputObjectInterface s3InputObject = (S3InputObjectInterface)variablesMap.get(key);
+                return s3InputObject;
+            } else {
+                if (variablesMap.get(key) instanceof Map) {
+                    return getS3ComplexObject((Map<String, Object>) variablesMap.get(key));
+                }
+            }
+        }
+        return null;
+    }
+
+    public void processNextInQueueMutation() {
+        Log.d("AppSync", "Checking if whether I need to process next originalMutation");
+        if (shouldProcess) {
+            Log.d("AppSync", "First check: Internet Available");
+            if (!persistentOfflineMutationManager.isQueueEmpty()) {
+                Log.d("AppSync", "Processing next in queue: PERSISTENT.");
+                persistentOfflineMutationManager.processNextMutationObject();
+                return;
+            } else {
+                Log.d("AppSync", "Second check: Persistent mutations queue is EMPTY!");
+            }
+            if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
+                Log.d("AppSync", "Processing next in queue: INMEMORY.");
+                InMemoryOfflineMutationObject mutationObject = inMemoryOfflineMutationManager.processNextMutation();
+                persistentOfflineMutationManager.removePersistentMutationObject(mutationObject.recordIdentifier);
+                return;
+            } else {
+                Log.d("AppSync", "Third check: Inmemory mutations queue is EMPTY!");
+            }
+        }
     }
 
 
@@ -105,10 +171,10 @@ class AppSyncOfflineMutationManager {
         }
     }
 
-    public AppSyncOfflineMutationManager(Context context, final Map<ScalarType,
-            CustomTypeAdapter> customTypeAdapters,
-            final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
-            final AppSyncCustomNetworkInvoker persistentMutationsNetworkInvoker) {
+    public AppSyncOfflineMutationManager(Context context,
+                                         final Map<ScalarType, CustomTypeAdapter> customTypeAdapters,
+                                         final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
+                                         final AppSyncCustomNetworkInvoker persistentMutationsNetworkInvoker) {
         this.mContext = context;
         handlerThread = new HandlerThread(TAG + "-AWSAppSyncOfflineMutationsHandlerThread");
         handlerThread.start();
@@ -134,10 +200,10 @@ class AppSyncOfflineMutationManager {
             if (msg.what == MSG_CHECK) {
                 // remove messages of the same type
                 networkUpdateHandler.removeMessages(MSG_CHECK);
-                // start executing the mutation queue
+                // start executing the originalMutation queue
                 Log.d("AppSync", "Internet connected.");
                 shouldProcess = true;
-                processAllQueuedMutations();
+                processNextInQueueMutation();
             } else if (msg.what == MSG_DISCONNECT) {
                 // disconnect, pause mutations
                 Log.d("AppSync", "Internet DISCONNECTED.");

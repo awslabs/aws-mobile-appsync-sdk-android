@@ -29,7 +29,11 @@ public class UnmodifiableMapBuilder<K, V> {
     this.map = new HashMap<>(initialCapacity);
   }
 
-  public UnmodifiableMapBuilder put(K key, V value) {
+  public UnmodifiableMapBuilder() {
+    this.map = new HashMap<>();
+  }
+
+  public UnmodifiableMapBuilder<K, V> put(K key, V value) {
     map.put(key, value);
     return this;
   }

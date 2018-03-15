@@ -18,32 +18,36 @@
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
-import android.util.Log;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.AppSyncStore;
-import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
-import com.apollographql.apollo.ApolloClient;
-import com.apollographql.apollo.CustomTypeAdapter;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.sql.AppSyncSqlHelper;
+import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.apollographql.apollo.api.S3ObjectManager;
 import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncSigV4SignerInterceptor;
-import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
 import com.amazonaws.regions.Regions;
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.ResponseField;
 import com.apollographql.apollo.api.ScalarType;
+import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.cache.CacheHeaders;
 import com.apollographql.apollo.cache.normalized.CacheKey;
 import com.apollographql.apollo.cache.normalized.CacheKeyResolver;
 import com.apollographql.apollo.cache.normalized.NormalizedCacheFactory;
-import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
-import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
+
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -51,15 +55,22 @@ import java.util.concurrent.Executor;
 import javax.annotation.Nonnull;
 
 import okhttp3.HttpUrl;
+import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
+import okhttp3.Response;
 
 public class AWSAppSyncClient {
     private static final String defaultSqlStoreName = "appsyncstore";
     private static final String defaultMutationSqlStoreName = "appsyncstore_mutation";
     ApolloClient mApolloClient;
     AppSyncStore mSyncStore;
+    private Context applicationContext;
+    S3ObjectManager mS3ObjectManager;
+    Map<Mutation, MutationInformation> mutationMap;
 
     private AWSAppSyncClient(AWSAppSyncClient.Builder builder) {
+        applicationContext = builder.mContext.getApplicationContext();
+
         AppSyncSigV4SignerInterceptor appSyncSigV4SignerInterceptor = null;
         if (builder.mCredentialsProvider != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mCredentialsProvider, builder.mRegion.getName());
@@ -81,6 +92,7 @@ public class AWSAppSyncClient {
 
         AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, defaultMutationSqlStoreName);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
+        mutationMap = new HashMap<>();
 
         AppSyncOptimisticUpdateInterceptor optimisticUpdateInterceptor = new AppSyncOptimisticUpdateInterceptor();
 
@@ -88,7 +100,8 @@ public class AWSAppSyncClient {
                 new AppSyncCustomNetworkInvoker(HttpUrl.parse(builder.mServerUrl),
                         okHttpClient,
                         new ScalarTypeAdapters(builder.customTypeAdapters),
-                        builder.mPersistentMutationsCallback);
+                        builder.mPersistentMutationsCallback,
+                        builder.mS3ObjectManager);
 
         ApolloClient.Builder clientBuilder = ApolloClient.builder()
                 .serverUrl(builder.mServerUrl)
@@ -100,7 +113,11 @@ public class AWSAppSyncClient {
                                 sqlCacheOperations,
                                 networkInvoker),
                         false,
-                        builder.mContext))
+                        builder.mContext,
+                        mutationMap,
+                        this,
+                        builder.mConflictResolver))
+                .addApplicationInterceptor(new AppSyncComplexObjectsInterceptor(builder.mS3ObjectManager))
                 .okHttpClient(okHttpClient);
 
         for (ScalarType scalarType : builder.customTypeAdapters.keySet()) {
@@ -119,12 +136,17 @@ public class AWSAppSyncClient {
             clientBuilder.defaultResponseFetcher(builder.mDefaultResponseFetcher);
         }
 
+        SubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
+        clientBuilder.subscriptionManager(subscriptionManager);
+
         mApolloClient = clientBuilder.build();
 
         mSyncStore = new AppSyncStore(mApolloClient.apolloStore());
 
         optimisticUpdateInterceptor.setStore(mApolloClient.apolloStore());
-
+        subscriptionManager.setStore(mApolloClient.apolloStore());
+        subscriptionManager.setScalarTypeAdapters(new ScalarTypeAdapters(builder.customTypeAdapters));
+        mS3ObjectManager = builder.mS3ObjectManager;
     }
 
     public static class Builder {
@@ -135,6 +157,7 @@ public class AWSAppSyncClient {
         CognitoUserPoolsAuthProvider mCognitoUserPoolsAuthProvider;
         NormalizedCacheFactory mNormalizedCacheFactory;
         CacheKeyResolver mResolver;
+        ConflictResolverInterface mConflictResolver;
 
         // Apollo
         String mServerUrl;
@@ -147,6 +170,7 @@ public class AWSAppSyncClient {
 
         // Android
         Context mContext;
+        S3ObjectManager mS3ObjectManager;
 
         private Builder() { }
 
@@ -180,6 +204,11 @@ public class AWSAppSyncClient {
             return this;
         }
 
+        public Builder s3ObjectManager(S3ObjectManager s3ObjectManager) {
+            mS3ObjectManager = s3ObjectManager;
+            return this;
+        }
+
         public Builder normalizedCache(NormalizedCacheFactory normalizedCacheFactory) {
             mNormalizedCacheFactory = normalizedCacheFactory;
             return this;
@@ -187,6 +216,11 @@ public class AWSAppSyncClient {
 
         public Builder resolver(CacheKeyResolver resolver) {
             mResolver = resolver;
+            return this;
+        }
+
+        public Builder conflictResolver(ConflictResolverInterface conflictResolver) {
+            mConflictResolver = conflictResolver;
             return this;
         }
 
@@ -234,18 +268,22 @@ public class AWSAppSyncClient {
                     @Nonnull
                     @Override
                     public CacheKey fromFieldRecordSet(@Nonnull ResponseField field, @Nonnull Map<String, Object> recordSet) {
-                        String id = (String) recordSet.get("id");
-                        if (id == null || id.isEmpty()) {
-                            return CacheKey.NO_KEY;
-                        }
-                        return CacheKey.from(id);
+                        return formatCacheKey((String) recordSet.get("id"));
                     }
 
                     @Nonnull
                     @Override
                     public CacheKey fromFieldArguments(@Nonnull ResponseField field, @Nonnull Operation.Variables variables) {
 
-                        return null;
+                        return formatCacheKey((String) field.resolveArgument("id", variables));
+                    }
+
+                    private CacheKey formatCacheKey(String id) {
+                        if (id == null || id.isEmpty()) {
+                            return CacheKey.NO_KEY;
+                        } else {
+                            return CacheKey.from(id);
+                        }
                     }
                 };
             }
@@ -267,14 +305,38 @@ public class AWSAppSyncClient {
     }
 
     public <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation) {
+        return mutate(mutation, false);
+    }
+
+    protected <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, boolean isRetry) {
+        if (isRetry) {
+            mutationMap.put(mutation, null);
+        }
         return mApolloClient.mutate(mutation);
     }
 
-    public <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates) {
+    protected <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates, boolean isRetry) {
+        if (isRetry) {
+            mutationMap.put(mutation, null);
+        }
         return mApolloClient.mutate(mutation, withOptimisticUpdates);
+    }
+
+
+    public <D extends Subscription.Data, T, V extends Subscription.Variables> AppSyncSubscriptionCall<T> subscribe(@Nonnull Subscription<D, T, V> subscription) {
+        return mApolloClient.subscribe(subscription);
+    }
+
+    public <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates) {
+        return mutate(mutation, withOptimisticUpdates, false);
+
     }
 
     public AppSyncStore getStore() {
         return mSyncStore;
+    }
+
+    public S3ObjectManager getS3ObjectManager() {
+        return mS3ObjectManager;
     }
 }

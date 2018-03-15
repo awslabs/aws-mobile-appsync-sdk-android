@@ -40,8 +40,10 @@ import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.interceptor.ApolloCacheInterceptor;
 import com.apollographql.apollo.internal.interceptor.ApolloParseInterceptor;
 import com.apollographql.apollo.internal.interceptor.ApolloServerInterceptor;
+import com.apollographql.apollo.internal.interceptor.AppSyncSubscriptionInterceptor;
 import com.apollographql.apollo.internal.interceptor.RealApolloInterceptorChain;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,6 +89,7 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
   final AtomicReference<CallState> state = new AtomicReference<>(IDLE);
   final AtomicReference<Callback<T>> originalCallback = new AtomicReference<>();
   final Optional<Operation.Data> optimisticUpdates;
+  SubscriptionManager subscriptionManager;
 
   public static <T> Builder<T> builder() {
     return new Builder<>();
@@ -109,6 +112,7 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
     refetchQueryNames = builder.refetchQueryNames;
     refetchQueries = builder.refetchQueries;
     tracker = builder.tracker;
+    subscriptionManager = builder.subscriptionManager;
 
     if ((refetchQueries.isEmpty() && refetchQueryNames.isEmpty()) || builder.mApolloStore == null) {
       queryReFetcher = Optional.absent();
@@ -376,6 +380,7 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
     interceptors.add(new ApolloCacheInterceptor(mApolloStore, responseFieldMapper, dispatcher, logger));
     interceptors.add(new ApolloParseInterceptor(httpCache, mApolloStore.networkResponseNormalizer(), responseFieldMapper,
         scalarTypeAdapters, logger));
+    interceptors.add(new AppSyncSubscriptionInterceptor(subscriptionManager, mApolloStore.networkResponseNormalizer()));
     interceptors.add(new ApolloServerInterceptor(serverUrl, httpCallFactory, httpCachePolicy, false,
         scalarTypeAdapters, logger, sendOperationdIdentifiers));
 
@@ -402,6 +407,7 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
     ApolloCallTracker tracker;
     boolean sendOperationIdentifiers;
     Optional<Operation.Data> optimisticUpdates = Optional.absent();
+    SubscriptionManager subscriptionManager;
 
     public Builder<T> operation(Operation operation) {
       this.operation = operation;
@@ -491,6 +497,11 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
 
     public Builder<T> optimisticUpdates(Optional<Operation.Data> optimisticUpdates) {
       this.optimisticUpdates = optimisticUpdates;
+      return this;
+    }
+
+    public Builder<T> subscriptionManager(SubscriptionManager subscriptionManager) {
+      this.subscriptionManager = subscriptionManager;
       return this;
     }
 

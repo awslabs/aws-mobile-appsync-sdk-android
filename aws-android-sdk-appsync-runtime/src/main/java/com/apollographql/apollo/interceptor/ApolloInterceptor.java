@@ -31,6 +31,8 @@ import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
 
+import okio.Buffer;
+
 import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
 
 /**
@@ -112,6 +114,7 @@ public interface ApolloInterceptor {
     public final Optional<okhttp3.Response> httpResponse;
     public final Optional<Response> parsedResponse;
     public final Optional<Collection<Record>> cacheRecords;
+    public final Optional<String> clonedBufferString;
 
     public InterceptorResponse(okhttp3.Response httpResponse) {
       this(httpResponse, null, null);
@@ -122,6 +125,15 @@ public interface ApolloInterceptor {
       this.httpResponse = Optional.fromNullable(httpResponse);
       this.parsedResponse = Optional.fromNullable(parsedResponse);
       this.cacheRecords = Optional.fromNullable(cacheRecords);
+      this.clonedBufferString = Optional.fromNullable(null);
+    }
+
+    public InterceptorResponse(okhttp3.Response httpResponse, Response parsedResponse,
+                               Collection<Record> cacheRecords, String clonedBufferString) {
+      this.httpResponse = Optional.fromNullable(httpResponse);
+      this.parsedResponse = Optional.fromNullable(parsedResponse);
+      this.cacheRecords = Optional.fromNullable(cacheRecords);
+      this.clonedBufferString = Optional.fromNullable(clonedBufferString);
     }
   }
 

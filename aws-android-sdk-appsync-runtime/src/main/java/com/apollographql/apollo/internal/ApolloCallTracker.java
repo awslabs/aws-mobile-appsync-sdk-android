@@ -17,6 +17,7 @@
 
 package com.apollographql.apollo.internal;
 
+import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
 import com.apollographql.apollo.GraphQLCall;
 import com.amazonaws.mobileconnectors.appsync.AppSyncMutationCall;
 import com.amazonaws.mobileconnectors.appsync.AppSyncQueryCall;
@@ -27,6 +28,7 @@ import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.OperationName;
 import com.apollographql.apollo.api.Query;
+import com.apollographql.apollo.api.Subscription;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -67,6 +69,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
       registerQueryCall((AppSyncQueryCall) call);
     } else if (operation instanceof Mutation) {
       registerMutationCall((AppSyncMutationCall) call);
+    } else if (operation instanceof Subscription) {
     } else {
       throw new IllegalArgumentException("Unknown call type");
     }
@@ -89,6 +92,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
       unregisterQueryCall((AppSyncQueryCall) call);
     } else if (operation instanceof Mutation) {
       unregisterMutationCall((AppSyncMutationCall) call);
+    } else if (operation instanceof Subscription) {
     } else {
       throw new IllegalArgumentException("Unknown call type");
     }

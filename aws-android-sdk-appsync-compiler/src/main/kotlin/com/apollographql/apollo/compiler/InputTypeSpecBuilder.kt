@@ -24,6 +24,7 @@ import com.apollographql.apollo.compiler.ir.TypeDeclarationField
 import com.squareup.javapoet.*
 import java.io.IOException
 import javax.lang.model.element.Modifier
+import com.apollographql.apollo.compiler.ClassNames.S3ObjectInput
 
 class InputTypeSpecBuilder(
     val name: String,
@@ -33,14 +34,27 @@ class InputTypeSpecBuilder(
   private val objectClassName = ClassName.get("", name.capitalize())
 
   fun build(): TypeSpec =
-      TypeSpec.classBuilder(objectClassName)
-          .addAnnotation(Annotations.GENERATED_BY_APOLLO)
-          .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
-          .addConstructor()
-          .addFields()
-          .addBuilder()
-          .addMethod(marshallerMethodSpec())
-          .build()
+          if (objectClassName.toString().equals("S3ObjectInput")) {
+              TypeSpec.classBuilder(objectClassName)
+                      .addAnnotation(Annotations.GENERATED_BY_APOLLO)
+                      .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                      .addSuperinterface(S3ObjectInput)
+                      .addConstructor()
+                      .addFields()
+                      .addBuilder()
+                      .addMethod(marshallerMethodSpec())
+                      .build()
+
+          } else {
+              TypeSpec.classBuilder(objectClassName)
+                      .addAnnotation(Annotations.GENERATED_BY_APOLLO)
+                      .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                      .addConstructor()
+                      .addFields()
+                      .addBuilder()
+                      .addMethod(marshallerMethodSpec())
+                      .build()
+          }
 
   private fun TypeSpec.Builder.addConstructor(): TypeSpec.Builder {
     val fieldInitializeCodeBuilder = fields.map {

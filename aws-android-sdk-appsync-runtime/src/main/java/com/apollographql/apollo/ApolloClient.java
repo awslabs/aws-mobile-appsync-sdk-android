@@ -20,7 +20,10 @@ package com.apollographql.apollo;
 import com.amazonaws.mobileconnectors.appsync.AppSyncMutationCall;
 import com.amazonaws.mobileconnectors.appsync.AppSyncPrefetch;
 import com.amazonaws.mobileconnectors.appsync.AppSyncQueryCall;
+import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
+import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.cache.normalized.ApolloStore;
+import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
@@ -40,11 +43,14 @@ import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.ApolloCallTracker;
 import com.apollographql.apollo.internal.ApolloLogger;
+import com.apollographql.apollo.internal.RealAppSyncSubscriptionCall;
 import com.apollographql.apollo.internal.RealAppSyncCall;
 import com.apollographql.apollo.internal.RealAppSyncPrefetch;
 import com.apollographql.apollo.internal.ResponseFieldMapperFactory;
 import com.apollographql.apollo.internal.cache.normalized.RealAppSyncStore;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.apollographql.apollo.internal.subscription.NoOpSubscriptionManager;
+import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -82,7 +88,8 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
  *
  * <p>See the {@link ApolloClient.Builder} class for configuring the ApolloClient.
  */
-public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMutationCall.Factory, AppSyncPrefetch.Factory {
+public final class ApolloClient
+    implements AppSyncQueryCall.Factory, AppSyncMutationCall.Factory, AppSyncSubscriptionCall.Factory, AppSyncPrefetch.Factory {
 
   public static Builder builder() {
     return new Builder();
@@ -102,6 +109,7 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
   private final ApolloCallTracker tracker = new ApolloCallTracker();
   private final List<ApolloInterceptor> applicationInterceptors;
   private final boolean sendOperationIdentifiers;
+  private final SubscriptionManager subscriptionManager;
 
   private ApolloClient(HttpUrl serverUrl,
       Call.Factory httpCallFactory,
@@ -114,7 +122,8 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
       CacheHeaders defaultCacheHeaders,
       ApolloLogger logger,
       List<ApolloInterceptor> applicationInterceptors,
-      boolean sendOperationIdentifiers) {
+      boolean sendOperationIdentifiers,
+      SubscriptionManager subscriptionManager) {
     this.serverUrl = serverUrl;
     this.httpCallFactory = httpCallFactory;
     this.httpCache = httpCache;
@@ -127,6 +136,7 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
     this.logger = logger;
     this.applicationInterceptors = applicationInterceptors;
     this.sendOperationIdentifiers = sendOperationIdentifiers;
+    this.subscriptionManager = subscriptionManager;
   }
 
   @Override
@@ -146,6 +156,12 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
   @Override
   public <D extends Query.Data, T, V extends Query.Variables> AppSyncQueryCall<T> query(@Nonnull Query<D, T, V> query) {
     return newCall(query);
+  }
+
+  @Override
+  public <D extends Subscription.Data, T, V extends Subscription.Variables> AppSyncSubscriptionCall<T> subscribe(
+      @Nonnull Subscription<D, T, V> subscription) {
+        return new RealAppSyncSubscriptionCall<T>(subscription, subscriptionManager, this, newCall(subscription));
   }
 
   /**
@@ -234,6 +250,7 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
         .refetchQueries(Collections.<Query>emptyList())
         .refetchQueryNames(Collections.<OperationName>emptyList())
         .sendOperationIdentifiers(sendOperationIdentifiers)
+        .subscriptionManager(subscriptionManager)
         .build();
   }
 
@@ -252,6 +269,7 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
     Optional<Logger> logger = Optional.absent();
     final List<ApolloInterceptor> applicationInterceptors = new ArrayList<>();
     boolean sendOperationIdentifiers;
+    SubscriptionManager subscriptionManager = new NoOpSubscriptionManager();
 
     private Builder() {
     }
@@ -368,8 +386,7 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
     }
 
     /**
-     * Set the default {@link CacheHeaders} strategy that will be passed to the {@link
-     * com.apollographql.apollo.interceptor.FetchOptions} used in each new {@link GraphQLCall}.
+     * Set the default {@link CacheHeaders} strategy that will be used in each new {@link GraphQLCall}.
      *
      * @return The {@link Builder} object to be used for chaining method calls
      */
@@ -425,6 +442,11 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
       return this;
     }
 
+    public Builder subscriptionManager(@Nonnull SubscriptionManager subscriptionManager) {
+      this.subscriptionManager = subscriptionManager;
+      return this;
+    }
+
     /**
      * Builds the {@link ApolloClient} instance using the configured values.
      *
@@ -455,6 +477,8 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
       ScalarTypeAdapters scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
 
       ApolloStore apolloStore = this.mApolloStore;
+      Optional<NormalizedCacheFactory> cacheFactory = this.cacheFactory;
+      Optional<CacheKeyResolver> cacheKeyResolver = this.cacheKeyResolver;
       if (cacheFactory.isPresent() && cacheKeyResolver.isPresent()) {
         final NormalizedCache normalizedCache = cacheFactory.get().createChain(RecordFieldJsonAdapter.create());
         apolloStore = new RealAppSyncStore(normalizedCache, cacheKeyResolver.get(), scalarTypeAdapters, dispatcher,
@@ -472,7 +496,8 @@ public final class ApolloClient implements AppSyncQueryCall.Factory, AppSyncMuta
           defaultCacheHeaders,
               apolloLogger,
           applicationInterceptors,
-          sendOperationIdentifiers);
+          sendOperationIdentifiers,
+          subscriptionManager);
     }
 
     private Executor defaultDispatcher() {
