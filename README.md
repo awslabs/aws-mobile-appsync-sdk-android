@@ -18,7 +18,7 @@ In the project's `build.gradle`, add the following dependency in
 the build script:
 
 ```
-    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.15'
+    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.16'
 ```
 
 **Sample project's build.gradle**
@@ -29,7 +29,7 @@ the build script:
         // ..other code..
         dependencies {
             classpath 'com.android.tools.build:gradle:3.0.1'
-            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.15'
+            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.16'
             // NOTE: Do not place your application dependencies here; they belong
             // in the individual module build.gradle files
         }
@@ -47,7 +47,7 @@ In the app's `build.gradle`, add the following plugin:
 Add the following dependency:
 
 ```
-    compile 'com.amazonaws:aws-android-sdk-appsync:2.6.15'
+    compile 'com.amazonaws:aws-android-sdk-appsync:2.6.16'
 ```
 
 **Sample app's build.gradle**
@@ -60,7 +60,7 @@ Add the following dependency:
     }
     dependencies {
         // Typical dependencies
-        compile 'com.amazonaws:aws-android-sdk-appsync:2.6.15'
+        compile 'com.amazonaws:aws-android-sdk-appsync:2.6.16'
     }
 ```
 
