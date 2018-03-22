@@ -1,6 +1,6 @@
 # Change Log - AWS AppSync SDK for Android
 
-## [Release 2.6.16](https://github.com/aws/aws-sdk-android/releases/tag/release_v2.6.16)
+## [Release 2.6.16](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.16)
 
 ### New Features
 
@@ -8,7 +8,7 @@
 * Complex objects allow fields to be S3 objects.
 * Conflict resolution surfaces mutation conflicts so that they can be resolved through a callback.
 
-## [Release 2.6.15](https://github.com/aws/aws-sdk-android/releases/tag/release_v2.6.15)
+## [Release 2.6.15](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.15)
 
 ### New Features
 
