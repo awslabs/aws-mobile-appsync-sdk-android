@@ -82,13 +82,16 @@ public class AWSAppSyncClient {
             throw new RuntimeException("Client requires credentials. Please use #apiKey() #credentialsProvider() or #cognitoUserPoolsAuthProvider() to set the credentials.");
         }
 
-        OkHttpClient okHttpClient = builder.mOkHttpClient;
-
-        if (okHttpClient == null) {
-            okHttpClient = new OkHttpClient.Builder()
-                    .addInterceptor(appSyncSigV4SignerInterceptor)
-                    .build();
+        OkHttpClient.Builder okHttpClientBuilder;
+        if (builder.mOkHttpClient == null) {
+            okHttpClientBuilder = new OkHttpClient.Builder();
+        } else {
+            okHttpClientBuilder = builder.mOkHttpClient.newBuilder();
         }
+
+        OkHttpClient okHttpClient = okHttpClientBuilder
+                .addInterceptor(appSyncSigV4SignerInterceptor)
+                .build();
 
         AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, defaultMutationSqlStoreName);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
