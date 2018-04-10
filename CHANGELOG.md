@@ -5,6 +5,7 @@
 ### Enhancements
 
 * Improve synchronization of shared data structures in multiple subscriptions.
+* Fixed bug that caused sigv4 signing not to be attached when okhttp client was specified in builder. See [PR #4](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/4)
 
 ## [Release 2.6.16](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.16)
 
