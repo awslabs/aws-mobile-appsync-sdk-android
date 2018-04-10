@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.17](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.17)
+
+### Enhancements
+
+* Improve synchronization of shared data structures in multiple subscriptions.
+
 ## [Release 2.6.16](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.16)
 
 ### New Features

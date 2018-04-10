@@ -91,8 +91,9 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             Log.d(TAG, this + " Attempt to subscribe to topic " + topic);
             if (msgListener == null) {
                 msgListener = new MessageListener();
+                msgListener.client = this;
+                msgListener.setTransmitting(false);
                 msgListener.setCallback(callback);
-                msgListener.setTransmitting(true);
                 mMqttAndroidClient.subscribe(topic, qos, msgListener);
             } else {
                 mMqttAndroidClient.subscribe(topic, qos, msgListener);
@@ -135,11 +136,12 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mMqttAndroidClient.disconnect();
             mMqttAndroidClient.close();
         } catch (Exception e) {
-            Log.w(TAG, "Closing " + clientRepresentation + "mqtt client", e);
+            Log.w(TAG, "Closing " + clientRepresentation + " mqtt client", e);
         }
     }
 
     class MessageListener implements IMqttMessageListener {
+        public MqttSubscriptionClient client;
         SubscriptionCallback callback;
         private boolean isTransmitting;
 
@@ -148,12 +150,13 @@ public class MqttSubscriptionClient implements SubscriptionClient {
         }
 
         public void setTransmitting(boolean truth) {
+            Log.d(TAG, "Set transmit " + truth + " " + client);
             this.isTransmitting = truth;
         }
 
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
-            Log.d("", "transmit: " + isTransmitting + "mqttL: " + this + "subL: " + callback + " Topic: " + topic + " Msg: " + message.toString());
+            Log.d(TAG, client + " transmit: " + isTransmitting + " mqttL: " + this + "subL: " + callback + " Topic: " + topic + " Msg: " + message.toString());
             if (isTransmitting) {
                 callback.onMessage(topic, message.toString());
             }

@@ -31,11 +31,13 @@ import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
@@ -49,46 +51,81 @@ public class RealSubscriptionManager implements SubscriptionManager {
     final List<SubscriptionClient> clients;
 
     final Map<Subscription, SubscriptionObject> subscriptionsById;
-    final Map<String, Set<SubscriptionObject>> subscriptionsByTopic;
+    final Map<String, AtomicReference<HashSet<SubscriptionObject>>> subscriptionsByTopic;
+
+    private final Object subscriptionsById_addLock = new Object();
+    private final Object subscriptionsByTopic_addLock = new Object();
 
     public RealSubscriptionManager(@Nonnull final Context applicationContext) {
         this.applicationContext = applicationContext.getApplicationContext();
-        subscriptionsById = new HashMap<>();
-        subscriptionsByTopic = new HashMap<>();
+        subscriptionsById = new ConcurrentHashMap<>();
+        subscriptionsByTopic = new ConcurrentHashMap<>();
         clients = new ArrayList<>();
     }
 
     private SubscriptionObject getSubscriptionObject(Subscription subscription) {
         SubscriptionObject sub = subscriptionsById.get(subscription);
-        if (sub == null) {
+
+        if (sub != null) {
+            return sub;
+        }
+
+        synchronized (subscriptionsById_addLock) {
+            sub = subscriptionsById.get(subscription);
+
+            if (sub != null) {
+                return sub;
+            }
+
             sub = new SubscriptionObject();
             sub.subscription = subscription;
             subscriptionsById.put(subscription, sub);
+            return sub;
         }
-        return sub;
     }
 
+    /**
+     * Used when topic should be added as a key in {@code subscriptionsByTopic} if it does not exist.
+     * @param topic the topic to add to or retrieve from {@code subscriptionsByTopic}
+     * @return the set of subscriptions that correspond to the topic, does not mutate underlying data
+     */
     private Set<SubscriptionObject> getSubscriptionObjects(String topic) {
-        synchronized (subscriptionsByTopic) {
-            Set<SubscriptionObject> set = subscriptionsByTopic.get(topic);
-            if (set == null) {
-                set = new HashSet<>();
-                subscriptionsByTopic.put(topic, set);
-            }
-            return set;
+        AtomicReference<HashSet<SubscriptionObject>> ref = subscriptionsByTopic.get(topic);
+
+        // Return without hitting synchronize block when reading when key is available.
+        if (ref != null)
+            return ref.get();
+
+        synchronized (subscriptionsByTopic_addLock) {
+            ref = subscriptionsByTopic.get(topic);
+
+            if (ref != null)
+                return ref.get();
+
+            ref = new AtomicReference<>();
+            ref.set(new HashSet<SubscriptionObject>());
+            subscriptionsByTopic.put(topic, ref);
+            return ref.get();
         }
     }
 
-    private void removeUnusedTopics(String[] activeTopics) {
-        synchronized (subscriptionsByTopic) {
-            Map<String, Set<SubscriptionObject>> newSubscriptionsByTopic = new HashMap<>();
-            for (String topic : activeTopics) {
-                newSubscriptionsByTopic.put(topic, getSubscriptionObjects(topic));
-            }
-
-            subscriptionsByTopic.clear();
-            subscriptionsByTopic.putAll(newSubscriptionsByTopic);
+    /**
+     * Adds the {@code subscriptionObject} to the {@code topic} so messages can be directed to the {@code subscriptionObject} when received.
+     * @param topic IoT topic i.e. 123123123123/i74uyvnaefymtgyjp15sfzmgxy/onCreatePost/
+     * @param subscriptionObject
+     */
+    private void addSubscriptionObject(String topic, SubscriptionObject subscriptionObject) {
+        synchronized (subscriptionsByTopic_addLock) {
+            Set<SubscriptionObject> subscriptionObjects = getSubscriptionObjects(topic);
+            HashSet<SubscriptionObject> set = new HashSet<>(subscriptionObjects);
+            set.add(subscriptionObject);
+            Log.d(TAG, "Adding subscription watcher " + subscriptionObject + " to topic " + topic + " total topics: " + set.size());
+            subscriptionsByTopic.get(topic).set(set);
         }
+    }
+
+    private void removeUnusedTopics(Set<String> activeTopicSet) {
+        subscriptionsByTopic.keySet().retainAll(activeTopicSet);
     }
 
     public void addListener(Subscription subscription, AppSyncSubscriptionCall.Callback callback) {
@@ -113,42 +150,38 @@ public class RealSubscriptionManager implements SubscriptionManager {
             @Nonnull final List<String> subbedTopics,
             @Nonnull SubscriptionResponse response,
             ResponseNormalizer<Map<String, Object>> mapResponseNormalizer) {
-        Log.d(TAG, "sub manager subscribe called");
+        Log.d(TAG, "subscribe called");
 
-        SubscriptionObject sub = getSubscriptionObject(subscription);
-        sub.subscription = subscription;
-        sub.normalizer = mapResponseNormalizer;
-        sub.scalarTypeAdapters = this.scalarTypeAdapters;
+        SubscriptionObject subscriptionObject = getSubscriptionObject(subscription);
+        subscriptionObject.subscription = subscription;
+        subscriptionObject.normalizer = mapResponseNormalizer;
+        subscriptionObject.scalarTypeAdapters = this.scalarTypeAdapters;
 
         for (String topic : subbedTopics) {
-            sub.topics.add(topic);
-            getSubscriptionObjects(topic).add(sub);
-            Log.d(TAG, "New topics for this sub" + sub + topic);
+            subscriptionObject.topics.add(topic);
+            addSubscriptionObject(topic, subscriptionObject);
         }
 
-        Log.d(TAG, "Number of my topics: " + subscriptionsByTopic.keySet().size());
-        for (Object topic : subscriptionsByTopic.keySet()) {
-            Log.d(TAG, "Listening to topic: " + topic);
-        }
+        final CountDownLatch clientConnected = new CountDownLatch(response.mqttInfos.size());
 
         // Create new clients, connections, and subscriptions
         List<SubscriptionClient> newClients = new ArrayList<>();
         Log.d(TAG, "Preparing to make Mqtt client count: " + response.mqttInfos.size());
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
             final SubscriptionClient client = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
+            // Silence new clients until swapped with old clients
             client.setTransmitting(false);
-            Log.d(TAG, "Notclosure Topic length: " + info.topics.length);
-            Log.d(TAG, "Notclosure My topic length: " + subscriptionsByTopic.keySet().size());
             client.connect(new SubscriptionClientCallback() {
                 @Override
                 public void onConnect() {
-                    Log.d(TAG, "Topic length: " + info.topics.length);
-                    Log.d(TAG, "My topic length: " + subscriptionsByTopic.keySet().size());
+                    Set<String> topicSet = subscriptionsByTopic.keySet();
+                    Log.d(TAG, String.format("Subscribe to %d out of %d topics in service response\nTopics: %s", topicSet.size(), info.topics.length, Arrays.toString(info.topics)));
                     for (String topic : info.topics) {
-                        if (subscriptionsByTopic.keySet().contains(topic)) {
+                        if (topicSet.contains(topic)) {
                             client.subscribe(topic, 0, mainMessageCallback);
                         }
                     }
+                    clientConnected.countDown();
                 }
 
                 @Override
@@ -158,42 +191,57 @@ public class RealSubscriptionManager implements SubscriptionManager {
                             subObj.onFailure(new ApolloException("Failed to create client for subscription", e));
                         }
                     }
+                    clientConnected.countDown();
                 }
             });
             newClients.add(client);
         }
 
-        synchronized (clients) {
-            // Silence the old clients
-            Log.d(TAG, "Old client count: " + clients);
-            for (final SubscriptionClient client : clients) {
-                client.setTransmitting(false);
-            }
+        try {
+            clientConnected.await();
 
-            // Unmute new clients
-            for (final SubscriptionClient client : newClients) {
-                client.setTransmitting(true);
-            }
+            synchronized (clients) {
+                // Silence the old clients
+                Log.d(TAG, "Old client count: " + clients);
+                for (final SubscriptionClient client : clients) {
+                    client.setTransmitting(false);
+                }
 
-            // Close old clients
-            for (final SubscriptionClient client : clients) {
-                Log.d(TAG, "Closing client: " + client);
-                client.close();
-            }
+                // Unmute new clients
+                for (final SubscriptionClient client : newClients) {
+                    client.setTransmitting(true);
+                }
 
-            clients.clear();
-            clients.addAll(newClients);
+                // Close old clients
+                for (final SubscriptionClient client : clients) {
+                    Log.d(TAG, "Closing client: " + client);
+                    client.close();
+                }
+
+                clients.clear();
+                clients.addAll(newClients);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException("Failed to wait for all clients to finish connecting.", e);
         }
+
+//        Set<String> activeTopicSet = new HashSet<>();
 //        for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
-//            removeUnusedTopics(info.topics);
+//            Collections.addAll(activeTopicSet, info.topics);
 //        }
+//        removeUnusedTopics(activeTopicSet);
     }
 
     final private SubscriptionCallback mainMessageCallback = new SubscriptionCallback() {
         @Override
         public void onMessage(String topic, String message) {
-            Log.d(TAG, "subs per this topic: " + getSubscriptionObjects(topic).size());
-            for (SubscriptionObject subObj : getSubscriptionObjects(topic)) {
+            final Set<SubscriptionObject> subscriptionSet = getSubscriptionObjects(topic);
+
+            if (subscriptionSet == null || subscriptionSet.size() == 0) {
+                Log.w(TAG, "No listeners for message: " + message + " from topic: " + topic);
+            }
+
+            for (SubscriptionObject subObj : subscriptionSet) {
                 Log.d(TAG, "Send " + subObj.subscription + " msg " + message + " for topic" + topic);
                 subObj.onMessage(message);
             }
