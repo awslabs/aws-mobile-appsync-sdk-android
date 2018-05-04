@@ -1,0 +1,1 @@
+include ':app', ':aws-android-sdk-appsync-api', ':aws-android-sdk-appsync-compiler', ':aws-android-sdk-appsync-gradle-plugin', ':aws-android-sdk-appsync-runtime', ':aws-android-sdk-appsync'

@@ -30,7 +30,8 @@ public final class SqlNormalizedCacheFactory extends NormalizedCacheFactory<SqlN
     this.helper = checkNotNull(helper, "helper == null");
   }
 
-  @Override public SqlNormalizedCache create(RecordFieldJsonAdapter recordFieldAdapter) {
+  @Override
+  public SqlNormalizedCache create(RecordFieldJsonAdapter recordFieldAdapter) {
     return new SqlNormalizedCache(recordFieldAdapter, helper);
   }
 }

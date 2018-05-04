@@ -1,0 +1,23 @@
+apply plugin: 'groovy'
+apply plugin: 'idea'
+apply plugin: 'java-gradle-plugin'
+
+apply from: rootProject.file('gradle-mvn-push.gradle')
+
+sourceSets.main.java.srcDirs = []
+sourceSets.main.groovy.srcDirs = ["src/main/java", "src/main/groovy"]
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    compileOnly gradleApi()
+    compileOnly localGroovy()
+    compileOnly "com.moowork.gradle:gradle-node-plugin:1.0.0"
+    compile 'com.android.tools.build:gradle:2.3.1' // compileOnly TODO Check if this can be upgraded.
+    compile 'com.squareup.moshi:moshi:1.5.0' // impl
+
+    compile project(':aws-android-sdk-appsync-compiler') // impl
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"

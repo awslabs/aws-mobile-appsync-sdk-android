@@ -53,33 +53,41 @@ public final class AppSyncPrefetchCallback extends AppSyncPrefetch.Callback {
     this.handler = checkNotNull(handler, "handler == null");
   }
 
-  @Override public void onSuccess() {
+  @Override
+  public void onSuccess() {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onSuccess();
       }
     });
   }
 
-  @Override public void onFailure(@Nonnull final ApolloException e) {
+  @Override
+  public void onFailure(@Nonnull final ApolloException e) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onFailure(e);
       }
     });
   }
 
-  @Override public void onHttpError(@Nonnull final ApolloHttpException e) {
+  @Override
+  public void onHttpError(@Nonnull final ApolloHttpException e) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onHttpError(e);
       }
     });
   }
 
-  @Override public void onNetworkError(@Nonnull final ApolloNetworkException e) {
+  @Override
+  public void onNetworkError(@Nonnull final ApolloNetworkException e) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onNetworkError(e);
       }
     });

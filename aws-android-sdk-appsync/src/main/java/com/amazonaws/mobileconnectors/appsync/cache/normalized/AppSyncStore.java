@@ -141,12 +141,12 @@ public class AppSyncStore {
     }
 
     public GraphQLStoreOperation<Set<String>> write(@Nonnull final GraphqlFragment fragment,
-                                                                       @Nonnull final CacheKey cacheKey, @Nonnull final Operation.Variables variables) {
+                                                    @Nonnull final CacheKey cacheKey, @Nonnull final Operation.Variables variables) {
         return mStore.write(fragment, cacheKey, variables);
     }
 
     public GraphQLStoreOperation<Boolean> writeAndPublish(@Nonnull final GraphqlFragment fragment,
-                                                                             @Nonnull final CacheKey cacheKey, @Nonnull final Operation.Variables variables) {
+                                                          @Nonnull final CacheKey cacheKey, @Nonnull final Operation.Variables variables) {
         return mStore.writeAndPublish(fragment, cacheKey, variables);
     }
 

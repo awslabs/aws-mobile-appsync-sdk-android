@@ -38,7 +38,7 @@ import javax.annotation.Nullable;
 
 import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
 
-public final class OptimisticNormalizedCache extends com.apollographql.apollo.cache.normalized.NormalizedCache {
+public final class OptimisticNormalizedCache extends NormalizedCache {
   private final Cache<String, RecordJournal> lruCache = CacheBuilder.newBuilder().build();
 
   @Nullable @Override public Record loadRecord(@Nonnull final String key, @Nonnull final CacheHeaders cacheHeaders) {
@@ -47,8 +47,8 @@ public final class OptimisticNormalizedCache extends com.apollographql.apollo.ca
 
     try {
       final Optional<Record> nonOptimisticRecord = nextCache()
-          .flatMap(new Function<com.apollographql.apollo.cache.normalized.NormalizedCache, Optional<Record>>() {
-            @Nonnull @Override public Optional<Record> apply(@Nonnull com.apollographql.apollo.cache.normalized.NormalizedCache cache) {
+          .flatMap(new Function<NormalizedCache, Optional<Record>>() {
+            @Nonnull @Override public Optional<Record> apply(@Nonnull NormalizedCache cache) {
               return Optional.fromNullable(cache.loadRecord(key, cacheHeaders));
             }
           });
@@ -73,8 +73,8 @@ public final class OptimisticNormalizedCache extends com.apollographql.apollo.ca
     checkNotNull(record, "record == null");
     checkNotNull(cacheHeaders, "cacheHeaders == null");
 
-    return nextCache().map(new Function<com.apollographql.apollo.cache.normalized.NormalizedCache, Set<String>>() {
-      @Nonnull @Override public Set<String> apply(@Nonnull com.apollographql.apollo.cache.normalized.NormalizedCache cache) {
+    return nextCache().map(new Function<NormalizedCache, Set<String>>() {
+      @Nonnull @Override public Set<String> apply(@Nonnull NormalizedCache cache) {
         return cache.merge(record, cacheHeaders);
       }
     }).or(Collections.<String>emptySet());
@@ -83,8 +83,8 @@ public final class OptimisticNormalizedCache extends com.apollographql.apollo.ca
   @Override public void clearAll() {
     lruCache.invalidateAll();
     //noinspection ResultOfMethodCallIgnored
-    nextCache().apply(new Action<com.apollographql.apollo.cache.normalized.NormalizedCache>() {
-      @Override public void apply(@Nonnull com.apollographql.apollo.cache.normalized.NormalizedCache cache) {
+    nextCache().apply(new Action<NormalizedCache>() {
+      @Override public void apply(@Nonnull NormalizedCache cache) {
         cache.clearAll();
       }
     });
@@ -93,8 +93,8 @@ public final class OptimisticNormalizedCache extends com.apollographql.apollo.ca
   @Override public boolean remove(@Nonnull final CacheKey cacheKey) {
     checkNotNull(cacheKey, "cacheKey == null");
 
-    boolean result = nextCache().map(new Function<com.apollographql.apollo.cache.normalized.NormalizedCache, Boolean>() {
-      @Nonnull @Override public Boolean apply(@Nonnull com.apollographql.apollo.cache.normalized.NormalizedCache cache) {
+    boolean result = nextCache().map(new Function<NormalizedCache, Boolean>() {
+      @Nonnull @Override public Boolean apply(@Nonnull NormalizedCache cache) {
         return cache.remove(cacheKey);
       }
     }).or(Boolean.FALSE);

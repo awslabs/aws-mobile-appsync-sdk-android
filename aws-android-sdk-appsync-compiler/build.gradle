@@ -1,0 +1,38 @@
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+
+apply from: rootProject.file('gradle-mvn-push.gradle')
+
+sourceSets {
+    main.java.srcDir "src/main/build"
+    main.java.srcDir "src/generated/kotlin"
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    compile 'com.squareup:javapoet:1.8.0' // impl
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version" // impl
+    compile 'com.squareup.moshi:moshi:1.5.0' // impl
+    compile 'com.google.code.findbugs:jsr305:3.0.1' // compileOnly
+
+    compile project(':aws-android-sdk-appsync-api') // impl
+}
+
+task pluginVersion {
+    def outputDir = file("src/generated/kotlin")
+
+    doLast {
+        def versionFile = file("$outputDir/com/apollographql/android/Version.kt")
+        versionFile.parentFile.mkdirs()
+        versionFile.text = """// Generated file. Do not edit!
+package com.apollographql.android
+val VERSION = "$VERSION_NAME"
+"""
+    }
+}
+
+tasks.getByName('compileKotlin').dependsOn('pluginVersion')
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"

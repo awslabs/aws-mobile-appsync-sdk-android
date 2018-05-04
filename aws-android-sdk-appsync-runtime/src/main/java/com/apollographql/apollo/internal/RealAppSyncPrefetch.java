@@ -58,7 +58,7 @@ import static com.apollographql.apollo.internal.CallState.TERMINATED;
   final ApolloInterceptorChain interceptorChain;
   final boolean sendOperationIds;
   final AtomicReference<CallState> state = new AtomicReference<>(IDLE);
-  final AtomicReference<AppSyncPrefetch.Callback> originalCallback = new AtomicReference<>();
+  final AtomicReference<Callback> originalCallback = new AtomicReference<>();
 
   public RealAppSyncPrefetch(Operation operation, HttpUrl serverUrl, Call.Factory httpCallFactory,
                              ScalarTypeAdapters scalarTypeAdapters, Executor dispatcher, ApolloLogger logger, ApolloCallTracker callTracker,
@@ -175,7 +175,7 @@ import static com.apollographql.apollo.internal.CallState.TERMINATED;
     return state.get() == CANCELED;
   }
 
-  private synchronized void activate(Optional<AppSyncPrefetch.Callback> callback) throws ApolloCanceledException {
+  private synchronized void activate(Optional<Callback> callback) throws ApolloCanceledException {
     switch (state.get()) {
       case IDLE:
         originalCallback.set(callback.orNull());
@@ -192,7 +192,7 @@ import static com.apollographql.apollo.internal.CallState.TERMINATED;
     state.set(ACTIVE);
   }
 
-  private synchronized Optional<AppSyncPrefetch.Callback> terminate() {
+  private synchronized Optional<Callback> terminate() {
     switch (state.get()) {
       case ACTIVE:
         tracker.unregisterPrefetchCall(this);

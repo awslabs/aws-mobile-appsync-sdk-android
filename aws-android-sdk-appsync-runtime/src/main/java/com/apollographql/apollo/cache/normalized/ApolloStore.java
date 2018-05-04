@@ -67,7 +67,7 @@ public interface ApolloStore {
   /**
    * Clear all records from this {@link ApolloStore}.
    *
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with {@code true} if all records was
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with {@code true} if all records was
    * successfully removed, {@code false} otherwise
    */
   @Nonnull
@@ -77,7 +77,7 @@ public interface ApolloStore {
    * Remove cache record by the key
    *
    * @param cacheKey of record to be removed
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with {@code true} if record with such key
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with {@code true} if record with such key
    * was successfully removed, {@code false} otherwise
    */
   @Nonnull
@@ -87,7 +87,7 @@ public interface ApolloStore {
    * Remove cache records by the list of keys
    *
    * @param cacheKeys keys of records to be removed
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with the count of records been removed
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with the count of records been removed
    */
   @Nonnull
   GraphQLStoreOperation<Integer> remove(@Nonnull List<CacheKey> cacheKeys);
@@ -137,10 +137,10 @@ public interface ApolloStore {
    * @param <D>       type of GraphQL operation data
    * @param <T>       type operation cached data will be wrapped with
    * @param <V>       type of operation variables
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with cached data for specified operation
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with cached data for specified operation
    */
   @Nonnull <D extends Operation.Data, T, V extends Operation.Variables> GraphQLStoreOperation<T> read(
-      @Nonnull Operation<D, T, V> operation);
+          @Nonnull Operation<D, T, V> operation);
 
   /**
    * Read GraphQL operation response from store.
@@ -152,11 +152,11 @@ public interface ApolloStore {
    * @param <D>                 type of GraphQL operation data
    * @param <T>                 type operation cached data will be wrapped with
    * @param <V>                 type of operation variables
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with cached response for specified operation
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with cached response for specified operation
    */
   @Nonnull <D extends Operation.Data, T, V extends Operation.Variables> GraphQLStoreOperation<Response<T>> read(
-      @Nonnull Operation<D, T, V> operation, @Nonnull ResponseFieldMapper<D> responseFieldMapper,
-      @Nonnull ResponseNormalizer<Record> responseNormalizer, @Nonnull CacheHeaders cacheHeaders);
+          @Nonnull Operation<D, T, V> operation, @Nonnull ResponseFieldMapper<D> responseFieldMapper,
+          @Nonnull ResponseNormalizer<Record> responseNormalizer, @Nonnull CacheHeaders cacheHeaders);
 
   /**
    * Read GraphQL fragment from store.
@@ -165,7 +165,7 @@ public interface ApolloStore {
    * @param cacheKey    {@link CacheKey} to be used to find cache record for the fragment
    * @param variables   {@link Operation.Variables} required for fragment arguments resolving
    * @param <F>         type of fragment to be read
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with cached fragment data
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with cached fragment data
    */
   @Nonnull <F extends GraphqlFragment> GraphQLStoreOperation<F> read(@Nonnull ResponseFieldMapper<F> fieldMapper,
                                                                      @Nonnull CacheKey cacheKey, @Nonnull Operation.Variables variables);
@@ -178,11 +178,11 @@ public interface ApolloStore {
    * @param <D>           type of GraphQL operation data
    * @param <T>           type operation cached data will be wrapped with
    * @param <V>           type of operation variables
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
    * have changed
    */
   @Nonnull <D extends Operation.Data, T, V extends Operation.Variables> GraphQLStoreOperation<Set<String>> write(
-      @Nonnull Operation<D, T, V> operation, @Nonnull D operationData);
+          @Nonnull Operation<D, T, V> operation, @Nonnull D operationData);
 
   /**
    * Write operation to the store and publish changes of {@link Record} which have changed, that will notify any {@link
@@ -193,18 +193,18 @@ public interface ApolloStore {
    * @param <D>           type of GraphQL operation data
    * @param <T>           type operation cached data will be wrapped with
    * @param <V>           type of operation variables
-   * @return {@ApolloStoreOperation} to be performed
+   * @return {@link GraphQLStoreOperation} to be performed
    */
   @Nonnull <D extends Operation.Data, T, V extends Operation.Variables> GraphQLStoreOperation<Boolean> writeAndPublish(
-      @Nonnull Operation<D, T, V> operation, @Nonnull D operationData);
+          @Nonnull Operation<D, T, V> operation, @Nonnull D operationData);
 
   /**
    * Write fragment to the store.
    *
    * @param fragment data to be written to the store
    * @param cacheKey {@link CacheKey} to be used as root record key
-   * @param {@link   Operation.Variables} required for fragment arguments resolving
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
+   * @param variables {@link Operation.Variables} required for fragment arguments resolving
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
    * have changed
    */
   @Nonnull
@@ -218,7 +218,7 @@ public interface ApolloStore {
    * @param fragment data to be written to the store
    * @param cacheKey {@link CacheKey} to be used as root record key
    * @param {@link   Operation.Variables} required for fragment arguments resolving
-   * @return {@ApolloStoreOperation} to be performed
+   * @return {@link GraphQLStoreOperation} to be performed
    */
   @Nonnull
   GraphQLStoreOperation<Boolean> writeAndPublish(@Nonnull GraphqlFragment fragment, @Nonnull CacheKey cacheKey,
@@ -230,7 +230,7 @@ public interface ApolloStore {
    * @param operation     {@link Operation} response data of which should be written to the store
    * @param operationData {@link Operation.Data} operation response data to be written to the store
    * @param mutationId    mutation unique identifier
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
    * have changed
    */
   @Nonnull <D extends Operation.Data, T, V extends Operation.Variables> GraphQLStoreOperation<Set<String>>
@@ -238,32 +238,32 @@ public interface ApolloStore {
 
   /**
    * Write operation data to the optimistic store and publish changes of {@link Record}s which have changed, that will
-   * notify any {@linkcom.apollographql.apollo.ApolloQueryWatcher} that depends on these {@link Record} to re-fetch.
+   * notify any {@link AppSyncQueryWatcher} that depends on these {@link Record} to re-fetch.
    *
    * @param operation     {@link Operation} response data of which should be written to the store
    * @param operationData {@link Operation.Data} operation response data to be written to the store
    * @param mutationId    mutation unique identifier
-   * @return {@ApolloStoreOperation} to be performed
+   * @return {@link GraphQLStoreOperation} to be performed
    */
   @Nonnull <D extends Operation.Data, T, V extends Operation.Variables> GraphQLStoreOperation<Boolean>
   writeOptimisticUpdatesAndPublish(@Nonnull Operation<D, T, V> operation, @Nonnull D operationData,
-      @Nonnull UUID mutationId);
+                                   @Nonnull UUID mutationId);
 
   /**
    * Rollback operation data optimistic updates.
    *
    * @param mutationId mutation unique identifier
-   * @return {@ApolloStoreOperation} to be performed
+   * @return {@link GraphQLStoreOperation} to be performed
    */
   @Nonnull
   GraphQLStoreOperation<Set<String>> rollbackOptimisticUpdates(@Nonnull UUID mutationId);
 
   /**
    * Rollback operation data optimistic updates and publish changes of {@link Record}s which have changed, that will
-   * notify any {@linkcom.apollographql.apollo.ApolloQueryWatcher} that depends on these {@link Record} to re-fetch.
+   * notify any {@link AppSyncQueryWatcher} that depends on these {@link Record} to re-fetch.
    *
    * @param mutationId mutation unique identifier
-   * @return {@ApolloStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
+   * @return {@link GraphQLStoreOperation} to be performed, that will be resolved with set of keys of {@link Record} which
    * have changed
    */
   @Nonnull

@@ -136,7 +136,7 @@ import java.util.Map;
   }
 
   @SuppressWarnings("unchecked") @Override
-  public <T> T readObject(ResponseField field, ResponseReader.ObjectReader<T> objectReader) {
+  public <T> T readObject(ResponseField field, ObjectReader<T> objectReader) {
     if (shouldSkip(field)) {
       return null;
     }

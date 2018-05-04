@@ -17,12 +17,6 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.exception.ApolloException;
-
-import org.json.JSONObject;
-
-import javax.annotation.Nonnull;
-
 /**
  * PersistentMutationsCallback.
  */

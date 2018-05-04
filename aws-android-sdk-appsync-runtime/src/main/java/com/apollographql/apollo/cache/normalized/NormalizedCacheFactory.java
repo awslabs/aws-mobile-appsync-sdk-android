@@ -29,7 +29,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
 
 /**
  * A Factory used to construct an instance of a {@link NormalizedCache} configured with the custom scalar adapters set
- * in {@link ApolloClient.Builder#addCustomTypeAdapter(ScalarType, CustomTypeAdapter)}.
+ * in {@link ApolloClient.Builder()#addCustomTypeAdapter(ScalarType, CustomTypeAdapter)}.
  */
 public abstract class NormalizedCacheFactory<T extends NormalizedCache> {
   private Optional<NormalizedCacheFactory> nextFactory = Optional.absent();

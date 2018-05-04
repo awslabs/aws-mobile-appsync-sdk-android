@@ -20,12 +20,11 @@ package com.amazonaws.mobileconnectors.appsync;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
 
-import javax.annotation.Nonnull;
-
 enum MuationType {
     InMemory,
     Persistent
 }
+
 /**
  * MutationInformation.
  */

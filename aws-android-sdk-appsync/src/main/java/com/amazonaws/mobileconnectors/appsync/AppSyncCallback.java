@@ -62,53 +62,65 @@ public final class AppSyncCallback<T> extends GraphQLCall.Callback<T> {
     this.handler = checkNotNull(handler, "handler == null");
   }
 
-  @Override public void onResponse(@Nonnull final Response<T> response) {
+  @Override
+  public void onResponse(@Nonnull final Response<T> response) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onResponse(response);
       }
     });
   }
 
-  @Override public void onStatusEvent(@Nonnull final GraphQLCall.StatusEvent event) {
+  @Override
+  public void onStatusEvent(@Nonnull final GraphQLCall.StatusEvent event) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onStatusEvent(event);
       }
     });
   }
 
-  @Override public void onFailure(@Nonnull final ApolloException e) {
+  @Override
+  public void onFailure(@Nonnull final ApolloException e) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onFailure(e);
       }
     });
   }
 
-  @Override public void onHttpError(@Nonnull final ApolloHttpException e) {
+  @Override
+  public void onHttpError(@Nonnull final ApolloHttpException e) {
     if (Looper.getMainLooper() == handler.getLooper()) {
       delegate.onHttpError(e);
     } else {
       handler.post(new Runnable() {
-        @Override public void run() {
+        @Override
+        public void run() {
           delegate.onHttpError(e);
         }
       });
     }
   }
 
-  @Override public void onNetworkError(@Nonnull final ApolloNetworkException e) {
+  @Override
+  public void onNetworkError(@Nonnull final ApolloNetworkException e) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onNetworkError(e);
       }
     });
   }
 
-  @Override public void onParseError(@Nonnull final ApolloParseException e) {
+  @Override
+  public void onParseError(@Nonnull final ApolloParseException e) {
     handler.post(new Runnable() {
-      @Override public void run() {
+      @Override
+      public void run() {
         delegate.onParseError(e);
       }
     });

@@ -34,6 +34,12 @@
  */
 package com.amazonaws.mobileconnectors.appsync.subscription.mqtt;
 
+import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
+import org.eclipse.paho.client.mqttv3.MqttPersistable;
+import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
+import org.eclipse.paho.client.mqttv3.internal.FileLock;
+import org.eclipse.paho.client.mqttv3.internal.MqttPersistentData;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileInputStream;
@@ -42,12 +48,6 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Vector;
-
-import org.eclipse.paho.client.mqttv3.MqttClientPersistence;
-import org.eclipse.paho.client.mqttv3.MqttPersistable;
-import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
-import org.eclipse.paho.client.mqttv3.internal.FileLock;
-import org.eclipse.paho.client.mqttv3.internal.MqttPersistentData;
 
 /**
  * An implementation of the {@link MqttClientPersistence} interface that provides

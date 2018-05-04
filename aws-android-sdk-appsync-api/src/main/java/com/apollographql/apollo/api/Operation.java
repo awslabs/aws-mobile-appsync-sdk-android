@@ -52,7 +52,8 @@ public interface Operation<D extends Operation.Data, T, V extends Operation.Vari
    *
    * @return {@link OperationName} operation name
    */
-  @Nonnull OperationName name();
+  @Nonnull
+  OperationName name();
 
   /**
    * Returns a unique identifier for this operation.

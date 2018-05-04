@@ -17,12 +17,12 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import android.os.Handler;
 import android.util.Log;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import android.os.Handler;
 
 /**
  * PersistentOfflineMutationManager.
