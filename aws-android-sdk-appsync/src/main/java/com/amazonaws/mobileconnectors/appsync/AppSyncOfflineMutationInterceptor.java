@@ -24,16 +24,13 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.api.ScalarType;
-import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.exception.ApolloParseException;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;

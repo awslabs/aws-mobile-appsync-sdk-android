@@ -38,7 +38,7 @@ public final class CacheHeaders {
 
   private final Map<String, String> headerMap;
 
-  public static CacheHeaders.Builder builder() {
+  public static Builder builder() {
     return new Builder();
   }
 
@@ -64,10 +64,10 @@ public final class CacheHeaders {
   }
 
   /**
-   * @return A {@link CacheHeaders.Builder} with a copy of this {@link CacheHeaders} values.
+   * @return A {@link Builder} with a copy of this {@link CacheHeaders} values.
    */
-  public CacheHeaders.Builder toBuilder() {
-    CacheHeaders.Builder builder = builder();
+  public Builder toBuilder() {
+    Builder builder = builder();
     builder.addHeaders(headerMap);
     return builder;
   }

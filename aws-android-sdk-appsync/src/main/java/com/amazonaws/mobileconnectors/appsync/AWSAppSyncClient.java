@@ -23,8 +23,6 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.AppSyncStore;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.sql.AppSyncSqlHelper;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
-import com.apollographql.apollo.api.S3ObjectManager;
-import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncSigV4SignerInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
@@ -36,16 +34,17 @@ import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.ResponseField;
+import com.apollographql.apollo.api.S3ObjectManager;
 import com.apollographql.apollo.api.ScalarType;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.cache.CacheHeaders;
 import com.apollographql.apollo.cache.normalized.CacheKey;
 import com.apollographql.apollo.cache.normalized.CacheKeyResolver;
 import com.apollographql.apollo.cache.normalized.NormalizedCacheFactory;
+import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
-
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -55,9 +54,7 @@ import java.util.concurrent.Executor;
 import javax.annotation.Nonnull;
 
 import okhttp3.HttpUrl;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
-import okhttp3.Response;
 
 public class AWSAppSyncClient {
     private static final String defaultSqlStoreName = "appsyncstore";

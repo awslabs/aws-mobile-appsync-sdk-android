@@ -86,7 +86,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
  * Conversely, creating a client for each query execution would result in resource wastage on idle pools.
  *
  *
- * <p>See the {@link ApolloClient.Builder} class for configuring the ApolloClient.
+ * <p>See the {@link Builder} class for configuring the ApolloClient.
  */
 public final class ApolloClient
     implements AppSyncQueryCall.Factory, AppSyncMutationCall.Factory, AppSyncSubscriptionCall.Factory, AppSyncPrefetch.Factory {
@@ -459,7 +459,7 @@ public final class ApolloClient
 
       ApolloLogger apolloLogger = new ApolloLogger(logger);
 
-      okhttp3.Call.Factory callFactory = this.callFactory;
+      Call.Factory callFactory = this.callFactory;
       if (callFactory == null) {
         callFactory = new OkHttpClient();
       }
@@ -509,7 +509,7 @@ public final class ApolloClient
       });
     }
 
-    private static okhttp3.Call.Factory addHttCacheInterceptorIfNeeded(Call.Factory callFactory,
+    private static Call.Factory addHttCacheInterceptorIfNeeded(Call.Factory callFactory,
         Interceptor httCacheInterceptor) {
       if (callFactory instanceof OkHttpClient) {
         OkHttpClient client = (OkHttpClient) callFactory;

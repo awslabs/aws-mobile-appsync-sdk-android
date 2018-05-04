@@ -21,9 +21,6 @@ import android.util.Log;
 
 import com.apollographql.apollo.api.Mutation;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import javax.annotation.Nonnull;
 
 /**

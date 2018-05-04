@@ -61,8 +61,8 @@ public final class EvictionPolicy {
     return expireAfterWriteTimeUnit;
   }
 
-  public static EvictionPolicy.Builder builder() {
-    return new EvictionPolicy.Builder();
+  public static Builder builder() {
+    return new Builder();
   }
 
   public static class Builder {
@@ -76,23 +76,23 @@ public final class EvictionPolicy {
     private Optional<Long> expireAfterWrite = Optional.absent();
     private Optional<TimeUnit> expireAfterWriteTimeUnit = Optional.absent();
 
-    public EvictionPolicy.Builder maxSizeBytes(long maxSizeBytes) {
+    public Builder maxSizeBytes(long maxSizeBytes) {
       this.maxSizeBytes = Optional.of(maxSizeBytes);
       return this;
     }
 
-    public EvictionPolicy.Builder maxEntries(long maxEntries) {
+    public Builder maxEntries(long maxEntries) {
       this.maxEntries = Optional.of(maxEntries);
       return this;
     }
 
-    public EvictionPolicy.Builder expireAfterAccess(long time, TimeUnit timeUnit) {
+    public Builder expireAfterAccess(long time, TimeUnit timeUnit) {
       this.expireAfterAccess = Optional.of(time);
       this.expireAfterAccessTimeUnit = Optional.of(timeUnit);
       return this;
     }
 
-    public EvictionPolicy.Builder expireAfterWrite(long time, TimeUnit timeUnit) {
+    public Builder expireAfterWrite(long time, TimeUnit timeUnit) {
       this.expireAfterWrite = Optional.of(time);
       this.expireAfterWriteTimeUnit = Optional.of(timeUnit);
       return this;

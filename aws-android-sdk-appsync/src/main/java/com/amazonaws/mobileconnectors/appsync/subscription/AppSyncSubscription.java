@@ -19,7 +19,6 @@ package com.amazonaws.mobileconnectors.appsync.subscription;
 
 import android.util.Log;
 
-import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.internal.response.OperationResponseParser;
 

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync/aws-android-sdk-appsync.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync/aws-android-sdk-appsync.iml" />
+      <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-api/aws-android-sdk-appsync-api.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-api/aws-android-sdk-appsync-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-compiler/aws-android-sdk-appsync-compiler.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-compiler/aws-android-sdk-appsync-compiler.iml" />
+      <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-gradle-plugin/aws-android-sdk-appsync-gradle-plugin.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-gradle-plugin/aws-android-sdk-appsync-gradle-plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-runtime/aws-android-sdk-appsync-runtime.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-runtime/aws-android-sdk-appsync-runtime.iml" />
+      <module fileurl="file://$PROJECT_DIR$/aws-mobile-appsync-sdk-android.iml" filepath="$PROJECT_DIR$/aws-mobile-appsync-sdk-android.iml" />
+    </modules>
+  </component>
+</project>

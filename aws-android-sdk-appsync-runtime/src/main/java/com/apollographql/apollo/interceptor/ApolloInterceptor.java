@@ -51,7 +51,7 @@ public interface ApolloInterceptor {
    * @param callBack   the Callback which will handle the interceptor's response or failure exception.
    */
   void interceptAsync(@Nonnull InterceptorRequest request, @Nonnull ApolloInterceptorChain chain,
-      @Nonnull Executor dispatcher, @Nonnull CallBack callBack);
+                      @Nonnull Executor dispatcher, @Nonnull CallBack callBack);
 
   /**
    * Disposes of the resources which are no longer required.

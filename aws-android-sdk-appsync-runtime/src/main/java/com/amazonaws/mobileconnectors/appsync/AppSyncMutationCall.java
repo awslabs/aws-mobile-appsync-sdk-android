@@ -66,7 +66,7 @@ public interface AppSyncMutationCall<T> extends GraphQLCall<T> {
      * @return prepared {@link AppSyncMutationCall} call to be executed at some point in the future
      */
     <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(
-        @Nonnull Mutation<D, T, V> mutation);
+            @Nonnull Mutation<D, T, V> mutation);
 
     /**
      * <p>Creates and prepares a new {@link AppSyncMutationCall} call with optimistic updates.</p>
@@ -80,6 +80,6 @@ public interface AppSyncMutationCall<T> extends GraphQLCall<T> {
      * @return prepared {@link AppSyncMutationCall} call to be executed at some point in the future
      */
     <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(
-        @Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates);
+            @Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates);
   }
 }

@@ -25,7 +25,6 @@ import com.apollographql.apollo.api.S3InputObjectInterface;
 import com.apollographql.apollo.api.S3ObjectInterface;
 import com.apollographql.apollo.api.S3ObjectManager;
 
-
 import java.io.File;
 
 /**

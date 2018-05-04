@@ -32,7 +32,7 @@ import javax.annotation.Nonnull;
 /**
  * Signals the apollo client to <b>only</b> fetch the data from the normalized cache. If it's not present in the
  * normalized cache or if an exception occurs while trying to fetch it from the normalized cache, an empty {@link
- * com.apollographql.apollo.api.Response} is sent back with the {@link com.apollographql.apollo.api.Operation} info
+ * Response} is sent back with the {@link Operation} info
  * wrapped inside.
  */
 public final class CacheOnlyFetcher implements ResponseFetcher {

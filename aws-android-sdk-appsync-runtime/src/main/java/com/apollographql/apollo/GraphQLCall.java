@@ -80,7 +80,7 @@ public interface GraphQLCall<T> extends Cancelable {
    * Cancels this {@link GraphQLCall}. If the call has already completed, nothing will happen.
    * If the call is outgoing, an {@link ApolloCanceledException} will be thrown if the call was started
    * with {@link #execute()}. If the call was started with {@link #enqueue(Callback)}
-   * the {@link GraphQLCall.Callback} will be disposed, and will receive no more events. The
+   * the {@link Callback} will be disposed, and will receive no more events. The
    * call will attempt to abort and release resources, if possible.
    */
   @Override void cancel();

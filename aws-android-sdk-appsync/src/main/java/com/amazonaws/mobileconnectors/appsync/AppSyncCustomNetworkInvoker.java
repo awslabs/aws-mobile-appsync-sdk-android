@@ -18,20 +18,13 @@
 package com.amazonaws.mobileconnectors.appsync;
 
 
-import android.util.Log;
-import com.amazonaws.util.VersionInfoUtils;
 import android.os.Handler;
 import android.os.Message;
-import android.util.JsonReader;
 import android.util.Log;
 
 import com.amazonaws.util.VersionInfoUtils;
-import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.S3InputObjectInterface;
 import com.apollographql.apollo.api.S3ObjectManager;
-import com.apollographql.apollo.api.cache.http.HttpCache;
-import com.apollographql.apollo.api.cache.http.HttpCachePolicy;
-import com.apollographql.apollo.api.internal.Optional;
 import com.apollographql.apollo.exception.ApolloNetworkException;
 import com.apollographql.apollo.exception.ApolloParseException;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
@@ -102,7 +95,8 @@ public class AppSyncCustomNetworkInvoker {
     private Executor defaultDispatcher() {
         return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60, TimeUnit.SECONDS,
                 new SynchronousQueue<Runnable>(), new ThreadFactory() {
-            @Override public Thread newThread(@Nonnull Runnable runnable) {
+            @Override
+            public Thread newThread(@Nonnull Runnable runnable) {
                 return new Thread(runnable, "AppSync Persistent Mutations Dispatcher");
             }
         });
@@ -167,7 +161,8 @@ public class AppSyncCustomNetworkInvoker {
                                    }
 
                                    httpCall.enqueue(new Callback() {
-                                       @Override public void onFailure(@Nonnull Call call, @Nonnull IOException e) {
+                                       @Override
+                                       public void onFailure(@Nonnull Call call, @Nonnull IOException e) {
                                            if (disposed) return;
                                            Log.e("AppSync", "Failed to execute http call for operation : " + persistentOfflineMutationObject.responseClassName);
                                            if (persistentMutationsCallback != null) {
@@ -179,7 +174,8 @@ public class AppSyncCustomNetworkInvoker {
                                            queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                        }
 
-                                       @Override public void onResponse(@Nonnull Call call, @Nonnull Response response) throws IOException {
+                                       @Override
+                                       public void onResponse(@Nonnull Call call, @Nonnull Response response) throws IOException {
                                            if (disposed) return;
                                            if (response.isSuccessful()) {
                                                String responseString = response.body().string();

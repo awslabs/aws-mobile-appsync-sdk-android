@@ -56,7 +56,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#STRING}
    */
   public static ResponseField forString(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                        boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.STRING, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -71,7 +71,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#INT}
    */
   public static ResponseField forInt(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                     boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.INT, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -86,7 +86,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#LONG}
    */
   public static ResponseField forLong(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                      boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.LONG, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -101,7 +101,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#DOUBLE}
    */
   public static ResponseField forDouble(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                        boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.DOUBLE, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -116,7 +116,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#BOOLEAN}
    */
   public static ResponseField forBoolean(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                         boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.BOOLEAN, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -131,7 +131,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#ENUM}
    */
   public static ResponseField forEnum(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                      boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.ENUM, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -146,7 +146,7 @@ public class ResponseField {
    * @return Field instance representing custom {@link Type#OBJECT}
    */
   public static ResponseField forObject(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                        boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.OBJECT, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -161,7 +161,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#LIST}
    */
   public static ResponseField forList(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, List<Condition> conditions) {
+                                      boolean optional, List<Condition> conditions) {
     return new ResponseField(Type.LIST, responseName, fieldName, arguments, optional, conditions);
   }
 
@@ -177,7 +177,7 @@ public class ResponseField {
    * @return Field instance representing {@link Type#CUSTOM}
    */
   public static CustomTypeField forCustomType(String responseName, String fieldName, Map<String, Object> arguments,
-      boolean optional, ScalarType scalarType, List<Condition> conditions) {
+                                              boolean optional, ScalarType scalarType, List<Condition> conditions) {
     return new CustomTypeField(responseName, fieldName, arguments, optional, scalarType, conditions);
   }
 
@@ -362,7 +362,7 @@ public class ResponseField {
     private final ScalarType scalarType;
 
     CustomTypeField(String responseName, String fieldName, Map<String, Object> arguments, boolean optional,
-        ScalarType scalarType, List<Condition> conditions) {
+                    ScalarType scalarType, List<Condition> conditions) {
       super(Type.CUSTOM, responseName, fieldName, arguments, optional, conditions);
       this.scalarType = scalarType;
     }

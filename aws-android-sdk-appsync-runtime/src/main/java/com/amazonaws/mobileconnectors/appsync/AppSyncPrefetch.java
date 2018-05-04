@@ -72,7 +72,7 @@ public interface AppSyncPrefetch extends Cancelable {
    * Cancels this {@link AppSyncPrefetch}. If the call has already completed, nothing will happen.
    * If the call is outgoing, an {@link ApolloCanceledException} will be thrown if the call was started
    * with {@link #execute()}. If the call was started with {@link #enqueue(Callback)}
-   * the {@link AppSyncPrefetch.Callback} will be disposed, and will receive no more events.
+   * the {@link Callback} will be disposed, and will receive no more events.
    * The call will attempt to abort and release resources, if possible.
    */
   @Override void cancel();
@@ -131,7 +131,7 @@ public interface AppSyncPrefetch extends Cancelable {
      * @return The AppSyncPrefetch object with the wrapped operation object
      */
     <D extends Operation.Data, T, V extends Operation.Variables> AppSyncPrefetch prefetch(
-        @Nonnull Operation<D, T, V> operation);
+            @Nonnull Operation<D, T, V> operation);
 
   }
 }

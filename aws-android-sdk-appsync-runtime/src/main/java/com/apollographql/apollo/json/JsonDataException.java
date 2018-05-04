@@ -32,6 +32,8 @@
  */
 package com.apollographql.apollo.json;
 
+import com.apollographql.apollo.internal.json.JsonReader;
+
 /**
  * Thrown when the data in a JSON document doesn't match the data expected by the caller. For
  * example, suppose the application expects a boolean but the JSON document contains a string. When

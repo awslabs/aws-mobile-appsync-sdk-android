@@ -51,7 +51,7 @@ public interface AppSyncQueryCall<T> extends GraphQLCall<T> {
   AppSyncQueryCall<T> httpCachePolicy(@Nonnull HttpCachePolicy.Policy httpCachePolicy);
 
   /**
-   * Sets the {@link CacheHeaders} to use for this call. {@link com.apollographql.apollo.interceptor.FetchOptions} will
+   * Sets the {@link CacheHeaders} to use for this call. {@link FetchOptions} will
    * be configured with this headers, and will be accessible from the {@link ResponseFetcher} used for this call.
    *
    * @param cacheHeaders the {@link CacheHeaders} that will be passed with records generated from this request to {@link

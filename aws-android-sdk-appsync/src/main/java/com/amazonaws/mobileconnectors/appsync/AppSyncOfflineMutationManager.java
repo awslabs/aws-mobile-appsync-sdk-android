@@ -32,7 +32,6 @@ import android.util.Log;
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.S3InputObjectInterface;
-import com.apollographql.apollo.api.S3ObjectInterface;
 import com.apollographql.apollo.api.ScalarType;
 import com.apollographql.apollo.internal.json.InputFieldJsonWriter;
 import com.apollographql.apollo.internal.json.JsonWriter;

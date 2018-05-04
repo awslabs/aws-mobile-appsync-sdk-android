@@ -60,7 +60,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
   private static final MediaType MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
 
   final HttpUrl serverUrl;
-  final okhttp3.Call.Factory httpCallFactory;
+  final Call.Factory httpCallFactory;
   final Optional<HttpCachePolicy.Policy> cachePolicy;
   final boolean prefetch;
   final ApolloLogger logger;
