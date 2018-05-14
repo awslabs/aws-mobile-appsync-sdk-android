@@ -19,19 +19,19 @@ Android library files for Offline, Sync, Sigv4.
 In the project's `build.gradle`, add the following dependency in
 the build script:
 
-```
-    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.17'
+```groovy
+    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.18'
 ```
 
 **Sample project's build.gradle**
 
-```
+```groovy
     // Top-level build file where you can add configuration options common to all sub-projects/modules.
     buildscript {
         // ..other code..
         dependencies {
             classpath 'com.android.tools.build:gradle:3.0.1'
-            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.17'
+            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.6.18'
             // NOTE: Do not place your application dependencies here; they belong
             // in the individual module build.gradle files
         }
@@ -42,19 +42,19 @@ the build script:
 
 In the app's `build.gradle`, add the following plugin:
 
-```
+```groovy
     apply plugin: 'com.amazonaws.appsync'
 ```
 
 Add the following dependency:
 
-```
-    compile 'com.amazonaws:aws-android-sdk-appsync:2.6.17'
+```groovy
+    compile 'com.amazonaws:aws-android-sdk-appsync:2.6.18'
 ```
 
 **Sample app's build.gradle**
 
-```
+```groovy
     apply plugin: 'com.android.application'
     apply plugin: 'com.amazonaws.appsync'
     android {
@@ -62,7 +62,7 @@ Add the following dependency:
     }
     dependencies {
         // Typical dependencies
-        compile 'com.amazonaws:aws-android-sdk-appsync:2.6.17'
+        compile 'com.amazonaws:aws-android-sdk-appsync:2.6.18'
     }
 ```
 
@@ -71,7 +71,7 @@ Add the following dependency:
 Add the permissions to access network state to determine if the device
 is offline.
 
-```
+```xml
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 ```
 
@@ -113,7 +113,7 @@ are added in the build path.
 
 ## Create a client
 
-```
+```java
 AWSAppSyncClient client = AWSAppSyncClient.builder()
                     .context(context)
                     .apiKey(new BasicAPIKeyAuthProvider(Constants.APPSYNC_API_KEY)) // API Key based authorization
@@ -124,7 +124,7 @@ AWSAppSyncClient client = AWSAppSyncClient.builder()
 
 ## Make a call
 
-```
+```java
 public void addPost() {
 	AddPostMutation addPostMutation = AddPostMutation.builder()
             .id(UUID.randomUUID().toString())

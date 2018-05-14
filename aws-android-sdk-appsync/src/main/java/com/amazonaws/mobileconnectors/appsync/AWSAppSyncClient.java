@@ -26,6 +26,7 @@ import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncSigV4SignerInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.ApolloClient;
@@ -73,6 +74,8 @@ public class AWSAppSyncClient {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mCredentialsProvider, builder.mRegion.getName());
         } else if (builder.mCognitoUserPoolsAuthProvider != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mCognitoUserPoolsAuthProvider, builder.mRegion.getName());
+        } else if (builder.mOidcAuthProvider != null) {
+            appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mOidcAuthProvider);
         } else if (builder.mApiKey != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mApiKey, builder.mRegion.getName());
         } else {
@@ -155,6 +158,7 @@ public class AWSAppSyncClient {
         AWSCredentialsProvider mCredentialsProvider;
         APIKeyAuthProvider mApiKey;
         CognitoUserPoolsAuthProvider mCognitoUserPoolsAuthProvider;
+        OidcAuthProvider mOidcAuthProvider;
         NormalizedCacheFactory mNormalizedCacheFactory;
         CacheKeyResolver mResolver;
         ConflictResolverInterface mConflictResolver;
@@ -191,6 +195,11 @@ public class AWSAppSyncClient {
 
         public Builder cognitoUserPoolsAuthProvider(CognitoUserPoolsAuthProvider cognitoUserPoolsAuthProvider) {
             mCognitoUserPoolsAuthProvider = cognitoUserPoolsAuthProvider;
+            return this;
+        }
+
+        public Builder oidcAuthProvider(OidcAuthProvider oidcAuthProvider) {
+            mOidcAuthProvider = oidcAuthProvider;
             return this;
         }
 

@@ -47,13 +47,14 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
     private final AWSCredentialsProvider credentialsProvider;
     private final APIKeyAuthProvider apiKey;
     private final CognitoUserPoolsAuthProvider cognitoUserPoolsAuthProvider;
+    private final OidcAuthProvider oidcAuthProvider;
     private final String awsRegion;
     private final AuthMode authMode;
 
     private enum AuthMode {
         API_KEY,
         IAM,
-        USER_POOL
+        AUTHORIZATION_TOKEN
     }
 
     public AppSyncSigV4SignerInterceptor(APIKeyAuthProvider apiKey, final String awsRegion){
@@ -61,6 +62,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.awsRegion = awsRegion;
         this.credentialsProvider = null;
         this.cognitoUserPoolsAuthProvider = null;
+        this.oidcAuthProvider = null;
         authMode = AuthMode.API_KEY;
     }
 
@@ -69,6 +71,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.awsRegion = awsRegion;
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = null;
+        this.oidcAuthProvider = null;
         authMode = AuthMode.IAM;
     }
 
@@ -77,7 +80,17 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.awsRegion = awsRegion;
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = cognitoUserPoolsAuthProvider;
-        authMode = AuthMode.USER_POOL;
+        this.oidcAuthProvider = null;
+        authMode = AuthMode.AUTHORIZATION_TOKEN;
+    }
+
+    public AppSyncSigV4SignerInterceptor(OidcAuthProvider oidcAuthProvider){
+        this.credentialsProvider = null;
+        this.awsRegion = null;
+        this.apiKey = null;
+        this.cognitoUserPoolsAuthProvider = null;
+        this.oidcAuthProvider = oidcAuthProvider;
+        authMode = AuthMode.AUTHORIZATION_TOKEN;
     }
 
     @Override
@@ -99,11 +112,18 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         dr.setHttpMethod(HttpMethodName.valueOf(req.method()));
         if (AuthMode.API_KEY.equals(authMode)) {
             dr.addHeader("x-api-key", apiKey.getAPIKey());
-        } else if (AuthMode.USER_POOL.equals(authMode)) {
+        } else if (AuthMode.AUTHORIZATION_TOKEN.equals(authMode) && cognitoUserPoolsAuthProvider != null) {
             try {
                 dr.addHeader("authorization", cognitoUserPoolsAuthProvider.getLatestAuthToken());
             } catch (Exception e) {
                 IOException ioe = new IOException("Failed to retrieve Cognito User Pools token.", e);
+                throw ioe;
+            }
+        } else if (AuthMode.AUTHORIZATION_TOKEN.equals(authMode) && oidcAuthProvider != null) {
+            try {
+                dr.addHeader("authorization", oidcAuthProvider.getLatestAuthToken());
+            } catch (Exception e) {
+                IOException ioe = new IOException("Failed to retrieve OIDC token.", e);
                 throw ioe;
             }
         }

@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.18](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.18)
+
+### New Features
+
+* Adds OpenID Connect (OIDC) support as an authorization option.
+
 ## [Release 2.6.17](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.17)
 
 ### Enhancements
