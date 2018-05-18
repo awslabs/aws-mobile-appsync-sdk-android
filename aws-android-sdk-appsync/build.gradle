@@ -30,9 +30,9 @@ dependencies {
     compile 'com.google.code.findbugs:jsr305:3.0.1' // api
     compile "com.squareup.okhttp3:okhttp:3.8.1" // impl
 
-    compile 'com.amazonaws:aws-android-sdk-core:2.6.18' // api
-    compileOnly 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.18'
-    compileOnly 'com.amazonaws:aws-android-sdk-s3:2.6.18'
+    compile "com.amazonaws:aws-android-sdk-core:$aws_version" // api
+    compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
+    compileOnly "com.amazonaws:aws-android-sdk-s3:$aws_version"
 
     compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
     compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'

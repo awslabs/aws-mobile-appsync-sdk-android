@@ -1,5 +1,17 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.19](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.19)
+
+### Enhancements
+
+* Improve dependency injection for gradle plugin.
+Uses `implementation` instead of `compile` when using higher than gradle version 2.
+Note: gradle version 0 and 1 are note supported.
+
+### Bug Fixes
+
+* Fixed dependency `com.moowork.gradle:gradle-node-plugin:1.0.0` in gradle plugin
+
 ## [Release 2.6.18](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.18)
 
 ### New Features
