@@ -7,6 +7,7 @@
 * Improve dependency injection for gradle plugin.
 Uses `implementation` instead of `compile` when using higher than gradle version 2.
 Note: gradle version 0 and 1 are note supported.
+* Improve `BasicCognitoUserPoolsAuthProvider` retrieval of token.
 
 ### Bug Fixes
 
