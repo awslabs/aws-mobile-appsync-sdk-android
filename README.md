@@ -2,7 +2,7 @@
 [![GitHub release](https://img.shields.io/github/release/awslabs/aws-mobile-appsync-sdk-android.svg)](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases)
 [![Maven Central](https://img.shields.io/maven-central/v/com.amazonaws/aws-android-sdk-appsync.svg)]()
 
-Android library files for Offline, Sync, Sigv4.
+The AWS AppSync SDK for Android enables you to access your AWS AppSync backend and perform operations like `Queries`, `Mutations`, and `Subscriptions`. The SDK also includes support for offline operations. This SDK is based off of the Apollo project found [here](https://github.com/apollographql/apollo-android).
 
 ## Samples
 
