@@ -40,7 +40,6 @@ public class BasicCognitoUserPoolsAuthProvider implements CognitoUserPoolsAuthPr
 
     public BasicCognitoUserPoolsAuthProvider(CognitoUserPool userPool) {
         this.userPool = userPool;
-        fetchToken();
     }
 
     /**
