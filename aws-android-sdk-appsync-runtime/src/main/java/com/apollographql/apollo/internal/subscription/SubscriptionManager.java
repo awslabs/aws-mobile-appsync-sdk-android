@@ -56,6 +56,13 @@ public interface SubscriptionManager {
     void addListener(Subscription subscription, AppSyncSubscriptionCall.Callback callback);
 
     /**
+     * Removes the listener based on the subscription's operation (unique) id
+     * @param subscription The subscription for which callbacks will be triggered.
+     * @param callback The callback for messages received on the subscription connection.
+     */
+    void removeListener(Subscription subscription, AppSyncSubscriptionCall.Callback callback);
+
+    /**
      * Sets the store used for cache updates based on subscription responses.
      * @param apolloStore
      */

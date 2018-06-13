@@ -56,7 +56,6 @@ class AppSyncOfflineMutationManager {
     static final int MSG_CHECK = 200;
     static final int MSG_DISCONNECT = 300;
     private static final String TAG = AppSyncOfflineMutationManager.class.getSimpleName();
-    private Context mContext;
     private NetworkUpdateHandler networkUpdateHandler;
     private HandlerThread handlerThread;
     private boolean shouldProcess;
@@ -174,18 +173,17 @@ class AppSyncOfflineMutationManager {
                                          final Map<ScalarType, CustomTypeAdapter> customTypeAdapters,
                                          final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
                                          final AppSyncCustomNetworkInvoker persistentMutationsNetworkInvoker) {
-        this.mContext = context;
         handlerThread = new HandlerThread(TAG + "-AWSAppSyncOfflineMutationsHandlerThread");
         handlerThread.start();
         this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
-        this.networkInfoReceiver = new NetworkInfoReceiver(this.mContext, this.networkUpdateHandler);
+        this.networkInfoReceiver = new NetworkInfoReceiver(context, this.networkUpdateHandler);
         this.inMemoryOfflineMutationManager = new InMemoryOfflineMutationManager();
         persistentOfflineMutationManager = new PersistentOfflineMutationManager(mutationSqlCacheOperations,
                 persistentMutationsNetworkInvoker);
         this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
         this.mutationSqlCacheOperations = mutationSqlCacheOperations;
 
-        mContext.getApplicationContext().registerReceiver(networkInfoReceiver, new IntentFilter(
+        context.getApplicationContext().registerReceiver(networkInfoReceiver, new IntentFilter(
                 ConnectivityManager.CONNECTIVITY_ACTION));
     }
 

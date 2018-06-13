@@ -41,6 +41,7 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
     private final AtomicReference<CallState> state = new AtomicReference<>(IDLE);
     private final ApolloClient apolloClient;
     private final RealAppSyncCall<T> solicitingCall;
+    private Callback<T> userCallback;
 
     public RealAppSyncSubscriptionCall(
             Subscription<?, T, ?> subscription,
@@ -56,6 +57,7 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
     @Override
     public void execute(@Nonnull final Callback<T> callback) {
         checkNotNull(callback, "callback == null");
+        userCallback = callback;
         subscriptionManager.addListener(subscription, callback);
         synchronized (this) {
             switch (state.get()) {
@@ -99,6 +101,8 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
                 case ACTIVE: {
                     try {
                         subscriptionManager.unsubscribe(subscription);
+                        subscriptionManager.removeListener(subscription, userCallback);
+                        userCallback = null;
                     } finally {
                         state.set(CANCELED);
                     }

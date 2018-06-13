@@ -1,5 +1,16 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.20](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.20)
+
+### Bug Fixes
+
+* Prevent crashing when retrieving credentials to sign AppSync requests. Errors will now be routed to the `onError` callback. See [issue #16](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/16)
+* Remove references to subscription callback when subscription is cancelled. See [issue #13](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/13)
+
+### Enhancements
+
+* Lazy load token in `BasicCognitoUserPoolsAuthProvider`.
+
 ## [Release 2.6.19](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.19)
 
 ### Enhancements

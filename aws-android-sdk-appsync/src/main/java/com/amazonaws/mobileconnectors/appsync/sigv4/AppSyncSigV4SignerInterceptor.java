@@ -140,10 +140,14 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
 
         if (AuthMode.IAM.equals(authMode)) {
             //get the aws credentials from provider.
-            AWSCredentials credentials = this.credentialsProvider.getCredentials();
+            try {
+                AWSCredentials credentials = this.credentialsProvider.getCredentials();
 
-            //sign the request
-            signer.sign(dr, credentials);
+                //sign the request
+                signer.sign(dr, credentials);
+            } catch (Exception e) {
+                throw new IOException("Failed to read credentials to sign the request.", e);
+            }
         }
 
         Request.Builder okReqBuilder = new Request.Builder();

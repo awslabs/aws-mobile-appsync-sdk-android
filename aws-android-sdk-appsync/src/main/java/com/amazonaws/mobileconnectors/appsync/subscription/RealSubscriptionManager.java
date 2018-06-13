@@ -150,7 +150,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
             @Nonnull final List<String> subbedTopics,
             @Nonnull SubscriptionResponse response,
             ResponseNormalizer<Map<String, Object>> mapResponseNormalizer) {
-        Log.d(TAG, "subscribe called");
+        Log.d(TAG, "subscribe called " + subbedTopics);
 
         SubscriptionObject subscriptionObject = getSubscriptionObject(subscription);
         subscriptionObject.subscription = subscription;
@@ -262,6 +262,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
             getSubscriptionObjects((String) topic).remove(subObject);
         }
         subObject.getTopics().clear();
+        subscriptionsById.remove(subObject);
     }
 
     @Override

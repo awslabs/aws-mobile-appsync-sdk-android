@@ -46,6 +46,11 @@ public final class NoOpSubscriptionManager implements SubscriptionManager {
     }
 
     @Override
+    public void removeListener(Subscription subscription, AppSyncSubscriptionCall.Callback callback) {
+
+    }
+
+    @Override
     public void setStore(ApolloStore apolloStore) {
 
     }
