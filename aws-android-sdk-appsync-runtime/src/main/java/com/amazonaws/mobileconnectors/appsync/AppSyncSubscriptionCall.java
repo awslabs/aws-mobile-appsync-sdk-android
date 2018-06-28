@@ -36,10 +36,13 @@ public interface AppSyncSubscriptionCall<T> extends Cancelable {
 
     interface Callback<T> {
 
+        // This method is called every time a message is received.
         void onResponse(@Nonnull Response<T> response);
 
+        // This method is called if there is an error creating subscription or parsing server response.
         void onFailure(@Nonnull ApolloException e);
 
+        // This method is called when a subscription is terminated.
         void onCompleted();
     }
 }

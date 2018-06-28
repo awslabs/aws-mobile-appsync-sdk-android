@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.21](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.21)
+
+### Enhancements
+
+* Call `onCompleted` method of `AppSyncSubscriptionCall.Callback` when a subscription is disconnected.
+
 ## [Release 2.6.20](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.20)
 
 ### Bug Fixes

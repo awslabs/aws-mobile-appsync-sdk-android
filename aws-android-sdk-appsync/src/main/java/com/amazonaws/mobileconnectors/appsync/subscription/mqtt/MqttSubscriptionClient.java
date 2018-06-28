@@ -24,19 +24,20 @@ import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionCallback;
 import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionClient;
 import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionClientCallback;
 import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionObject;
+import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionDisconnectedException;
 
 import org.eclipse.paho.android.service.MqttAndroidClient;
 import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -63,6 +64,23 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mqttConnectOptions.setCleanSession(true);
             mqttConnectOptions.setAutomaticReconnect(true);
             mqttConnectOptions.setKeepAliveInterval(5);
+            mMqttAndroidClient.setCallback(new MqttCallback() {
+                @Override
+                public void connectionLost(Throwable cause) {
+                    Log.d(TAG, "connection lost");
+                    callback.onError(new SubscriptionDisconnectedException("Client disconnected", cause));
+                }
+
+                @Override
+                public void messageArrived(String topic, MqttMessage message) throws Exception {
+                    Log.d(TAG, "message arrived");
+                }
+
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) {
+                    Log.d(TAG, "delivery complete");
+                }
+            });
             Log.d(TAG, "Calling MQTT Connect with actual endpoint");
             mMqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
