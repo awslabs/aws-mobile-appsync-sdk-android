@@ -188,7 +188,15 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 public void onError(Exception e) {
                     for (String topic : info.topics) {
                         for (SubscriptionObject subObj : getSubscriptionObjects(topic)) {
-                            subObj.onFailure(new ApolloException("Failed to create client for subscription", e));
+                            if (e instanceof SubscriptionDisconnectedException) {
+                                subObj.onFailure(new ApolloException("Subscription terminated", e));
+                                for (Object c : subObj.getListeners()) {
+                                    RealSubscriptionManager.this.removeListener(subObj.subscription, ((AppSyncSubscriptionCall.Callback)c));
+                                    RealSubscriptionManager.this.unsubscribe(subObj.subscription);
+                                }
+                            } else {
+                                subObj.onFailure(new ApolloException("Failed to create client for subscription", e));
+                            }
                         }
                     }
                     clientConnected.countDown();

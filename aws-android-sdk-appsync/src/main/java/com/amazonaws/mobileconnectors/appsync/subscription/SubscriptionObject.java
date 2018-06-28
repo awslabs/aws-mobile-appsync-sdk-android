@@ -80,13 +80,23 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     }
 
     public void onFailure(final ApolloException e) {
-        notifyAllError(e);
+        if (e.getCause() instanceof SubscriptionDisconnectedException) {
+            notifyAllDisconnected();
+        } else {
+            notifyAllError(e);
+        }
     }
 
     private void notifyAllMessage(Response<T> data) {
         for (AppSyncSubscriptionCall.Callback listener : listeners) {
             Log.d(TAG, "Messaging: " + listener.toString());
             listener.onResponse(data);
+        }
+    }
+
+    private void notifyAllDisconnected() {
+        for (AppSyncSubscriptionCall.Callback listener : listeners) {
+            listener.onCompleted();
         }
     }
 
