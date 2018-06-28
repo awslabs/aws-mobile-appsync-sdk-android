@@ -1,6 +1,6 @@
 package com.amazonaws.mobileconnectors.appsync.subscription;
 
-/*
+/**
   Indicates if a subscription was disconnected.
  */
 public class SubscriptionDisconnectedException extends Exception {
