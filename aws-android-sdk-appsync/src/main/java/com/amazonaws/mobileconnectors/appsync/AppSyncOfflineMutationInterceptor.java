@@ -162,7 +162,6 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
     final boolean sendOperationIdentifiers;
     final ScalarTypeAdapters scalarTypeAdapters;
     final AppSyncOfflineMutationManager manager;
-    Context mContext;
     Map<Mutation, MutationInformation> originalMutationRequestMap;
     AWSAppSyncClient appSyncClient;
     private QueueUpdateHandler queueHandler;
@@ -220,7 +219,6 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
         this.sendOperationIdentifiers = sendOperationIdentifiers;
         this.manager = manager;
-        this.mContext = context;
         this.appSyncClient = client;
         this.originalMutationRequestMap = requestMap;
         queueHandlerThread = new HandlerThread("AWSAppSyncMutationQueueThread");
