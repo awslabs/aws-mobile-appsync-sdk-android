@@ -5,6 +5,7 @@
 ### Enhancements
 
 * Call `onCompleted` method of `AppSyncSubscriptionCall.Callback` when a subscription is disconnected.
+* Remove static references to context. See [issue #13](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/13)
 
 ## [Release 2.6.20](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.20)
 
