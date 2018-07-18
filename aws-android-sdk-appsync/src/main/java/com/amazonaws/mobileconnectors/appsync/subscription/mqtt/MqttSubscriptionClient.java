@@ -50,10 +50,14 @@ public class MqttSubscriptionClient implements SubscriptionClient {
      */
     public final Map<String, Set<SubscriptionObject>> subsMap;
     MessageListener msgListener;
+    ClientConnectionListener clientConnectionListener;
 
     public MqttSubscriptionClient(Context applicationContext, String wssURL, String clientId) {
         mMqttAndroidClient = new MqttAndroidClient(applicationContext, wssURL, clientId, new MemoryPersistence());
         subsMap = new HashMap<>();
+        msgListener = new MessageListener();
+        msgListener.client = this;
+        msgListener.setTransmitting(false);
     }
 
     @Override
@@ -64,23 +68,8 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mqttConnectOptions.setCleanSession(true);
             mqttConnectOptions.setAutomaticReconnect(true);
             mqttConnectOptions.setKeepAliveInterval(5);
-            mMqttAndroidClient.setCallback(new MqttCallback() {
-                @Override
-                public void connectionLost(Throwable cause) {
-                    Log.d(TAG, "connection lost");
-                    callback.onError(new SubscriptionDisconnectedException("Client disconnected", cause));
-                }
-
-                @Override
-                public void messageArrived(String topic, MqttMessage message) throws Exception {
-                    Log.d(TAG, "message arrived");
-                }
-
-                @Override
-                public void deliveryComplete(IMqttDeliveryToken token) {
-                    Log.d(TAG, "delivery complete");
-                }
-            });
+            clientConnectionListener = new ClientConnectionListener(callback);
+            mMqttAndroidClient.setCallback(clientConnectionListener);
             Log.d(TAG, "Calling MQTT Connect with actual endpoint");
             mMqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
@@ -107,15 +96,10 @@ public class MqttSubscriptionClient implements SubscriptionClient {
     public void subscribe(final String topic, int qos, final SubscriptionCallback callback) {
         try {
             Log.d(TAG, this + " Attempt to subscribe to topic " + topic);
-            if (msgListener == null) {
-                msgListener = new MessageListener();
-                msgListener.client = this;
-                msgListener.setTransmitting(false);
+            if (msgListener != null) {
                 msgListener.setCallback(callback);
-                mMqttAndroidClient.subscribe(topic, qos, msgListener);
-            } else {
-                mMqttAndroidClient.subscribe(topic, qos, msgListener);
             }
+            mMqttAndroidClient.subscribe(topic, qos, msgListener);
         } catch (MqttException e) {
             callback.onError(topic, e);
         }
@@ -144,6 +128,9 @@ public class MqttSubscriptionClient implements SubscriptionClient {
     public void setTransmitting(final boolean isTransmitting) {
         if (msgListener != null) {
             msgListener.setTransmitting(isTransmitting);
+        }
+        if (this.clientConnectionListener != null) {
+            this.clientConnectionListener.isTransmitting = isTransmitting;
         }
     }
 
@@ -178,6 +165,34 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             if (isTransmitting) {
                 callback.onMessage(topic, message.toString());
             }
+        }
+    }
+
+    class ClientConnectionListener implements MqttCallback {
+        private boolean isTransmitting;
+        final SubscriptionClientCallback callback;
+
+        public ClientConnectionListener(final SubscriptionClientCallback callback) {
+            this.callback = callback;
+            isTransmitting = true;
+        }
+
+        @Override
+        public void connectionLost(Throwable cause) {
+            Log.d(TAG, "connection lost isTransmitting: " + isTransmitting);
+            if (isTransmitting) {
+                callback.onError(new SubscriptionDisconnectedException("Client disconnected", cause));
+            }
+        }
+
+        @Override
+        public void messageArrived(String topic, MqttMessage message) throws Exception {
+            Log.d(TAG, "message arrived");
+        }
+
+        @Override
+        public void deliveryComplete(IMqttDeliveryToken token) {
+            Log.d(TAG, "delivery complete");
         }
     }
 }

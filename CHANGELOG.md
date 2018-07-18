@@ -6,6 +6,10 @@
 
 * Adds support for AWS AppSync Defined Scalars such as `AWSTimestamp`.
 
+### Bug Fixes
+
+* Fix premature execution of `onCompleted` method of `AppSyncSubscriptionCall.Callback`.
+
 ## [Release 2.6.21](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.21)
 
 ### Enhancements
