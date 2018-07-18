@@ -22,6 +22,7 @@ import com.apollographql.apollo.compiler.ir.CodeGenerationIR
 import com.apollographql.apollo.compiler.ir.ScalarType
 import com.apollographql.apollo.compiler.ir.TypeDeclaration
 import com.squareup.javapoet.JavaFile
+import com.squareup.javapoet.TypeName
 import com.squareup.moshi.Moshi
 import java.io.File
 
@@ -87,6 +88,15 @@ class GraphQLCompiler {
     return typeDeclarations.filter { it.kind == TypeDeclaration.KIND_SCALAR_TYPE }
         .associate { it.name to (this[it.name] ?: ClassNames.OBJECT.toString()) }
         .plus(idScalarTypeMap)
+        .plus("AWSDate" to ClassNames.STRING.toString())
+        .plus("AWSTime" to ClassNames.STRING.toString())
+        .plus("AWSDateTime" to ClassNames.STRING.toString())
+        .plus("AWSTimestamp" to TypeName.LONG.box().toString())
+        .plus("AWSEmail" to ClassNames.STRING.toString())
+        .plus("AWSJSON" to ClassNames.STRING.toString())
+        .plus("AWSURL" to ClassNames.STRING.toString())
+        .plus("AWSPhone" to ClassNames.STRING.toString())
+        .plus("AWSIPAddress" to ClassNames.STRING.toString())
   }
 
   companion object {

@@ -126,7 +126,7 @@ class AppSyncOfflineMutationManager {
     }
 
     public void processNextInQueueMutation() {
-        Log.d("AppSync", "Checking if whether I need to process next originalMutation");
+        Log.d("AppSync", "Checking if I need to process next originalMutation");
         if (shouldProcess) {
             Log.d("AppSync", "First check: Internet Available");
             if (!persistentOfflineMutationManager.isQueueEmpty()) {

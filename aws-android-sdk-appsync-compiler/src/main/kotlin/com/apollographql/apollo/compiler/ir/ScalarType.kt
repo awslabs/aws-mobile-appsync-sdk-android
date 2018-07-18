@@ -23,4 +23,5 @@ sealed class ScalarType(val name: String) {
   object INT : ScalarType("Int")
   object BOOLEAN : ScalarType("Boolean")
   object FLOAT : ScalarType("Float")
+  object AWS_TIMESTAMP : ScalarType("AWSTimestamp")
 }
