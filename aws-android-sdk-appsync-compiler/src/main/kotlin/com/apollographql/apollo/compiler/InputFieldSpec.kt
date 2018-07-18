@@ -213,7 +213,6 @@ class InputFieldSpec(
             Type.OBJECT_LIST
           }
         }
-        graphQLType.isCustomScalarType(context) -> Type.CUSTOM
         normalizedJavaType.isScalar(context) -> {
           when (normalizedJavaType) {
             TypeName.INT, TypeName.INT.box() -> Type.INT
@@ -223,6 +222,7 @@ class InputFieldSpec(
             else -> if (normalizedJavaType.isEnum(context)) Type.ENUM else Type.STRING
           }
         }
+        graphQLType.isCustomScalarType(context) -> Type.CUSTOM
         else -> Type.OBJECT
       }
       return InputFieldSpec(

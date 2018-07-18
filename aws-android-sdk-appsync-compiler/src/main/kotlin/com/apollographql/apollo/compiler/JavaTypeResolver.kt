@@ -42,6 +42,7 @@ class JavaTypeResolver(
       normalizedTypeName == ScalarType.INT.name -> if (isOptional) TypeName.INT.box() else TypeName.INT
       normalizedTypeName == ScalarType.BOOLEAN.name -> if (isOptional) TypeName.BOOLEAN.box() else TypeName.BOOLEAN
       normalizedTypeName == ScalarType.FLOAT.name -> if (isOptional) TypeName.DOUBLE.box() else TypeName.DOUBLE
+      normalizedTypeName == ScalarType.AWS_TIMESTAMP.name -> if (isOptional) TypeName.LONG.box() else TypeName.LONG
       customScalarType != null -> customScalarType.toJavaType()
       else -> ClassName.get(packageName, normalizedTypeName)
     }

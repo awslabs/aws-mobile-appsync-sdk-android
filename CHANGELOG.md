@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.22](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.22)
+
+### New Features
+
+* Adds support for AWS AppSync Defined Scalars such as `AWSTimestamp`.
+
 ## [Release 2.6.21](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.21)
 
 ### Enhancements
