@@ -23,6 +23,7 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.AppSyncStore;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.sql.AppSyncSqlHelper;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncSigV4SignerInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
@@ -90,6 +91,7 @@ public class AWSAppSyncClient {
         }
 
         OkHttpClient okHttpClient = okHttpClientBuilder
+                .addInterceptor(new RetryInterceptor())
                 .addInterceptor(appSyncSigV4SignerInterceptor)
                 .build();
 

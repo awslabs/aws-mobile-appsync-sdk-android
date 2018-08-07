@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.23](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.23)
+
+### Enhancements
+* Add retries for service calls with error code 5XX and 429. GraphQL calls for mutation, query, and subscription will be retried. This does not include retrying the connection for subscription messages.
+
 ## [Release 2.6.22](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.22)
 
 ### New Features
