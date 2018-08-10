@@ -3,11 +3,11 @@ apply plugin: 'com.android.library'
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
 android {
-    compileSdkVersion 27
+    compileSdkVersion 28
 
     defaultConfig {
         minSdkVersion 15
-        targetSdkVersion 26
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
@@ -22,6 +22,9 @@ android {
         }
     }
 
+    lintOptions {
+        disable 'GradleDependency', 'HandlerLeak'
+    }
 }
 
 dependencies {
@@ -45,4 +48,12 @@ dependencies {
 
     androidTestImplementation project(':aws-android-sdk-appsync-runtime')
     androidTestImplementation project(':aws-android-sdk-appsync-api')
+
+    androidTestImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
+    androidTestImplementation "org.mockito:mockito-core:2.19.1"
+
+    testImplementation "org.robolectric:robolectric:3.8"
+    testImplementation "org.mockito:mockito-core:2.19.1"
+    testImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
+    testImplementation project(':aws-android-sdk-appsync-runtime')
 }
