@@ -20,12 +20,14 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.content.Context;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.AppSyncStore;
 import com.amazonaws.mobileconnectors.appsync.cache.normalized.sql.AppSyncSqlHelper;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncSigV4SignerInterceptor;
+import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
@@ -48,8 +50,13 @@ import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
+import org.json.JSONObject;
+
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -61,11 +68,54 @@ import okhttp3.OkHttpClient;
 public class AWSAppSyncClient {
     private static final String defaultSqlStoreName = "appsyncstore";
     private static final String defaultMutationSqlStoreName = "appsyncstore_mutation";
+
+    private static final String TAG = AWSAppSyncClient.class.getSimpleName();
+
     ApolloClient mApolloClient;
     AppSyncStore mSyncStore;
     private Context applicationContext;
     S3ObjectManager mS3ObjectManager;
     Map<Mutation, MutationInformation> mutationMap;
+
+    private enum AuthMode {
+        API_KEY("API_KEY"),
+        AWS_IAM("AWS_IAM"),
+        AMAZON_COGNITO_USER_POOLS("AMAZON_COGNITO_USER_POOLS"),
+        OPENID_CONNECT("OPENID_CONNECT");
+
+        private final String name;
+
+        AuthMode(String name) {
+            this.name = name;
+        }
+
+        /**
+         * @return the name of this AuthMode
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * Returns the AuthMode enum corresponding to the given AuthMode name.
+         *
+         * @param authModeName The name of the AuthMode. Ex.: API_KEY
+         * @return AuthMode enum representing the given AuthMode name.
+         */
+        public static AuthMode fromName(String authModeName) {
+            for (final AuthMode authMode : AuthMode.values()) {
+                if (authModeName.equals(authMode.getName())) {
+                    return authMode;
+                }
+            }
+            throw new IllegalArgumentException("Cannot create enum from " + authModeName + " value!");
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
 
     private AWSAppSyncClient(AWSAppSyncClient.Builder builder) {
         applicationContext = builder.mContext.getApplicationContext();
@@ -164,6 +214,7 @@ public class AWSAppSyncClient {
         NormalizedCacheFactory mNormalizedCacheFactory;
         CacheKeyResolver mResolver;
         ConflictResolverInterface mConflictResolver;
+        AWSConfiguration mAwsConfiguration;
 
         // Apollo
         String mServerUrl;
@@ -236,7 +287,7 @@ public class AWSAppSyncClient {
         }
 
         public <T> Builder addCustomTypeAdapter(ScalarType scalarType,
-                                            final CustomTypeAdapter<T> customTypeAdapter) {
+                                                final CustomTypeAdapter<T> customTypeAdapter) {
             customTypeAdapters.put(scalarType, customTypeAdapter);
             return this;
         }
@@ -266,12 +317,99 @@ public class AWSAppSyncClient {
             return this;
         }
 
+        /**
+         * Read the AppSync section of the awsconfiguration.json file and populate the serverUrl and region
+         * variables from the ApiUrl and Region keys. The AuthMode specified in the file will be used to
+         * validate the Authentication mechanism chosen during the object construction.
+         *
+         * Example: API_KEY
+         *
+         * <p>
+         * "AppSync": {
+         *   "Default": {
+         *       "ApiUrl": "https://xxxx.appsync-api.<region>.amazonaws.com/graphql",
+         *       "Region": "us-east-1",
+         *       "ApiKey": "da2-yyyy",
+         *       "AuthMode": "API_KEY"
+         *   }
+         * }
+         * </p>
+         *
+         * <p>
+         *     Usage:
+         *          .awsConfiguration(new AWSConfiguration(getApplicationContext())
+         *
+         * </p>
+         * @param awsConfiguration The object representing the configuration
+         *                         information from awsconfiguration.json
+         *
+         * @return the builder object
+         */
+        public Builder awsConfiguration(AWSConfiguration awsConfiguration) {
+            mAwsConfiguration = awsConfiguration;
+            return this;
+        }
+
         public AWSAppSyncClient build() {
             if (mNormalizedCacheFactory == null) {
                 AppSyncSqlHelper appSyncSqlHelper = AppSyncSqlHelper.create(mContext, defaultSqlStoreName);
 
                 //Create NormalizedCacheFactory
                 mNormalizedCacheFactory = new SqlNormalizedCacheFactory(appSyncSqlHelper);
+            }
+
+            // Read serverUrl, region and AuthMode from awsconfiguration.json if present
+            if (mAwsConfiguration != null) {
+                try {
+                    // Populate the serverUrl and region from awsconfiguration.json
+                    JSONObject appSyncJsonObject = mAwsConfiguration.optJsonObject("AppSync");
+                    if (appSyncJsonObject == null) {
+                        throw new RuntimeException("AppSync configuration is missing from awsconfiguration.json");
+                    }
+
+                    mServerUrl = appSyncJsonObject.getString("ApiUrl");
+                    mRegion = Regions.fromName(appSyncJsonObject.getString("Region"));
+
+                    Map<Object, AuthMode> authModeObjects = new HashMap<>();
+                    authModeObjects.put(mApiKey, AuthMode.API_KEY);
+                    authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
+                    authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
+                    authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
+                    authModeObjects.remove(null);
+
+                    // Validate if only one Auth object is passed in to the builder
+                    if (authModeObjects.size() > 1) {
+                        throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
+                                authModeObjects.values().toString() +
+                                ". Please pass in exactly one AuthMode into the builder.");
+                    }
+
+                    // Store references to the authMode object passed in to the builder and the
+                    // corresponding AuthMode
+                    Object selectedAuthModeObject = null;
+                    AuthMode selectedAuthMode = null;
+                    Iterator<Object> iterator = authModeObjects.keySet().iterator();
+                    if (iterator.hasNext()) {
+                        selectedAuthModeObject = iterator.next();
+                        selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
+                    }
+
+                    // Read the AuthMode and validate if the corresponding Auth object is passed in
+                    // to the builder
+                    final AuthMode authMode = AuthMode.fromName(appSyncJsonObject.getString("AuthMode"));
+                    if (selectedAuthModeObject == null && authMode.equals(AuthMode.API_KEY)) {
+                        mApiKey = new BasicAPIKeyAuthProvider(appSyncJsonObject.getString("ApiKey"));
+                        selectedAuthMode = authMode;
+                    }
+
+                    // Validate if the AuthMode match
+                    if (!authMode.equals(selectedAuthMode)) {
+                        throw new RuntimeException("Found conflicting AuthMode. Should be " +
+                                authMode.toString() + " but you selected " + selectedAuthMode.toString());
+                    }
+                } catch (Exception exception) {
+                    throw new RuntimeException("Please check the AppSync configuration in awsconfiguration.json.", exception);
+                }
             }
 
             if (mResolver == null) {

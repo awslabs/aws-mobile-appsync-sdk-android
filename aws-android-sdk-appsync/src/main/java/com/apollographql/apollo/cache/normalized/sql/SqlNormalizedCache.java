@@ -108,7 +108,7 @@ public final class SqlNormalizedCache extends NormalizedCache {
     }
 
     //noinspection ResultOfMethodCallIgnored
-    nextCache().apply(new Action<NormalizedCache>() {
+    Optional<NormalizedCache> normalizedCacheOptional = nextCache().apply(new Action<NormalizedCache>() {
       @Override
       public void apply(@Nonnull NormalizedCache cache) {
         cache.merge(apolloRecord, cacheHeaders);
@@ -139,7 +139,7 @@ public final class SqlNormalizedCache extends NormalizedCache {
     }
 
     //noinspection ResultOfMethodCallIgnored
-    nextCache().apply(new Action<NormalizedCache>() {
+    Optional<NormalizedCache> normalizedCacheOptional = nextCache().apply(new Action<NormalizedCache>() {
       @Override
       public void apply(@Nonnull NormalizedCache cache) {
         for (Record record : recordSet) {
@@ -162,7 +162,7 @@ public final class SqlNormalizedCache extends NormalizedCache {
   @Override
   public void clearAll() {
     //noinspection ResultOfMethodCallIgnored
-    nextCache().apply(new Action<NormalizedCache>() {
+    Optional<NormalizedCache> normalizedCacheOptional = nextCache().apply(new Action<NormalizedCache>() {
       @Override
       public void apply(@Nonnull NormalizedCache cache) {
         cache.clearAll();

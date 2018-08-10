@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.25](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.25)
+
+### New Features
+* Add support for `AWSConfiguration` through `awsconfiguration.json` in `AWSAppSyncClient`.
+ 
 ## [Release 2.6.24](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.24)
 
 ### Bug Fixes
