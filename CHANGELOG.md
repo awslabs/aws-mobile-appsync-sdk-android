@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.24](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.24)
+
+### Bug Fixes
+* Fix a bug where multiple instances of same subscriptions when cancelled cause a `ConcurrentModificationException`. See [issue #22](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/22)
+
 ## [Release 2.6.23](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.23)
 
 ### Enhancements

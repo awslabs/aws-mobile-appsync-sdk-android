@@ -31,7 +31,9 @@ import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -186,18 +188,22 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
                 @Override
                 public void onError(Exception e) {
+                    Map<SubscriptionObject, AppSyncSubscriptionCall.Callback> unsubscribeMap = new HashMap<>();
                     for (String topic : info.topics) {
                         for (SubscriptionObject subObj : getSubscriptionObjects(topic)) {
                             if (e instanceof SubscriptionDisconnectedException) {
                                 subObj.onFailure(new ApolloException("Subscription terminated", e));
                                 for (Object c : subObj.getListeners()) {
-                                    RealSubscriptionManager.this.removeListener(subObj.subscription, ((AppSyncSubscriptionCall.Callback)c));
-                                    RealSubscriptionManager.this.unsubscribe(subObj.subscription);
+                                    unsubscribeMap.put(subObj, ((AppSyncSubscriptionCall.Callback)c));
                                 }
                             } else {
                                 subObj.onFailure(new ApolloException("Failed to create client for subscription", e));
                             }
                         }
+                    }
+                    for (SubscriptionObject subObj: unsubscribeMap.keySet()) {
+                        RealSubscriptionManager.this.removeListener(subObj.subscription, unsubscribeMap.get(subObj));
+                        RealSubscriptionManager.this.unsubscribe(subObj.subscription);
                     }
                     clientConnected.countDown();
                 }
