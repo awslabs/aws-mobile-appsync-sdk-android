@@ -113,6 +113,8 @@ are added in the build path.
 
 ## Create a client
 
+### Configuration via code
+
 ```java
 AWSAppSyncClient client = AWSAppSyncClient.builder()
                     .context(context)
@@ -122,11 +124,245 @@ AWSAppSyncClient client = AWSAppSyncClient.builder()
                     .build();
 ```
 
+### Configuration via a config file
+
+Alternatively, you can use the `awsconfiguration.json` file to supply the configuration information required to create a `AWSAppSyncClient` object.
+
+Create a file named `awsconfiguration.json` under `res/raw` directory of your app.
+
+```
+{
+    "AppSync": {
+        "Default": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-1",
+            "ApiKey": "YOUR-API-KEY",
+            "AuthMode": "API_KEY"
+        }
+    }
+}
+```
+
+The `AWSConfiguration` represents the configuration information present in `awsconfiguration.json` file. By default, the information under `Default` section will be used. 
+
+```java
+AWSConfiguration awsConfig = new AWSConfiguration(context);
+
+AWSAppSyncClient client = AWSAppSyncClient.builder()
+                    .context(context)
+                    .awsConfiguration(awsConfig)
+                    .build();
+```
+
+You can override the `Default` configuration by using the `AWSConfiguration#setConfiguration()` method.
+
+```
+{
+    "AppSync": {
+        "Default": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-1",
+            "ApiKey": "YOUR-API-KEY",
+            "AuthMode": "API_KEY"
+        },
+        "Custom": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-2",
+            "ApiKey": "YOUR-API-KEY",
+            "AuthMode": "API_KEY"
+        }
+   }
+}
+```
+
+```java
+AWSConfiguration awsConfig = new AWSConfiguration(context);
+awsConfig.setConfiguration("Custom");
+
+AWSAppSyncClient client = AWSAppSyncClient.builder()
+                    .context(context)
+                    .awsConfiguration(awsConfig)
+                    .build();
+```
+
+## Authentication Modes
+
+When making calls to AWS AppSync, there are several ways to authenticate those calls. The API key authorization (**API_KEY**) is the simplest way to onboard, but we recommend you use either Amazon IAM (**AWS_IAM**) or Amazon Cognito UserPools (**AMAZON\_COGNITO\_USER_POOLS**) or any OpenID Connect Provider (**OPENID_CONNECT**) after you onboard with an API key.
+
+### API Key
+
+For authorization using the API key, update the `awsconfiguration.json` file and code snippet as follows:
+
+#### Configuration
+
+Add the following snippet to your `awsconfiguration.json` file.
+
+```
+{
+    "AppSync": {
+        "Default": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-1",
+            "ApiKey": "YOUR-API-KEY",
+            "AuthMode": "API_KEY"
+        }
+   }
+}
+```
+
+#### Code
+
+Add the following code to use the information in the `Default` section from `awsconfiguration.json` file.
+
+
+```java
+AWSAppSyncClient client = AWSAppSyncClient.builder()
+                    .context(context)
+                    .awsConfiguration(new AWSConfiguration(context))
+                    .build();
+```
+
+### AWS IAM
+
+For authorization using the Amazon IAM credentials using Amazon IAM or Amazon STS or Amazon Cognito, update the `awsconfiguration.json` file and code snippet as follows:
+
+#### Configuration
+
+Add the following snippet to your `awsconfiguration.json` file.
+
+```
+{
+    "CredentialsProvider": {
+        "CognitoIdentity": {
+            "Default": {
+                "PoolId": "YOUR-COGNITO-IDENTITY-POOLID",
+                "Region": "us-east-1"
+            }
+        }
+    },
+    "AppSync": {
+        "Default": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-1",
+            "AuthMode": "AWS_IAM"
+       }
+   }
+}
+```
+
+#### Code
+
+Add the following code to use the information in the `Default` section from `awsconfiguration.json` file.
+
+```java
+AWSConfiguration awsConfig = new AWSConfiguration(context);
+
+CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(context, awsConfig);
+
+AWSAppSyncClient client = AWSAppSyncClient.builder()
+                    .context(context)
+                    .awsConfiguration(awsConfig)
+                    .credentialsProvider(credentialsProvider)
+                    .build();
+```
+
+
+### Amazon Cognito UserPools
+
+For authorization using the Amazon Cognito UserPools, update the `awsconfiguration.json` file and code snippet as follows:
+
+#### Configuration
+
+Add the following snippet to your `awsconfiguration.json` file.
+
+```
+{
+    "CognitoUserPool": {
+        "Default": {
+            "PoolId": "POOL-ID",
+            "AppClientId": "APP-CLIENT-ID",
+            "AppClientSecret": "APP-CLIENT-SECRET",
+            "Region": "us-east-1"
+        }
+    },
+    "AppSync": {
+        "Default": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-1",
+            "AuthMode": "AMAZON_COGNITO_USER_POOLS"
+        }
+   }
+}
+```
+
+#### Code
+
+Add the following dependency to your app in order to use Amazon Cognito UserPools:
+
+```
+dependencies {
+    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.+'
+}
+```
+
+Add the following code to use the information in the `Default` section from `awsconfiguration.json` file.
+
+
+```java
+AWSConfiguration awsConfig = new AWSConfiguration(context);
+
+CognitoUserPool cognitoUserPool = new CognitoUserPool(context, awsConfig);
+BasicCognitoUserPoolsAuthProvider basicCognitoUserPoolsAuthProvider = new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
+
+AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+                    .context(context)
+                    .awsConfiguration(awsConfig)
+                    .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider)
+                    .build();
+```
+
+### OIDC (OpenID Connect)
+
+For authorization using any OIDC (OpenID Connect) Identity Provider, update the `awsconfiguration.json` file and code snippet as follows:
+
+#### Configuration
+
+Add the following snippet to your `awsconfiguration.json` file.
+
+```
+{
+    "AppSync": {
+        "Default": {
+            "ApiUrl": "YOUR-GRAPHQL-ENDPOINT",
+            "Region": "us-east-1",
+            "AuthMode": "OPENID_CONNECT"
+        }
+   }
+}
+```
+
+#### Code
+
+Add the following code to use the information in the `Default` section from `awsconfiguration.json` file.
+
+```java
+AWSAppSyncClient client = AWSAppSyncClient.builder()
+                    .context(context)
+                    .awsConfiguration(new AWSConfiguration(context))
+                    .oidcAuthProvider(new OidcAuthProvider() {
+                        @Override
+                        public String getLatestAuthToken() {
+                            return "jwt-token-from-oidc-provider";
+                        }
+                    })
+                    .build();
+```
+
 ## Make a call
 
 ```java
 public void addPost() {
-	AddPostMutation addPostMutation = AddPostMutation.builder()
+    AddPostMutation addPostMutation = AddPostMutation.builder()
             .id(UUID.randomUUID().toString())
             .title(title)
             .author(author)
@@ -136,13 +372,13 @@ public void addPost() {
             .downs(0)
             .expectedVersion(1)
             .build();
-	client.mutate(addPostMutation).enqueue(postsCallback);
+    client.mutate(addPostMutation).enqueue(postsCallback);
 }
 
 private GraphQLCall.Callback<AddPostMutation.Data> postsCallback = new GraphQLCall.Callback<AddPostMutation.Data>() {
     @Override
     public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
-    	// non-UI calls
+        // non-UI calls
 
         runOnUiThread(new Runnable() {
             @Override
