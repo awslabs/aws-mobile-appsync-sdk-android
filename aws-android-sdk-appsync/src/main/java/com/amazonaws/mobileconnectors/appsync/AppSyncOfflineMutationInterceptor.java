@@ -97,15 +97,25 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
     public void onResponse(@Nonnull ApolloInterceptor.InterceptorResponse response) {
         Log.d("AppSync", "onResponse()");
         //The conditional request failed
-        if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().errors().size() >= 1)) {
+        final Response interceptorResponse = response.parsedResponse.get();
+        if (interceptorResponse != null && (interceptorResponse.errors().size() >= 1)) {
             Log.d("AppSync", "onResponse -- found error");
-            if ( response.parsedResponse.get().errors().get(0).toString().contains("The conditional request failed")) {
+
+            final Error firstError = (Error) interceptorResponse.errors().get(0);
+            if (firstError.toString().contains("The conditional request failed")) {
                 Log.d("AppSync", "onResponse -- string match");
+
                 // if !shouldRetry AND conflict detected
                 if (shouldRetry) {
-                    String conflictString = new JSONObject((Map)((Error) response.parsedResponse.get().errors().get(0)).customAttributes().get("data")).toString();
+                    final Map<String, Object> customAttributes = firstError.customAttributes();
+                    final Map data = (Map) customAttributes.get("data");
+                    if (data == null) {
+                        return;
+                    }
+                    String conflictString = new JSONObject(data).toString();
                     Log.d("AppSync", "Conflict String: " + conflictString);
                     Log.d("AppSync", "Client String: " + clientState);
+
                     Message message = new Message();
                     MutationInterceptorMessage msg = new MutationInterceptorMessage(originalMutation, currentMutation);
                     msg.serverState = conflictString;
