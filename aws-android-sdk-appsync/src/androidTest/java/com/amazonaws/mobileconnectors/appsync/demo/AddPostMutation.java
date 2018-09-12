@@ -1,6 +1,7 @@
 package com.amazonaws.mobileconnectors.appsync.demo;
 
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
+import com.amazonaws.mobileconnectors.appsync.demo.type.CustomType;
 import com.apollographql.apollo.api.InputFieldMarshaller;
 import com.apollographql.apollo.api.InputFieldWriter;
 import com.apollographql.apollo.api.Mutation;
@@ -29,6 +30,7 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
   public static final String OPERATION_DEFINITION = "mutation AddPost($input: CreatePostInput!) {\n"
       + "  createPost(input: $input) {\n"
       + "    __typename\n"
+      + "    id\n"
       + "    title\n"
       + "    author\n"
       + "    url\n"
@@ -54,7 +56,7 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
 
   @Override
   public String operationId() {
-    return "3db1851d0e4349cfd9c02a87032a51791424f838548f026c9e1f526672806f2f";
+    return "56fe42cb73cba6679788a19cf49c2274596f4ce6ba9b7794493f1068e342ebf1";
   }
 
   @Override
@@ -221,6 +223,7 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
   public static class CreatePost {
     static final ResponseField[] $responseFields = {
       ResponseField.forString("__typename", "__typename", null, false, Collections.<ResponseField.Condition>emptyList()),
+      ResponseField.forCustomType("id", "id", null, false, CustomType.ID, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("title", "title", null, true, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("author", "author", null, false, Collections.<ResponseField.Condition>emptyList()),
       ResponseField.forString("url", "url", null, true, Collections.<ResponseField.Condition>emptyList()),
@@ -228,6 +231,8 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
     };
 
     final @Nonnull String __typename;
+
+    final @Nonnull String id;
 
     final @Nullable String title;
 
@@ -243,9 +248,10 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
 
     private volatile boolean $hashCodeMemoized;
 
-    public CreatePost(@Nonnull String __typename, @Nullable String title, @Nonnull String author,
-        @Nullable String url, @Nullable String content) {
+    public CreatePost(@Nonnull String __typename, @Nonnull String id, @Nullable String title,
+        @Nonnull String author, @Nullable String url, @Nullable String content) {
       this.__typename = Utils.checkNotNull(__typename, "__typename == null");
+      this.id = Utils.checkNotNull(id, "id == null");
       this.title = title;
       this.author = Utils.checkNotNull(author, "author == null");
       this.url = url;
@@ -254,6 +260,10 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
 
     public @Nonnull String __typename() {
       return this.__typename;
+    }
+
+    public @Nonnull String id() {
+      return this.id;
     }
 
     public @Nullable String title() {
@@ -277,10 +287,11 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
         @Override
         public void marshal(ResponseWriter writer) {
           writer.writeString($responseFields[0], __typename);
-          writer.writeString($responseFields[1], title);
-          writer.writeString($responseFields[2], author);
-          writer.writeString($responseFields[3], url);
-          writer.writeString($responseFields[4], content);
+          writer.writeCustom((ResponseField.CustomTypeField) $responseFields[1], id);
+          writer.writeString($responseFields[2], title);
+          writer.writeString($responseFields[3], author);
+          writer.writeString($responseFields[4], url);
+          writer.writeString($responseFields[5], content);
         }
       };
     }
@@ -290,6 +301,7 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
       if ($toString == null) {
         $toString = "CreatePost{"
           + "__typename=" + __typename + ", "
+          + "id=" + id + ", "
           + "title=" + title + ", "
           + "author=" + author + ", "
           + "url=" + url + ", "
@@ -307,6 +319,7 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
       if (o instanceof CreatePost) {
         CreatePost that = (CreatePost) o;
         return this.__typename.equals(that.__typename)
+         && this.id.equals(that.id)
          && ((this.title == null) ? (that.title == null) : this.title.equals(that.title))
          && this.author.equals(that.author)
          && ((this.url == null) ? (that.url == null) : this.url.equals(that.url))
@@ -321,6 +334,8 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
         int h = 1;
         h *= 1000003;
         h ^= __typename.hashCode();
+        h *= 1000003;
+        h ^= id.hashCode();
         h *= 1000003;
         h ^= (title == null) ? 0 : title.hashCode();
         h *= 1000003;
@@ -339,11 +354,12 @@ public final class AddPostMutation implements Mutation<AddPostMutation.Data, Add
       @Override
       public CreatePost map(ResponseReader reader) {
         final String __typename = reader.readString($responseFields[0]);
-        final String title = reader.readString($responseFields[1]);
-        final String author = reader.readString($responseFields[2]);
-        final String url = reader.readString($responseFields[3]);
-        final String content = reader.readString($responseFields[4]);
-        return new CreatePost(__typename, title, author, url, content);
+        final String id = reader.readCustomType((ResponseField.CustomTypeField) $responseFields[1]);
+        final String title = reader.readString($responseFields[2]);
+        final String author = reader.readString($responseFields[3]);
+        final String url = reader.readString($responseFields[4]);
+        final String content = reader.readString($responseFields[5]);
+        return new CreatePost(__typename, id, title, author, url, content);
       }
     }
   }

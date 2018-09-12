@@ -14,6 +14,8 @@ import javax.annotation.Nullable;
 
 @Generated("Apollo GraphQL")
 public final class CreatePostInput {
+  private final @Nonnull String id;
+
   private final @Nonnull String author;
 
   private final Input<String> title;
@@ -28,8 +30,10 @@ public final class CreatePostInput {
 
   private final int version;
 
-  CreatePostInput(@Nonnull String author, Input<String> title, Input<String> content,
-      Input<String> url, Input<Integer> ups, Input<Integer> downs, int version) {
+  CreatePostInput(@Nonnull String id, @Nonnull String author, Input<String> title,
+      Input<String> content, Input<String> url, Input<Integer> ups, Input<Integer> downs,
+      int version) {
+    this.id = id;
     this.author = author;
     this.title = title;
     this.content = content;
@@ -37,6 +41,10 @@ public final class CreatePostInput {
     this.ups = ups;
     this.downs = downs;
     this.version = version;
+  }
+
+  public @Nonnull String id() {
+    return this.id;
   }
 
   public @Nonnull String author() {
@@ -75,6 +83,7 @@ public final class CreatePostInput {
     return new InputFieldMarshaller() {
       @Override
       public void marshal(InputFieldWriter writer) throws IOException {
+        writer.writeCustom("id", com.amazonaws.mobileconnectors.appsync.demo.type.CustomType.ID, id);
         writer.writeString("author", author);
         if (title.defined) {
           writer.writeString("title", title.value);
@@ -97,6 +106,8 @@ public final class CreatePostInput {
   }
 
   public static final class Builder {
+    private @Nonnull String id;
+
     private @Nonnull String author;
 
     private Input<String> title = Input.absent();
@@ -112,6 +123,11 @@ public final class CreatePostInput {
     private int version;
 
     Builder() {
+    }
+
+    public Builder id(@Nonnull String id) {
+      this.id = id;
+      return this;
     }
 
     public Builder author(@Nonnull String author) {
@@ -151,7 +167,7 @@ public final class CreatePostInput {
 
     public CreatePostInput build() {
       Utils.checkNotNull(author, "author == null");
-      return new CreatePostInput(author, title, content, url, ups, downs, version);
+      return new CreatePostInput(id, author, title, content, url, ups, downs, version);
     }
   }
 }
