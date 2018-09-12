@@ -1,4 +1,4 @@
-package com.amazonaws.mobileconnectors.appsync.demo.type;
+ package com.amazonaws.mobileconnectors.appsync.demo.type;
 
 import com.apollographql.apollo.api.Input;
 import com.apollographql.apollo.api.InputFieldMarshaller;
