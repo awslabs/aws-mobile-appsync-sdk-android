@@ -244,7 +244,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertTrue( postID.equals(deletePostMutationResponse.data().deletePost().id()));
 
         //Check that it is gone from the server
-        queryPost(AppSyncResponseFetchers.NETWORK_FIRST, postID);
+        queryPost(AppSyncResponseFetchers.NETWORK_ONLY, postID);
         assertNotNull(getPostQueryResponse);
         assertNotNull(getPostQueryResponse.data());
         assertNull(getPostQueryResponse.data().getPost());

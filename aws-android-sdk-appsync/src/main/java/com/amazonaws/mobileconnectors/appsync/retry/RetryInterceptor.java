@@ -32,16 +32,17 @@ import okhttp3.Response;
 public class RetryInterceptor implements Interceptor {
     private static final String TAG = RetryInterceptor.class.getSimpleName();
     // The first call does not count towards retry count
-    private static final int MAX_RETRY_COUNT = 3;
-    private static final int MAX_RETRY_WAIT_MILLIS = 5000;
+    private static final int BASE_RETRY_WAIT_MILLIS = 100;
+    private static final int MAX_RETRY_WAIT_MILLIS = 300 * 1000; //Five Minutes
     private static final int JITTER = 100;
 
     @Override
     public Response intercept(Chain chain) throws IOException {
-        int retryCount = 0;
+        int retryCount = -1;
         Response response;
+        int waitMillis = 0;
         do {
-
+            sleep(waitMillis);
             //Send the request on to the next link in the chain of processors
             response = chain.proceed(chain.request());
 
@@ -51,15 +52,14 @@ public class RetryInterceptor implements Interceptor {
                 return response;
             }
 
+            retryCount++;
 
             //Check if server has sent a Retry-After header attribute in the response.
             //If so, respect that!
             final String retryAfterHeaderValue = response.header("Retry-After");
             if (retryAfterHeaderValue != null) {
                 try {
-                    int waitMillis = Integer.parseInt(retryAfterHeaderValue) * 1000;
-                    Log.d(TAG, "Sleeping for " + waitMillis + " ms as per server's Retry-After header value");
-                    sleep(waitMillis);
+                    waitMillis = Integer.parseInt(retryAfterHeaderValue) * 1000;
                     continue;
                 } catch (NumberFormatException e) {
                     Log.w(TAG, "Could not parse Retry-After header: " + retryAfterHeaderValue);
@@ -70,9 +70,7 @@ public class RetryInterceptor implements Interceptor {
             //Compute backoff and sleep if error is retriable
             if ((response.code() >= 500 && response.code() < 600)
                     || response.code() == 429 ) {
-                final int backOff = (int) Math.min(Math.pow(2, retryCount) * 100 + (Math.random() * JITTER), MAX_RETRY_WAIT_MILLIS) ;
-                Log.d(TAG, "Sleeping for " + backOff + " ms as per exponential backoff sequence");
-                sleep(backOff);
+                waitMillis = (int) (Math.pow(2, retryCount) * BASE_RETRY_WAIT_MILLIS + (Math.random() * JITTER));
                 continue;
             }
 
@@ -80,7 +78,7 @@ public class RetryInterceptor implements Interceptor {
             Log.d(TAG, "Encountered non-retriable error. Returning response");
             return response;
 
-        } while (retryCount++ < MAX_RETRY_COUNT);
+        } while (waitMillis < MAX_RETRY_WAIT_MILLIS);
 
         Log.i(TAG, "Returning network response, retries exhausted");
         return response;
@@ -88,9 +86,13 @@ public class RetryInterceptor implements Interceptor {
 
     private void sleep(int waitMillis) {
         try {
-            Thread.sleep(waitMillis);
+            if (waitMillis > 0 ) {
+                Log.d(TAG, "Will sleep for " + waitMillis + " ms as per backoff sequence");
+                Thread.sleep(waitMillis);
+            }
         } catch (InterruptedException e) {
             Log.e(TAG, "Retry **wait** interrupted.");
         }
     }
 }
+
