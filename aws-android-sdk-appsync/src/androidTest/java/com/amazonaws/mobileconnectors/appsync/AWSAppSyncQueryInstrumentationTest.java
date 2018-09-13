@@ -119,13 +119,13 @@ public class AWSAppSyncQueryInstrumentationTest {
                     .persistentMutationsCallback(new PersistentMutationsCallback() {
                         @Override
                         public void onResponse(PersistentMutationsResponse response) {
-                            Log.d("NOTERROR", response.getMutationClassName());
+                            Log.d(TAG, response.getMutationClassName());
                         }
 
                         @Override
                         public void onFailure(PersistentMutationsError error) {
-                            Log.e("TAG", error.getMutationClassName());
-                            Log.e("TAG", "Error", error.getException());
+                            Log.e(TAG, error.getMutationClassName());
+                            Log.e(TAG, "Error", error.getException());
                         }
                     })
                     .build();
@@ -254,7 +254,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     private void queryPosts(final ResponseFetcher responseFetcher) {
 
         final CountDownLatch queryCountDownLatch = new CountDownLatch(1);
-
+        Log.d(TAG, "Calling Query AllPosts");
         mAWSAppSyncClient.query(AllPostsQuery.builder().build())
                 .responseFetcher(responseFetcher)
                 .enqueue(new GraphQLCall.Callback<AllPostsQuery.Data>() {
@@ -279,14 +279,14 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
     private void queryPost( final ResponseFetcher responseFetcher, final String id) {
-        Log.d(TAG, "Fetching Post: " + id);
+
         final CountDownLatch queryCountDownLatch = new CountDownLatch(1);
+        Log.d(TAG, "Calling Query GetPost");
         mAWSAppSyncClient.query(GetPostQuery.builder().id(id).build())
                 .responseFetcher(responseFetcher)
                 .enqueue(new GraphQLCall.Callback<GetPostQuery.Data>() {
                     @Override
                     public void onResponse(@Nonnull Response<GetPostQuery.Data> response) {
-                        Log.d(TAG, "Got Response " + response);
                         getPostQueryResponse = response;
                         queryCountDownLatch.countDown();
                     }
@@ -325,8 +325,6 @@ public class AWSAppSyncQueryInstrumentationTest {
                         ""
                 ));
 
-                Log.d(TAG, "Building Mutation");
-
                 CreatePostInput createPostInput = CreatePostInput.builder()
                         .title(title)
                         .author(author)
@@ -338,7 +336,6 @@ public class AWSAppSyncQueryInstrumentationTest {
 
                 AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
 
-                Log.d(TAG, "Calling mutate and enqueue");
 
                 mAWSAppSyncClient
                         .mutate(addPostMutation, expected)

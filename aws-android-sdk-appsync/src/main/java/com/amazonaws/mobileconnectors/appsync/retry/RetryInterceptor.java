@@ -34,53 +34,63 @@ public class RetryInterceptor implements Interceptor {
     // The first call does not count towards retry count
     private static final int MAX_RETRY_COUNT = 3;
     private static final int MAX_RETRY_WAIT_MILLIS = 5000;
+    private static final int JITTER = 100;
 
     @Override
     public Response intercept(Chain chain) throws IOException {
         int retryCount = 0;
         Response response;
         do {
+
+            //Send the request on to the next link in the chain of processors
             response = chain.proceed(chain.request());
+
+            //Exit function if response was successful
             if (response.isSuccessful()) {
                 Log.i(TAG, "Returning network response: success");
                 return response;
             }
 
-            boolean retryAfterSet = false;
-            int waitMillis = 0;
 
+            //Check if server has sent a Retry-After header attribute in the response.
+            //If so, respect that!
             final String retryAfterHeaderValue = response.header("Retry-After");
             if (retryAfterHeaderValue != null) {
                 try {
-                    waitMillis = Integer.parseInt(retryAfterHeaderValue) * 1000;
-                    retryAfterSet = true;
+                    int waitMillis = Integer.parseInt(retryAfterHeaderValue) * 1000;
+                    Log.d(TAG, "Sleeping for " + waitMillis + " ms as per server's Retry-After header value");
+                    sleep(waitMillis);
+                    continue;
                 } catch (NumberFormatException e) {
                     Log.w(TAG, "Could not parse Retry-After header: " + retryAfterHeaderValue);
+                    Log.w(TAG, "Will proceed with exponential backoff strategy");
                 }
             }
 
+            //Compute backoff and sleep if error is retriable
             if ((response.code() >= 500 && response.code() < 600)
-                    || response.code() == 429) {
-
-                if (!retryAfterSet) {
-                    final double calculateBackoffMillis = Math.min(Math.pow(2, retryCount) * 100, MAX_RETRY_WAIT_MILLIS);
-                    final double randomizedBackoffMillis = Math.random() * calculateBackoffMillis;
-                    waitMillis = (int) randomizedBackoffMillis;
-                }
-
-                try {
-                    Log.i(TAG, "Waiting " + waitMillis + " milliseconds to retry based on service response.");
-                    Thread.sleep(waitMillis);
-                } catch (InterruptedException e) {
-                    Log.e(TAG, "Exponential backoff or Retry-Ater header based retry **wait** failed.");
-                }
-            } else {
-                Log.d(TAG, "Returning network response, fail unknown error code default return");
-                return response;
+                    || response.code() == 429 ) {
+                final int backOff = (int) Math.min(Math.pow(2, retryCount) * 100 + (Math.random() * JITTER), MAX_RETRY_WAIT_MILLIS) ;
+                Log.d(TAG, "Sleeping for " + backOff + " ms as per exponential backoff sequence");
+                sleep(backOff);
+                continue;
             }
+
+            //Not a 5XX or 429 error. Don't retry
+            Log.d(TAG, "Encountered non-retriable error. Returning response");
+            return response;
+
         } while (retryCount++ < MAX_RETRY_COUNT);
 
-        Log.i(TAG, "Returning network response, default return, retries exhausted");
+        Log.i(TAG, "Returning network response, retries exhausted");
         return response;
+    }
+
+    private void sleep(int waitMillis) {
+        try {
+            Thread.sleep(waitMillis);
+        } catch (InterruptedException e) {
+            Log.e(TAG, "Retry **wait** interrupted.");
+        }
     }
 }
