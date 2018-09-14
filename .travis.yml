@@ -1,10 +1,10 @@
 before_install:
-# Allow executing of gradlew
+- openssl aes-256-cbc -K $encrypted_ac814b4117bc_key -iv $encrypted_ac814b4117bc_iv
+  -in aws-android-sdk-appsync/assets/appsync_test_credentials.json.enc -out aws-android-sdk-appsync/assets/appsync_test_credentials.json
+  -d
 - chmod +x gradlew
-# Accept stubborn license
 - yes | sdkmanager "platforms;android-27"
 - android list target
-# Emulator Management: Create, Start and Wait
 - echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a
 - emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
@@ -21,4 +21,4 @@ android:
   - sys-img-armeabi-v7a-android-22
 script:
 - android list target
-- ./gradlew build connectedCheck
+- "./gradlew build connectedCheck"
