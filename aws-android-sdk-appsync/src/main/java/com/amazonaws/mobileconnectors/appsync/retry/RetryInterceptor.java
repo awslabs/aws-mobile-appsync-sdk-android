@@ -41,6 +41,7 @@ public class RetryInterceptor implements Interceptor {
         int retryCount = -1;
         Response response;
         int waitMillis = 0;
+        Log.d(TAG, "Retry Interceptor called");
         do {
             sleep(waitMillis);
             //Send the request on to the next link in the chain of processors

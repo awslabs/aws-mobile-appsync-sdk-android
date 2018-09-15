@@ -30,15 +30,17 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile 'com.google.code.findbugs:jsr305:3.0.1' // api
-    compile "com.squareup.okhttp3:okhttp:3.8.1" // impl
+    implementation 'com.google.code.findbugs:jsr305:3.0.1' // api
+    implementation "com.squareup.okhttp3:okhttp:3.8.1" // impl
 
-    compile "com.amazonaws:aws-android-sdk-core:$aws_version" // api
-    compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    compileOnly "com.amazonaws:aws-android-sdk-s3:$aws_version"
+    compile "com.amazonaws:aws-android-sdk-core:2.6.+" // api
+    compile "com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.+"
+    compile "com.amazonaws:aws-android-sdk-s3:2.6.+"
 
-    compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
-    compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+    implementation 'com.android.support:appcompat-v7:28.+'
+
+    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
+    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
 
     compileOnly project(':aws-android-sdk-appsync-runtime')
 
@@ -50,12 +52,5 @@ dependencies {
     androidTestImplementation project(':aws-android-sdk-appsync-runtime')
     androidTestImplementation project(':aws-android-sdk-appsync-api')
 
-    androidTestImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    androidTestImplementation "org.mockito:mockito-core:2.19.1"
-    androidTestImplementation project(':aws-android-sdk-appsync-runtime')
 
-    testImplementation "org.robolectric:robolectric:3.8"
-    testImplementation "org.mockito:mockito-core:2.19.1"
-    testImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    testImplementation project(':aws-android-sdk-appsync-runtime')
 }
