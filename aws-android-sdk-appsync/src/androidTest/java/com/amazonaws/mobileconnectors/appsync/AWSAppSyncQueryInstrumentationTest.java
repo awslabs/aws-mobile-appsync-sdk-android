@@ -96,10 +96,10 @@ public class AWSAppSyncQueryInstrumentationTest {
                 sb.append(in.nextLine());
             }
             JSONObject config = new JSONObject(sb.toString());
-            String endPoint = config.getString("AppSyncEndpoint1");
-            String appSyncRegion = config.getString("AppSyncRegion1");
-            String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId1");
-            String cognitoRegion = config.getString("CognitoIdentityPoolRegion1");
+            String endPoint = config.getString("AppSyncEndpoint");
+            String appSyncRegion = config.getString("AppSyncRegion");
+            String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId");
+            String cognitoRegion = config.getString("CognitoIdentityPoolRegion");
 
             if (endPoint == null ||appSyncRegion == null || cognitoIdentityPoolID == null || cognitoRegion == null ) {
                 Log.e(TAG, "Unable to read AppSyncEndpoint, AppSyncRegion, CognitoIdentityPoolId, CognitoIdentityPoolRegion from config file ");
@@ -161,9 +161,9 @@ public class AWSAppSyncQueryInstrumentationTest {
                 sb.append(in.nextLine());
             }
             JSONObject config = new JSONObject(sb.toString());
-            String endPoint = config.getString("AppSyncEndpoint2");
-            String appSyncRegion = config.getString("AppSyncRegion2");
-            String apiKey = config.getString("AppSyncAPIKey2");
+            String endPoint = config.getString("AppSyncEndpointAPIKey");
+            String appSyncRegion = config.getString("AppSyncRegionAPIKey");
+            String apiKey = config.getString("AppSyncAPIKey");
 
             if (endPoint == null ||apiKey == null  ) {
                 Log.e(TAG, "Unable to read AppSyncEndpoint2 or AppSyncAPIKey2 from config file ");
