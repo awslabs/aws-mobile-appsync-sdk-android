@@ -166,7 +166,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             String apiKey = config.getString("AppSyncAPIKey");
 
             if (endPoint == null ||apiKey == null  ) {
-                Log.e(TAG, "Unable to read AppSyncEndpoint2 or AppSyncAPIKey2 from config file ");
+                Log.e(TAG, "Unable to read AppSyncEndpointAPIKey, AppSyncRegionAPIKey or AppSyncAPIKey from config file ");
                 return null;
             }
 
