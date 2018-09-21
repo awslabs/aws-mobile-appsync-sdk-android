@@ -67,7 +67,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mqttConnectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
             mqttConnectOptions.setCleanSession(true);
             mqttConnectOptions.setAutomaticReconnect(true);
-            mqttConnectOptions.setKeepAliveInterval(60);
+            mqttConnectOptions.setKeepAliveInterval(30);
             clientConnectionListener = new ClientConnectionListener(callback);
             mMqttAndroidClient.setCallback(clientConnectionListener);
             Log.d(TAG, "Calling MQTT Connect with actual endpoint");
