@@ -147,29 +147,30 @@ public class RealSubscriptionManager implements SubscriptionManager {
     }
 
     @Override
-    public <T> void subscribe(
+    public synchronized  <T> void subscribe(
             @Nonnull Subscription<?, T, ?> subscription,
-            @Nonnull final List<String> subbedTopics,
+            @Nonnull final List<String> newTopics,
             @Nonnull SubscriptionResponse response,
             ResponseNormalizer<Map<String, Object>> mapResponseNormalizer) {
-        Log.d(TAG, "subscribe called " + subbedTopics);
+        Log.d(TAG, "subscribe called " + newTopics);
 
         SubscriptionObject subscriptionObject = getSubscriptionObject(subscription);
         subscriptionObject.subscription = subscription;
         subscriptionObject.normalizer = mapResponseNormalizer;
         subscriptionObject.scalarTypeAdapters = this.scalarTypeAdapters;
 
-        for (String topic : subbedTopics) {
+        for (String topic : newTopics) {
             subscriptionObject.topics.add(topic);
             addSubscriptionObject(topic, subscriptionObject);
         }
 
-        final CountDownLatch clientConnected = new CountDownLatch(response.mqttInfos.size());
+        final CountDownLatch allClientsConnectedLatch = new CountDownLatch(response.mqttInfos.size());
 
         // Create new clients, connections, and subscriptions
-        List<SubscriptionClient> newClients = new ArrayList<>();
-        Log.d(TAG, "Preparing to make Mqtt client count: " + response.mqttInfos.size());
+        final List<SubscriptionClient> newClients = new ArrayList<>();
+        Log.d(TAG, "Attempting to make [" + response.mqttInfos.size() + "] MQTT clients]");
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
+
             final SubscriptionClient client = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
             // Silence new clients until swapped with old clients
             client.setTransmitting(false);
@@ -177,13 +178,15 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 @Override
                 public void onConnect() {
                     Set<String> topicSet = subscriptionsByTopic.keySet();
-                    Log.d(TAG, String.format("Subscribe to %d out of %d topics in service response\nTopics: %s", topicSet.size(), info.topics.length, Arrays.toString(info.topics)));
+                    Log.d(TAG, String.format("Connection successful. Will subscribe up to %d topics", info.topics.length));
                     for (String topic : info.topics) {
                         if (topicSet.contains(topic)) {
+                            Log.d(TAG, String.format("Connecting to topic:[%s]", topic));
                             client.subscribe(topic, 0, mainMessageCallback);
                         }
                     }
-                    clientConnected.countDown();
+                    newClients.add(client);
+                    allClientsConnectedLatch.countDown();
                 }
 
                 @Override
@@ -205,28 +208,31 @@ public class RealSubscriptionManager implements SubscriptionManager {
                         RealSubscriptionManager.this.removeListener(subObj.subscription, unsubscribeMap.get(subObj));
                         RealSubscriptionManager.this.unsubscribe(subObj.subscription);
                     }
-                    clientConnected.countDown();
+                    allClientsConnectedLatch.countDown();
                 }
             });
-            newClients.add(client);
         }
 
+
         try {
-            clientConnected.await();
+            allClientsConnectedLatch.await();
+            Log.d(TAG, "Made [" + newClients.size() + "] MQTT clients");
 
             synchronized (clients) {
                 // Silence the old clients
-                Log.d(TAG, "Old client count: " + clients);
+                Log.d(TAG, "Muting the old clients [ " + clients.size() + "] in total");
                 for (final SubscriptionClient client : clients) {
                     client.setTransmitting(false);
                 }
 
+                Log.d(TAG, "Unmuting the new clients [" + newClients.size() + "] in total");
                 // Unmute new clients
                 for (final SubscriptionClient client : newClients) {
                     client.setTransmitting(true);
                 }
 
                 // Close old clients
+                Log.d(TAG, "Closing the old clients [" + clients.size() + "] in total");
                 for (final SubscriptionClient client : clients) {
                     Log.d(TAG, "Closing client: " + client);
                     client.close();
@@ -274,6 +280,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         SubscriptionObject subObject = getSubscriptionObject(subscription);
         for (Object topic : subObject.getTopics()) {
             getSubscriptionObjects((String) topic).remove(subObject);
+
         }
         subObject.getTopics().clear();
         subscriptionsById.remove(subObject);

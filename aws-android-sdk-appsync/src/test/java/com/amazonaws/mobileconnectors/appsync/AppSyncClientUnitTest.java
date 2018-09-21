@@ -88,7 +88,7 @@ public class AppSyncClientUnitTest {
                 "    \"AmazonCognitoUserPools\": {\n" +
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
                 "      \"Region\": \"us-east-1\",\n" +
-                "      \"AuthMode\": \"AWS_COGNITO_USER_POOLS\"\n" +
+                "      \"AuthMode\": \"AMAZON_COGNITO_USER_POOLS\"\n" +
                 "    },\n" +
                 "    \"OpenidConnect\": {\n" +
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +

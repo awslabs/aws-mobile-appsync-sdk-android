@@ -21,11 +21,18 @@ import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.mobileconnectors.appsync.demo.AddPostMissingRequiredFieldsMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
+import com.amazonaws.mobileconnectors.appsync.demo.AddPostRequiredFieldsOnlyMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.DeletePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
+import com.amazonaws.mobileconnectors.appsync.demo.OnCreateArticleSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnCreatePostSubscription;
+import com.amazonaws.mobileconnectors.appsync.demo.OnDeleteArticleSubscription;
+import com.amazonaws.mobileconnectors.appsync.demo.OnDeletePostSubscription;
+import com.amazonaws.mobileconnectors.appsync.demo.OnUpdateArticleSubscription;
+import com.amazonaws.mobileconnectors.appsync.demo.OnUpdatePostSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.DeletePostInput;
@@ -72,6 +79,9 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     private Response<GetPostQuery.Data> getPostQueryResponse;
     private Response<AddPostMutation.Data> addPostMutationResponse;
+    private Response<AddPostRequiredFieldsOnlyMutation.Data> addPostRequiredFieldsOnlyMutationResponse;
+    private Response<AddPostMissingRequiredFieldsMutation.Data> addPostMissingRequiredFieldsResponse;
+
     private Response<DeletePostMutation.Data> deletePostMutationResponse;
     private Response<UpdatePostMutation.Data> updatePostMutationResponse;
 
@@ -96,10 +106,10 @@ public class AWSAppSyncQueryInstrumentationTest {
                 sb.append(in.nextLine());
             }
             JSONObject config = new JSONObject(sb.toString());
-            String endPoint = config.getString("AppSyncEndpoint1");
-            String appSyncRegion = config.getString("AppSyncRegion1");
-            String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId1");
-            String cognitoRegion = config.getString("CognitoIdentityPoolRegion1");
+            String endPoint = config.getString("AppSyncEndpoint");
+            String appSyncRegion = config.getString("AppSyncRegion");
+            String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId");
+            String cognitoRegion = config.getString("CognitoIdentityPoolRegion");
 
             if (endPoint == null ||appSyncRegion == null || cognitoIdentityPoolID == null || cognitoRegion == null ) {
                 Log.e(TAG, "Unable to read AppSyncEndpoint, AppSyncRegion, CognitoIdentityPoolId, CognitoIdentityPoolRegion from config file ");
@@ -161,12 +171,12 @@ public class AWSAppSyncQueryInstrumentationTest {
                 sb.append(in.nextLine());
             }
             JSONObject config = new JSONObject(sb.toString());
-            String endPoint = config.getString("AppSyncEndpoint2");
-            String appSyncRegion = config.getString("AppSyncRegion2");
-            String apiKey = config.getString("AppSyncAPIKey2");
+            String endPoint = config.getString("AppSyncEndpointAPIKey");
+            String appSyncRegion = config.getString("AppSyncRegionAPIKey");
+            String apiKey = config.getString("AppSyncAPIKey");
 
             if (endPoint == null ||apiKey == null  ) {
-                Log.e(TAG, "Unable to read AppSyncEndpoint2 or AppSyncAPIKey2 from config file ");
+                Log.e(TAG, "Unable to read AppSyncEndpointAPIKey, AppSyncRegionAPIKey or AppSyncAPIKey from config file ");
                 return null;
             }
 
@@ -212,6 +222,208 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         }
         return null;
+    }
+
+
+    @Test
+    public void testMultipleSubscriptionsWithIAM() {
+
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+
+        final CountDownLatch addPostMessageReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch updatePostMessageReceivedLatch = new CountDownLatch(5);
+        final CountDownLatch deletePostMessageReceivedLatch = new CountDownLatch(1);
+
+        assertNotNull(awsAppSyncClient);
+        final String title = "Pull Me Under";
+        final String author = "Dream Theater @ " + System.currentTimeMillis();
+        final String url = "Dream Theater";
+        final String content = "Lost in the sky @" + System.currentTimeMillis();
+
+        //Create post callback
+        AppSyncSubscriptionCall.Callback onCreatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
+                Log.d(TAG,"Add Post Response " + response.data().toString());
+                addPostMessageReceivedLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Add Post Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Add Post Subscription terminated.");
+
+            }
+        };
+
+        //Update Post callback
+        AppSyncSubscriptionCall.Callback onUpdatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnUpdatePostSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<OnUpdatePostSubscription.Data> response) {
+                Log.d(TAG,"Update Post Response " + response.data().toString());
+                updatePostMessageReceivedLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Update Post Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Update Post Subscription terminated.");
+            }
+        };
+
+        //Delete Post callback
+        AppSyncSubscriptionCall.Callback onDeletePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnDeletePostSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<OnDeletePostSubscription.Data> response) {
+                Log.d(TAG,"Delete Post Response " + response.data().toString());
+                deletePostMessageReceivedLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Delete Post Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Delete Post Subscription terminated.");
+            }
+        };
+
+        //Create Article callback
+        AppSyncSubscriptionCall.Callback onCreateArticleSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreateArticleSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<OnCreateArticleSubscription.Data> response) {
+                Log.d(TAG,"Add Article Response " + response.data().toString());
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Add article Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Add Article Subscription terminated.");
+            }
+        };
+
+
+        //Update Article callback
+        AppSyncSubscriptionCall.Callback onUpdateArticleSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnUpdateArticleSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<OnUpdateArticleSubscription.Data> response) {
+                Log.d(TAG,"Update Article Response " + response.data().toString());
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Update Article Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Update Article Subscription terminated.");
+            }
+        };
+
+        //Delete Article callback
+        AppSyncSubscriptionCall.Callback onDeleteArticleCallback = new AppSyncSubscriptionCall.Callback<OnDeleteArticleSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<OnDeleteArticleSubscription.Data> response) {
+                Log.d(TAG,"Delete Article Response " + response.data().toString());
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Delete Article Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Delete Article Subscription terminated.");
+            }
+        };
+
+
+
+
+        OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
+        AppSyncSubscriptionCall addSubWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
+        addSubWatcher.execute(onCreatePostSubscriptionCallback);
+
+        OnUpdatePostSubscription onUpdatePostSubscription = OnUpdatePostSubscription.builder().build();
+        AppSyncSubscriptionCall updateSubWatcher = awsAppSyncClient.subscribe(onUpdatePostSubscription);
+        updateSubWatcher.execute(onUpdatePostSubscriptionCallback);
+
+
+        OnDeletePostSubscription onDeletePostSubscription = OnDeletePostSubscription.builder().build();
+        AppSyncSubscriptionCall deleteSubWatcher = awsAppSyncClient.subscribe(onDeletePostSubscription);
+        deleteSubWatcher.execute(onDeletePostSubscriptionCallback);
+
+        OnCreateArticleSubscription onCreateArticleSubscription = OnCreateArticleSubscription.builder().build();
+        AppSyncSubscriptionCall addArticleSubWatcher = awsAppSyncClient.subscribe(onCreateArticleSubscription);
+        addArticleSubWatcher.execute(onCreateArticleSubscriptionCallback);
+
+        OnUpdateArticleSubscription onUpdateArticleSubscription = OnUpdateArticleSubscription.builder().build();
+        AppSyncSubscriptionCall updateArticleSubWatcher = awsAppSyncClient.subscribe(onUpdateArticleSubscription);
+        updateArticleSubWatcher.execute(onUpdateArticleSubscriptionCallback);
+
+        OnDeleteArticleSubscription onDeleteArticleSubscription = OnDeleteArticleSubscription.builder().build();
+        AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
+        deleteArticleSubWatcher.execute(onDeleteArticleCallback);
+
+
+        Log.d(TAG, "Subscribed and setup callback handlers.");
+
+        //Sleep for a while to make sure the subscriptions goes through and dont disconnect.
+        sleep ( 30 *1000);
+
+
+        addPost(awsAppSyncClient,title,author,url,content);
+        String postID = addPostMutationResponse.data().createPost().id();
+        Log.d(TAG, "Added Post");
+
+        for ( int i = 0; i < 5; i++ ) {
+            updatePost(awsAppSyncClient, postID, "Lost in the sky @" + System.currentTimeMillis());
+        }
+
+        Log.d(TAG, "Updated post five times");
+
+        deletePost(awsAppSyncClient,postID);
+        Log.d(TAG, "Deleted post");
+
+
+        try {
+            assertTrue(addPostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(updatePostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(deletePostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
+
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+        addSubWatcher.cancel();
+        updateSubWatcher.cancel();
+        deleteSubWatcher.cancel();
+
+        sleep (3*1000);
+
+
     }
 
     @Test
@@ -266,27 +478,32 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
-    @Test
-    public void testAddSubscriptionWithIAMAuthModel() {
-        AWSAppSyncClient awsAppSyncClient1 = createAppSyncClientWithIAM();
-        final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
-        assertNotNull(awsAppSyncClient1);
-        final String title = "Alabama Song [Whisky Bar]";
-        final String author = "Doors @ " + System.currentTimeMillis();
-        final String url = "The Doors";
-        final String content = "Well, show me the way, to the next whisky bar @" + System.currentTimeMillis();
 
-        AppSyncSubscriptionCall.Callback onCreatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
+    @Test
+    public void testAddSubscriptionWithIAMAuthModelForNullPatching() {
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch message2ExceptionReceivedLatch = new CountDownLatch(1);
+
+        assertNotNull(awsAppSyncClient);
+        assertNotNull(awsAppSyncClient);
+        final String title = "22 Acacia Avenue";
+        final String author = "Maiden @ " + System.currentTimeMillis();
+        final String url = "1998 Remastered ";
+        final String content = "If you are feeling down, depressed and lonely @" + System.currentTimeMillis();
+
+        AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data> onCreatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
             @Override
             public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
                 Log.d(TAG,"Response " + response.data().toString());
-                messageReceivedLatch.countDown();
+                message1ReceivedLatch.countDown();
             }
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
                 Log.e(TAG, "Error " + e.getLocalizedMessage());
-                e.printStackTrace();
+                assertEquals("Failed to parse http response", e.getLocalizedMessage());
+                message2ExceptionReceivedLatch.countDown();
             }
 
             @Override
@@ -297,8 +514,74 @@ public class AWSAppSyncQueryInstrumentationTest {
         };
 
         OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
-        AppSyncSubscriptionCall subscriptionWatcher = awsAppSyncClient1.subscribe(onCreatePostSubscription);
-        subscriptionWatcher.execute(onCreatePostSubscriptionCallback);
+        AppSyncSubscriptionCall onCreatePostSubscriptionWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
+        onCreatePostSubscriptionWatcher.execute(onCreatePostSubscriptionCallback);
+        Log.d(TAG, "Subscribed and setup callback handler.");
+
+        //Sleep for a while to make sure the subscription goes through
+        try {
+            Thread.sleep(5 * 1000);
+        }
+        catch (InterruptedException ie) {
+            Log.d(TAG, "Sleep was interrupted");
+        }
+
+        addPostRequiredFieldsOnlyMutation(awsAppSyncClient,title,author,url,content);
+        Log.d(TAG, "Added Post using addPostRequireFieldsOnlyMutation ");
+
+        try {
+            assertTrue(message1ReceivedLatch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+
+        addPostMissingRequiredFieldsMutation(awsAppSyncClient,title, author + System.currentTimeMillis(), url, content);
+        Log.d(TAG, "Added Post using addPostMissingRequiredFieldsMutation");
+
+        try {
+            assertTrue(message2ExceptionReceivedLatch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+    }
+
+
+    @Test
+    public void testAddSubscriptionWithIAMAuthModel() {
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch message2ReceivedLatch = new CountDownLatch(1);
+
+        assertNotNull(awsAppSyncClient);
+        final String title = "Alabama Song [Whisky Bar]";
+        final String author = "Doors @ " + System.currentTimeMillis();
+        final String url = "The Doors";
+        final String content = "Well, show me the way, to the next whisky bar @" + System.currentTimeMillis();
+
+        AppSyncSubscriptionCall.Callback onCreatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
+                Log.d(TAG,"Response " + response.data().toString());
+                message1ReceivedLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e(TAG, "Error " + e.getLocalizedMessage());
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Received onCompleted on subscription");
+
+            }
+        };
+
+        OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
+        AppSyncSubscriptionCall onCreatePostSubscriptionWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
+        onCreatePostSubscriptionWatcher.execute(onCreatePostSubscriptionCallback);
         Log.d(TAG, "Subscribed and setup callback handler.");
 
         //Sleep for a while to make sure the subscription goes through
@@ -308,15 +591,30 @@ public class AWSAppSyncQueryInstrumentationTest {
         catch (InterruptedException ie) {
            Log.d(TAG, "Sleep was interrupted");
         }
-        addPost(awsAppSyncClient1,title,author,url,content);
+        addPost(awsAppSyncClient,title,author,url,content);
         Log.d(TAG, "Added Post");
 
         try {
-            assertTrue(messageReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(message1ReceivedLatch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+        //Unsubscribe
+        Log.d(TAG, "Going to cancel subscription");
+        onCreatePostSubscriptionWatcher.cancel();
+
+
+        //Add another post. The expectation is that we will not get a message (wait for 10 seconds to be sure)
+        addPost(awsAppSyncClient,title,author,url,"Well, show me the way, to the next whisky bar @" + System.currentTimeMillis());
+        try {
+            assertFalse(message2ReceivedLatch.await(10, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
     }
+
+
 
     @Test
     public void testCRUD() {
@@ -335,8 +633,6 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNotNull(addPostMutationResponse.data());
         assertNotNull(addPostMutationResponse.data().createPost());
         assertNotNull(addPostMutationResponse.data().createPost().id());
-        assertEquals(true, content.equals(addPostMutationResponse.data().createPost().content()));
-        assertEquals(true, author.equals(addPostMutationResponse.data().createPost().author()));
 
         String postID = addPostMutationResponse.data().createPost().id();
         Log.d(TAG, "Added Post ID: " + postID);
@@ -488,7 +784,10 @@ public class AWSAppSyncQueryInstrumentationTest {
                         "",
                         "",
                         "",
-                        ""
+                        "",
+                        null,
+                        null,
+                        0
                 ));
 
                 CreatePostInput createPostInput = CreatePostInput.builder()
@@ -538,6 +837,126 @@ public class AWSAppSyncQueryInstrumentationTest {
             iex.printStackTrace();
         }
     }
+
+    private void addPostRequiredFieldsOnlyMutation(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final String url, final String content) {
+        final CountDownLatch mCountDownLatch = new CountDownLatch(1);
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+
+                AddPostRequiredFieldsOnlyMutation.Data expected = new AddPostRequiredFieldsOnlyMutation.Data( null);
+
+                CreatePostInput createPostInput = CreatePostInput.builder()
+                        .title(title)
+                        .author(author)
+                        .url(url)
+                        .content(content)
+                        .ups(1)
+                        .downs(0)
+                        .build();
+
+                final AddPostRequiredFieldsOnlyMutation addPostRequiredFieldsOnlyMutation = AddPostRequiredFieldsOnlyMutation.builder().input(createPostInput).build();
+
+
+                awsAppSyncClient
+                        .mutate(addPostRequiredFieldsOnlyMutation, expected)
+                        .enqueue(new GraphQLCall.Callback<AddPostRequiredFieldsOnlyMutation.Data>() {
+                            @Override
+                            public void onResponse(@Nonnull final Response<AddPostRequiredFieldsOnlyMutation.Data> response) {
+                                addPostRequiredFieldsOnlyMutationResponse = response;
+                                mCountDownLatch.countDown();
+                                if (Looper.myLooper() != null) {
+                                    Looper.myLooper().quit();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(@Nonnull final ApolloException e) {
+                                e.printStackTrace();
+                                //Set to null to indicate failure
+                                addPostRequiredFieldsOnlyMutationResponse = null;
+                                mCountDownLatch.countDown();
+                                if (Looper.myLooper() != null) {
+                                    Looper.myLooper().quit();
+                                }
+                            }
+                        });
+                Looper.loop();
+
+            }
+        }).start();
+
+        Log.d(TAG, "Waiting for latch to be counted down");
+        try {
+            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+    }
+
+
+    private void addPostMissingRequiredFieldsMutation(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final String url, final String content) {
+        final CountDownLatch mCountDownLatch = new CountDownLatch(1);
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+
+                AddPostMissingRequiredFieldsMutation.Data expected = new AddPostMissingRequiredFieldsMutation.Data(null);
+
+                CreatePostInput createPostInput = CreatePostInput.builder()
+                        .title(title)
+                        .author(author)
+                        .url(url)
+                        .content(content)
+                        .ups(1)
+                        .downs(0)
+                        .build();
+
+                final AddPostMissingRequiredFieldsMutation missingRequiredFieldsMutation = AddPostMissingRequiredFieldsMutation.builder().input(createPostInput).build();
+
+
+                awsAppSyncClient
+                        .mutate(missingRequiredFieldsMutation, expected)
+                        .enqueue(new GraphQLCall.Callback<AddPostMissingRequiredFieldsMutation.Data>() {
+                            @Override
+                            public void onResponse(@Nonnull final Response<AddPostMissingRequiredFieldsMutation.Data> response) {
+                                addPostMissingRequiredFieldsResponse = response;
+                                mCountDownLatch.countDown();
+                                if (Looper.myLooper() != null) {
+                                    Looper.myLooper().quit();
+                                }
+                            }
+
+                            @Override
+                            public void onFailure(@Nonnull final ApolloException e) {
+                                e.printStackTrace();
+                                //Set to null to indicate failure
+                                addPostRequiredFieldsOnlyMutationResponse = null;
+                                mCountDownLatch.countDown();
+                                if (Looper.myLooper() != null) {
+                                    Looper.myLooper().quit();
+                                }
+                            }
+                        });
+                Looper.loop();
+
+            }
+        }).start();
+
+        Log.d(TAG, "Waiting for latch to be counted down");
+        try {
+            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+    }
+
 
     private void deletePost(final AWSAppSyncClient awsAppSyncClient, final String id) {
         final CountDownLatch mCountDownLatch = new CountDownLatch(1);
@@ -659,5 +1078,16 @@ public class AWSAppSyncQueryInstrumentationTest {
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
+    }
+
+    private void sleep(int time) {
+        //Sleep for a while to make sure the cancel goes through
+        try {
+            Thread.sleep(time);
+        }
+        catch (InterruptedException ie) {
+            Log.d(TAG, "Sleep was interrupted");
+        }
+
     }
 }

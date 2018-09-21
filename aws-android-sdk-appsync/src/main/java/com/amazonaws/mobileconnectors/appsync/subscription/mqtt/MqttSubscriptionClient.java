@@ -67,7 +67,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mqttConnectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
             mqttConnectOptions.setCleanSession(true);
             mqttConnectOptions.setAutomaticReconnect(true);
-            mqttConnectOptions.setKeepAliveInterval(5);
+            mqttConnectOptions.setKeepAliveInterval(60);
             clientConnectionListener = new ClientConnectionListener(callback);
             mMqttAndroidClient.setCallback(clientConnectionListener);
             Log.d(TAG, "Calling MQTT Connect with actual endpoint");
@@ -138,8 +138,19 @@ public class MqttSubscriptionClient implements SubscriptionClient {
     public void close() {
         final String clientRepresentation = mMqttAndroidClient.toString();
         try {
-            mMqttAndroidClient.disconnect();
-            mMqttAndroidClient.close();
+            //Disconnect the connection with quiese timeout set to 0, which means disconnect immediately.
+            //Issue the close connection on the callback - this ensures that the connection is properly closed out before resources are freed/reclaimed by the close method.
+            mMqttAndroidClient.disconnect(0,null, new IMqttActionListener() {
+                        @Override
+                        public void onSuccess(IMqttToken asyncActionToken) {
+                            mMqttAndroidClient.close();
+                        }
+
+                        @Override
+                        public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+
+                        }
+                    });
         } catch (Exception e) {
             Log.w(TAG, "Closing " + clientRepresentation + " mqtt client", e);
         }

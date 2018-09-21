@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-
+apply plugin: 'com.amazonaws.appsync'
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
 android {
@@ -33,9 +33,9 @@ dependencies {
     implementation 'com.google.code.findbugs:jsr305:3.0.1' // api
     implementation "com.squareup.okhttp3:okhttp:3.8.1" // impl
 
-    compile "com.amazonaws:aws-android-sdk-core:2.6.+" // api
-    compile "com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.6.+"
-    compile "com.amazonaws:aws-android-sdk-s3:2.6.+"
+    compile "com.amazonaws:aws-android-sdk-core:$aws_version" // api
+    compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
+    compileOnly "com.amazonaws:aws-android-sdk-s3:$aws_version"
 
     implementation 'com.android.support:appcompat-v7:28.+'
 
@@ -51,6 +51,5 @@ dependencies {
 
     androidTestImplementation project(':aws-android-sdk-appsync-runtime')
     androidTestImplementation project(':aws-android-sdk-appsync-api')
-
 
 }

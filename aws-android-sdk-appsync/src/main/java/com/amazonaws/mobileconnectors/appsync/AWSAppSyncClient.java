@@ -84,7 +84,7 @@ public class AWSAppSyncClient {
     private enum AuthMode {
         API_KEY("API_KEY"),
         AWS_IAM("AWS_IAM"),
-        AWS_COGNITO_USER_POOLS("AWS_COGNITO_USER_POOLS"),
+        AMAZON_COGNITO_USER_POOLS("AMAZON_COGNITO_USER_POOLS"),
         OPENID_CONNECT("OPENID_CONNECT");
 
         private final String name;
@@ -410,7 +410,7 @@ public class AWSAppSyncClient {
                     Map<Object, AuthMode> authModeObjects = new HashMap<>();
                     authModeObjects.put(mApiKey, AuthMode.API_KEY);
                     authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
-                    authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AWS_COGNITO_USER_POOLS);
+                    authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
                     authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
                     authModeObjects.remove(null);
 
