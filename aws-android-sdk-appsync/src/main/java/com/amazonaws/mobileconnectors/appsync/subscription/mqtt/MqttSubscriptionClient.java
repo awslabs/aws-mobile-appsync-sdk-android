@@ -144,11 +144,12 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
                             mMqttAndroidClient.close();
+                            Log.d(TAG, "Successfully closed the connection.");
                         }
 
                         @Override
                         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-
+                            Log.w(TAG, "Got exception [" + exception +"] when attempting to disconnect." );
                         }
                     });
         } catch (Exception e) {

@@ -218,29 +218,28 @@ public class RealSubscriptionManager implements SubscriptionManager {
             allClientsConnectedLatch.await();
             Log.d(TAG, "Made [" + newClients.size() + "] MQTT clients");
 
-            synchronized (clients) {
-                // Silence the old clients
-                Log.d(TAG, "Muting the old clients [ " + clients.size() + "] in total");
-                for (final SubscriptionClient client : clients) {
-                    client.setTransmitting(false);
-                }
-
-                Log.d(TAG, "Unmuting the new clients [" + newClients.size() + "] in total");
-                // Unmute new clients
-                for (final SubscriptionClient client : newClients) {
-                    client.setTransmitting(true);
-                }
-
-                // Close old clients
-                Log.d(TAG, "Closing the old clients [" + clients.size() + "] in total");
-                for (final SubscriptionClient client : clients) {
-                    Log.d(TAG, "Closing client: " + client);
-                    client.close();
-                }
-
-                clients.clear();
-                clients.addAll(newClients);
+            // Silence the old clients
+            Log.d(TAG, "Muting the old clients [ " + clients.size() + "] in total");
+            for (final SubscriptionClient client : clients) {
+                client.setTransmitting(false);
             }
+
+            Log.d(TAG, "Unmuting the new clients [" + newClients.size() + "] in total");
+            // Unmute new clients
+            for (final SubscriptionClient client : newClients) {
+                client.setTransmitting(true);
+            }
+
+            // Close old clients
+            Log.d(TAG, "Closing the old clients [" + clients.size() + "] in total");
+            for (final SubscriptionClient client : clients) {
+                Log.d(TAG, "Closing client: " + client);
+                client.close();
+            }
+
+            //Add the new clients
+            clients.clear();
+            clients.addAll(newClients);
         } catch (InterruptedException e) {
             throw new RuntimeException("Failed to wait for all clients to finish connecting.", e);
         }
