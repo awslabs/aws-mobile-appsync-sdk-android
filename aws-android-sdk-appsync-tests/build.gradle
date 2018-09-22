@@ -1,9 +1,10 @@
 apply plugin: 'com.android.library'
 apply plugin: 'com.amazonaws.appsync'
-apply from: rootProject.file('gradle-mvn-push.gradle')
 
 android {
     compileSdkVersion 28
+
+
 
     defaultConfig {
         minSdkVersion 15
@@ -22,33 +23,20 @@ android {
         }
     }
 
-    lintOptions {
-        disable 'GradleDependency', 'HandlerLeak'
-    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile 'com.google.code.findbugs:jsr305:3.0.1' // api
-    compile "com.squareup.okhttp3:okhttp:3.8.1" // impl
-
-    compile "com.amazonaws:aws-android-sdk-core:$aws_version" // api
-    compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    compileOnly "com.amazonaws:aws-android-sdk-s3:$aws_version"
-
-
-    compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
-    compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
-
-    compileOnly project(':aws-android-sdk-appsync-runtime')
-
+    implementation 'com.android.support:appcompat-v7:28.0.0-rc02'
     testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
 
     androidTestImplementation project(':aws-android-sdk-appsync-runtime')
     androidTestImplementation project(':aws-android-sdk-appsync-api')
+    androidTestImplementation project(':aws-android-sdk-appsync')
 
+    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
+    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
 }
