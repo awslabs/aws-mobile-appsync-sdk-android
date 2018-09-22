@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.amazonaws.appsync'
+
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
 android {

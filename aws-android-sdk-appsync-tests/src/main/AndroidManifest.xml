@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.aws_android_sdk_appsync_tests" >
 
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
     <application>
         <service android:name="org.eclipse.paho.android.service.MqttService" />
     </application>
