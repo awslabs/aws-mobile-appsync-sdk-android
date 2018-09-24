@@ -18,7 +18,6 @@
 package com.amazonaws.mobileconnectors.appsync.sigv4;
 
 import com.amazonaws.DefaultRequest;
-import com.amazonaws.auth.AWS4Signer;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.http.HttpMethodName;
@@ -35,6 +34,8 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okio.Buffer;
 
+import android.util.Log;
+
 public class AppSyncSigV4SignerInterceptor implements Interceptor {
 
     private static final String TAG = AppSyncSigV4SignerInterceptor.class.getSimpleName();
@@ -43,9 +44,14 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse(CONTENT_TYPE);
     private static final String SERVICE_NAME = "appsync";
     private static final String HEADER_USER_AGENT = "User-Agent";
+    private static final String X_API_KEY = "x-api-key";
+    private static final String AUTHORIZATION = "authorization";
+    private static final String X_AMZ_SUBSCRIBER_ID = "x-amz-subscriber-id";
 
     private final AWSCredentialsProvider credentialsProvider;
     private final APIKeyAuthProvider apiKey;
+    private final String subscriberUUID;
+
     private final CognitoUserPoolsAuthProvider cognitoUserPoolsAuthProvider;
     private final OidcAuthProvider oidcAuthProvider;
     private final String awsRegion;
@@ -54,16 +60,18 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
     private enum AuthMode {
         API_KEY,
         IAM,
-        AUTHORIZATION_TOKEN
+        OIDC_AUTHORIZATION_TOKEN,
+        USERPOOLS_AUTHORIZATION_TOKEN
     }
 
-    public AppSyncSigV4SignerInterceptor(APIKeyAuthProvider apiKey, final String awsRegion){
+    public AppSyncSigV4SignerInterceptor(APIKeyAuthProvider apiKey, final String awsRegion, final String subscriberUUID){
         this.apiKey = apiKey;
         this.awsRegion = awsRegion;
         this.credentialsProvider = null;
         this.cognitoUserPoolsAuthProvider = null;
         this.oidcAuthProvider = null;
         authMode = AuthMode.API_KEY;
+        this.subscriberUUID = subscriberUUID;
     }
 
     public AppSyncSigV4SignerInterceptor(AWSCredentialsProvider credentialsProvider, final String awsRegion){
@@ -73,6 +81,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.cognitoUserPoolsAuthProvider = null;
         this.oidcAuthProvider = null;
         authMode = AuthMode.IAM;
+        subscriberUUID = null;
     }
 
     public AppSyncSigV4SignerInterceptor(CognitoUserPoolsAuthProvider cognitoUserPoolsAuthProvider, final String awsRegion){
@@ -81,7 +90,8 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = cognitoUserPoolsAuthProvider;
         this.oidcAuthProvider = null;
-        authMode = AuthMode.AUTHORIZATION_TOKEN;
+        authMode = AuthMode.USERPOOLS_AUTHORIZATION_TOKEN;
+        subscriberUUID = null;
     }
 
     public AppSyncSigV4SignerInterceptor(OidcAuthProvider oidcAuthProvider){
@@ -90,44 +100,28 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = null;
         this.oidcAuthProvider = oidcAuthProvider;
-        authMode = AuthMode.AUTHORIZATION_TOKEN;
+        authMode = AuthMode.OIDC_AUTHORIZATION_TOKEN;
+        subscriberUUID = null;
     }
 
     @Override
     public Response intercept(Chain chain) throws IOException {
+        Log.d(TAG, "Signer Interceptor called");
+
         Request req = chain.request();
-        AWS4Signer signer = null;
-        if (AuthMode.IAM.equals(authMode)) {
-            signer = new AppSyncV4Signer(this.awsRegion);
-        }
+
+        //Clone the request into a new DefaultRequest object and populate it with credentials
         DefaultRequest dr = new DefaultRequest(SERVICE_NAME);
         //set the endpoint
         dr.setEndpoint(req.url().uri());
-
         //copy all the headers
         for(String headerName : req.headers().names()) {
             dr.addHeader(headerName, req.header(headerName));
         }
         //set the http method
         dr.setHttpMethod(HttpMethodName.valueOf(req.method()));
-        if (AuthMode.API_KEY.equals(authMode)) {
-            dr.addHeader("x-api-key", apiKey.getAPIKey());
-        } else if (AuthMode.AUTHORIZATION_TOKEN.equals(authMode) && cognitoUserPoolsAuthProvider != null) {
-            try {
-                dr.addHeader("authorization", cognitoUserPoolsAuthProvider.getLatestAuthToken());
-            } catch (Exception e) {
-                IOException ioe = new IOException("Failed to retrieve Cognito User Pools token.", e);
-                throw ioe;
-            }
-        } else if (AuthMode.AUTHORIZATION_TOKEN.equals(authMode) && oidcAuthProvider != null) {
-            try {
-                dr.addHeader("authorization", oidcAuthProvider.getLatestAuthToken());
-            } catch (Exception e) {
-                IOException ioe = new IOException("Failed to retrieve OIDC token.", e);
-                throw ioe;
-            }
-        }
 
+        //Add User Agent
         dr.addHeader(HEADER_USER_AGENT, VersionInfoUtils.getUserAgent());
 
         //write the body to a byte array stream.
@@ -138,18 +132,41 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
 
         Buffer body = buffer.clone();
 
+        //Sign or Decorate request with the required headers
         if (AuthMode.IAM.equals(authMode)) {
             //get the aws credentials from provider.
             try {
+                //Get credentials - This will refresh the credentials if necessary
                 AWSCredentials credentials = this.credentialsProvider.getCredentials();
-
                 //sign the request
-                signer.sign(dr, credentials);
+                new AppSyncV4Signer(this.awsRegion).sign(dr, credentials);
             } catch (Exception e) {
                 throw new IOException("Failed to read credentials to sign the request.", e);
             }
+        } else if (AuthMode.API_KEY.equals(authMode)) {
+            dr.addHeader(X_API_KEY, apiKey.getAPIKey());
+            if (subscriberUUID != null ) {
+                Log.d(TAG,"Subscriber ID is " + subscriberUUID);
+                dr.addHeader(X_AMZ_SUBSCRIBER_ID, subscriberUUID);
+            }
+
+        } else if (AuthMode.USERPOOLS_AUTHORIZATION_TOKEN.equals(authMode)) {
+            try {
+                dr.addHeader(AUTHORIZATION, cognitoUserPoolsAuthProvider.getLatestAuthToken());
+            } catch (Exception e) {
+                IOException ioe = new IOException("Failed to retrieve Cognito User Pools token.", e);
+                throw ioe;
+            }
+        } else if (AuthMode.OIDC_AUTHORIZATION_TOKEN.equals(authMode)) {
+            try {
+                dr.addHeader(AUTHORIZATION, oidcAuthProvider.getLatestAuthToken());
+            } catch (Exception e) {
+                IOException ioe = new IOException("Failed to retrieve OIDC token.", e);
+                throw ioe;
+            }
         }
 
+        //Copy the signed/credentialed request back into an OKHTTP Request object.
         Request.Builder okReqBuilder = new Request.Builder();
 
         //set the headers from default request, since it contains the signed headers as well.
@@ -157,7 +174,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
             okReqBuilder.addHeader(e.getKey(), e.getValue());
         }
 
-
+        //Set the URL and Method
         okReqBuilder.url(req.url());
         okReqBuilder.method(req.method(), RequestBody.create(JSON_MEDIA_TYPE, body.readByteArray()));
 

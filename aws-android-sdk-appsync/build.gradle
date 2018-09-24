@@ -37,8 +37,8 @@ dependencies {
     compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
     compileOnly "com.amazonaws:aws-android-sdk-s3:$aws_version"
 
-    compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.1.0'
-    compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+    compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
+    compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
 
     compileOnly project(':aws-android-sdk-appsync-runtime')
 
@@ -53,7 +53,6 @@ dependencies {
     androidTestImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
     androidTestImplementation "org.mockito:mockito-core:2.19.1"
     androidTestImplementation project(':aws-android-sdk-appsync-runtime')
-
     testImplementation "org.robolectric:robolectric:3.8"
     testImplementation "org.mockito:mockito-core:2.19.1"
     testImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"

@@ -18,6 +18,8 @@
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobile.config.AWSConfiguration;
@@ -32,6 +34,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
 import com.amazonaws.regions.Regions;
+import com.amazonaws.util.BinaryUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.api.Mutation;
@@ -52,12 +55,13 @@ import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import org.json.JSONObject;
 
-import java.util.Arrays;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
@@ -128,7 +132,7 @@ public class AWSAppSyncClient {
         } else if (builder.mOidcAuthProvider != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mOidcAuthProvider);
         } else if (builder.mApiKey != null) {
-            appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mApiKey, builder.mRegion.getName());
+            appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mApiKey, builder.mRegion.getName(),  getClientSubscriptionUUID(builder.mApiKey.getAPIKey()));
         } else {
             throw new RuntimeException("Client requires credentials. Please use #apiKey() #credentialsProvider() or #cognitoUserPoolsAuthProvider() to set the credentials.");
         }
@@ -203,6 +207,39 @@ public class AWSAppSyncClient {
         subscriptionManager.setScalarTypeAdapters(new ScalarTypeAdapters(builder.customTypeAdapters));
         mS3ObjectManager = builder.mS3ObjectManager;
     }
+
+    /**
+     * Returns the Client Subscription UUID associated with the APIKEY. Creates a new UUID if required.
+     *
+     * @param apiKey The apiKey
+     * @return The client subscription UUID.
+     */
+
+    private String getClientSubscriptionUUID(String apiKey) {
+        String clientSubscriptionUUID = null;
+        final String SHARED_PREFERENCES_FILE_NAME = "com.amazonaws.mobileconnectors.appsync";
+        try {
+            //Get Shared Preferences
+            SharedPreferences appSyncSharedPreferences = applicationContext.getSharedPreferences(SHARED_PREFERENCES_FILE_NAME, Context.MODE_PRIVATE);
+
+            //Create a SHA 256 hash of the API KEY
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.reset();
+            String hash = BinaryUtils.toHex(digest.digest(apiKey.getBytes()));
+
+            clientSubscriptionUUID = appSyncSharedPreferences.getString(hash, null);
+            if (clientSubscriptionUUID == null) {
+                clientSubscriptionUUID = UUID.randomUUID().toString();
+                appSyncSharedPreferences.edit().putString(hash, clientSubscriptionUUID);
+            }
+        }
+        catch (NoSuchAlgorithmException nsae) {
+            Log.e(TAG, "Error getting Subscription UUID " + nsae.getLocalizedMessage());
+            Log.e(TAG, "Proceeding without Subscription UUID");
+        }
+        return clientSubscriptionUUID;
+    }
+
 
     public static class Builder {
         // AWS

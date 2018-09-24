@@ -31,16 +31,17 @@ import okhttp3.Response;
  */
 public class RetryInterceptor implements Interceptor {
     private static final String TAG = RetryInterceptor.class.getSimpleName();
-    // The first call does not count towards retry count
     private static final int BASE_RETRY_WAIT_MILLIS = 100;
     private static final int MAX_RETRY_WAIT_MILLIS = 300 * 1000; //Five Minutes
     private static final int JITTER = 100;
 
     @Override
     public Response intercept(Chain chain) throws IOException {
+        // The first call does not count towards retry count
         int retryCount = -1;
         Response response;
         int waitMillis = 0;
+        Log.d(TAG, "Retry Interceptor called");
         do {
             sleep(waitMillis);
             //Send the request on to the next link in the chain of processors
