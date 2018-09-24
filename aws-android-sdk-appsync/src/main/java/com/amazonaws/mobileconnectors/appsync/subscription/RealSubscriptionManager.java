@@ -193,7 +193,9 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 public void onError(Exception e) {
                     Map<SubscriptionObject, AppSyncSubscriptionCall.Callback> unsubscribeMap = new HashMap<>();
                     for (String topic : info.topics) {
-                        for (SubscriptionObject subObj : getSubscriptionObjects(topic)) {
+                        Set<SubscriptionObject> subscriptionObjects =
+                                new HashSet<>(getSubscriptionObjects(topic));
+                        for (SubscriptionObject subObj : subscriptionObjects) {
                             if (e instanceof SubscriptionDisconnectedException) {
                                 subObj.onFailure(new ApolloException("Subscription terminated", e));
                                 for (Object c : subObj.getListeners()) {
