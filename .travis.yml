@@ -21,6 +21,6 @@ android:
   - sys-img-armeabi-v7a-android-22
 script:
 - android list target
-- "./gradlew build connectedCheck --debug "
+- "./gradlew build connectedCheck --stacktrace "
 after_failure:
   - cat aws-android-sdk-appsync-tests/build/outputs/androidTest-results/connected/*.xml
