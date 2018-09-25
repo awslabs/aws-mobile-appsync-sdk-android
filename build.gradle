@@ -3,7 +3,7 @@
 
 buildscript {
     ext.kotlin_version = '1.2.40'
-    ext.aws_version = VERSION_NAME
+    ext.aws_version = AWS_CORE_SDK_VERSION
     repositories {
         google()
         jcenter()
