@@ -138,7 +138,13 @@ class AppSyncOfflineMutationManager {
             }
             if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
                 Log.d("AppSync", "Processing next in queue: INMEMORY.");
-                InMemoryOfflineMutationObject mutationObject = inMemoryOfflineMutationManager.processNextMutation();
+                InMemoryOfflineMutationObject mutationObject;
+                try {
+                    mutationObject = inMemoryOfflineMutationManager.processNextMutation();
+                }catch (IndexOutOfBoundsException e){
+                    Log.e("AppSync", "Failed to process next in queue: INMEMORY, Index Out Of Bounds");
+                    return;
+                }
                 persistentOfflineMutationManager.removePersistentMutationObject(mutationObject.recordIdentifier);
                 return;
             } else {
