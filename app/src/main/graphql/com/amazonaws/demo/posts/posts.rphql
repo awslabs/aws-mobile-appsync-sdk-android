@@ -1,0 +1,158 @@
+query GetPost($id:ID!) {
+ getPost(id:$id) {
+     id
+     title
+     author
+     content
+     url
+     version
+ }
+}
+
+query AllPosts {
+   listPosts {
+    items {
+       id
+       title
+       author
+       content
+       url
+       version
+       ups
+       downs
+      }
+   }
+}
+
+query AllPostsFromSync($lastSync: String) {
+   syncPosts(lastSync: $lastSync) {
+       id
+       title
+       author
+       content
+       url
+       version
+       ups
+       downs
+   }
+}
+
+
+mutation AddPost($input: CreatePostInput!) {
+  createPost(input: $input) {
+    id
+    title
+    author
+    content
+    url
+    ups
+    downs
+    version
+  }
+}
+
+mutation AddPostRequiredFieldsOnly($input: CreatePostInput!) {
+  createPost(input: $input) {
+    id
+    author
+    version
+  }
+}
+
+mutation AddPostMissingRequiredFields($input: CreatePostInput!) {
+    createPost(input: $input) {
+      id
+    }
+}
+
+mutation UpdatePost($input: UpdatePostInput!) {
+  updatePost(input: $input) {
+      id
+      author
+      title
+      content
+      url
+      version
+  }
+}
+
+mutation DeletePost($input: DeletePostInput!) {
+  deletePost(input: $input) {
+      id
+      title
+      author
+      url
+      content
+  }
+}
+
+mutation AddPostInSyncTable( $id: ID,
+                            $author: String!,
+                            $title: String,
+                            $content: String,
+                            $url: String,
+                            $ups: Int,
+                            $downs: Int,
+                            $version: Int)
+                            {
+    deltaPost(
+         		id: $id,
+         		author: $author,
+         		title: $title,
+         		content: $content,
+         		url: $url,
+         		ups: $ups,
+         		downs: $downs,
+         		version: $version
+         	)
+         {
+         	id
+         }
+}
+
+
+subscription OnCreatePost {
+  onCreatePost {
+    id
+    author
+    title
+    content
+    url
+  }
+}
+
+subscription OnUpdatePost {
+  onUpdatePost {
+    id
+    content
+    url
+  }
+}
+
+subscription OnDeletePost {
+  onDeletePost {
+    id
+  }
+}
+
+subscription OnCreateArticle {
+  onCreateArticle {
+    id
+    author
+    title
+  }
+}
+
+subscription OnUpdateArticle {
+  onUpdateArticle {
+    id
+    author
+  }
+}
+
+subscription OnDeleteArticle {
+  onDeleteArticle {
+    id
+  }
+}
+

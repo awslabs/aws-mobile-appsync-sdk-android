@@ -46,61 +46,71 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     public ResponseNormalizer<Map<String,Object>> normalizer;
 
     public SubscriptionObject() {
+        //Initialize topics and listeners.
         topics = new HashSet<>();
         listeners = new HashSet<>();
     }
 
+    //Getter for listeners
     public Set<AppSyncSubscriptionCall.Callback> getListeners() {
         return listeners;
     }
 
+    //Getter for topics
     public Set<String> getTopics() {
         return topics;
     }
 
+    //Add listener
     public void addListener(AppSyncSubscriptionCall.Callback l) {
-        Log.d(TAG, "Adding listener to " + this);
+        Log.v(TAG, "Adding listener to " + this);
         listeners.add(l);
     }
 
     public void onMessage(final String msg) {
         try {
+            //TODO: Check why is this being converted to a Response Body
             ResponseBody messageBody = ResponseBody.create(MediaType.parse("text/plain"), msg);
             OperationResponseParser<D, T> parser = new OperationResponseParser(subscription,
                     subscription.responseFieldMapper(), scalarTypeAdapters, normalizer);
             Response<T> parsedResponse = parser.parse(messageBody.source());
+
             if (parsedResponse.hasErrors()) {
-                Log.d(TAG, "Errors detected in parsed subscription message");
+                Log.w(TAG, "Errors detected in parsed subscription message");
             }
-            notifyAllMessage(parsedResponse);
+            //TODO: Check why the message is this is not done in an else clause
+            propagateMessageToAllListeners(parsedResponse);
         } catch (Exception rethrown) {
             Log.e(TAG, "Failed to parse: " + msg, rethrown);
-            notifyAllError(new ApolloParseException("Failed to parse http response", rethrown));
+            notifyErrorToAllListeners(new ApolloParseException("Failed to parse http response", rethrown));
         }
     }
 
     public void onFailure(final ApolloException e) {
         if (e.getCause() instanceof SubscriptionDisconnectedException) {
-            notifyAllDisconnected();
+            notifyDisconnectionEventToAllListeners();
         } else {
-            notifyAllError(e);
+            notifyErrorToAllListeners(e);
         }
     }
 
-    private void notifyAllMessage(Response<T> data) {
+    //Convenience method to propagate messages received on the subscription to all registered listeners
+    private void propagateMessageToAllListeners(Response<T> data) {
         for (AppSyncSubscriptionCall.Callback listener : listeners) {
-            Log.d(TAG, "Messaging: " + listener.toString());
+            Log.v(TAG, "Propagating message to : " + listener.toString());
             listener.onResponse(data);
         }
     }
 
-    private void notifyAllDisconnected() {
+    //Convenience method to notify all registered listeners that the subscription has been terminated.
+    private void notifyDisconnectionEventToAllListeners() {
         for (AppSyncSubscriptionCall.Callback listener : listeners) {
             listener.onCompleted();
         }
     }
 
-    private void notifyAllError(ApolloException e) {
+    //Convenience method to notify all registered listeners that an error has occured on the subscription.
+    private void notifyErrorToAllListeners(ApolloException e) {
         for (AppSyncSubscriptionCall.Callback listener : listeners) {
             listener.onFailure(e);
         }

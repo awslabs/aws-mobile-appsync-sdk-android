@@ -30,10 +30,8 @@ import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,10 +51,10 @@ public class RealSubscriptionManager implements SubscriptionManager {
     final List<SubscriptionClient> clients;
 
     final Map<Subscription, SubscriptionObject> subscriptionsById;
-    final Map<String, AtomicReference<HashSet<SubscriptionObject>>> subscriptionsByTopic;
+    final Map<String, HashSet<SubscriptionObject>> subscriptionsByTopic;
 
-    private final Object subscriptionsById_addLock = new Object();
-    private final Object subscriptionsByTopic_addLock = new Object();
+    private final Object subscriptionsByIdLock = new Object();
+    private final Object subscriptionsByTopicLock = new Object();
 
     public RealSubscriptionManager(@Nonnull final Context applicationContext) {
         this.applicationContext = applicationContext.getApplicationContext();
@@ -65,24 +63,32 @@ public class RealSubscriptionManager implements SubscriptionManager {
         clients = new ArrayList<>();
     }
 
-    private SubscriptionObject getSubscriptionObject(Subscription subscription) {
-        SubscriptionObject sub = subscriptionsById.get(subscription);
+    //Return associated SubscriptionObject from subscriptionsById map using the Subscription.
+    private SubscriptionObject getSubscriptionObjectFromIdMap(Subscription subscription) {
+        synchronized (subscriptionsByIdLock) {
+            return subscriptionsById.get(subscription);
+        }
+    }
 
-        if (sub != null) {
+    //Return associated SubscriptionObject from subscriptionsById map using the Subscription.
+    //Create and Add a subscription object if required
+    private SubscriptionObject addSubscriptionObjectToIdMap(Subscription subscription) {
+        synchronized (subscriptionsByIdLock) {
+            SubscriptionObject sub = subscriptionsById.get(subscription);
+            if (sub == null) {
+                sub = new SubscriptionObject();
+                sub.subscription = subscription;
+                subscriptionsById.put(subscription, sub);
+            }
             return sub;
         }
+    }
 
-        synchronized (subscriptionsById_addLock) {
-            sub = subscriptionsById.get(subscription);
-
-            if (sub != null) {
-                return sub;
-            }
-
-            sub = new SubscriptionObject();
-            sub.subscription = subscription;
-            subscriptionsById.put(subscription, sub);
-            return sub;
+    //Remove Subscription Object from subscriptionsById map
+    private void removeSubscriptionObjectFromIdMap(SubscriptionObject subscriptionObject) {
+        synchronized (subscriptionsByIdLock) {
+            subscriptionObject.getTopics().clear();
+            subscriptionsById.remove(subscriptionObject);
         }
     }
 
@@ -91,38 +97,38 @@ public class RealSubscriptionManager implements SubscriptionManager {
      * @param topic the topic to add to or retrieve from {@code subscriptionsByTopic}
      * @return the set of subscriptions that correspond to the topic, does not mutate underlying data
      */
-    private Set<SubscriptionObject> getSubscriptionObjects(String topic) {
-        AtomicReference<HashSet<SubscriptionObject>> ref = subscriptionsByTopic.get(topic);
+    private Set<SubscriptionObject> createSubscriptionsObjectSetinTopicMap(String topic) {
 
-        // Return without hitting synchronize block when reading when key is available.
-        if (ref != null)
-            return ref.get();
-
-        synchronized (subscriptionsByTopic_addLock) {
-            ref = subscriptionsByTopic.get(topic);
-
-            if (ref != null)
-                return ref.get();
-
-            ref = new AtomicReference<>();
-            ref.set(new HashSet<SubscriptionObject>());
-            subscriptionsByTopic.put(topic, ref);
-            return ref.get();
+        synchronized (subscriptionsByTopicLock) {
+            HashSet<SubscriptionObject> set  = subscriptionsByTopic.get(topic);
+            if (set == null) {
+                set = new HashSet<SubscriptionObject>();
+                subscriptionsByTopic.put(topic, set);
+            }
+            return set;
         }
     }
+
+    private Set<SubscriptionObject> getSubscriptionObjectSetFromTopicMap(String topic) {
+       synchronized (subscriptionsByTopicLock) {
+            return subscriptionsByTopic.get(topic);
+        }
+    }
+
 
     /**
      * Adds the {@code subscriptionObject} to the {@code topic} so messages can be directed to the {@code subscriptionObject} when received.
      * @param topic IoT topic i.e. 123123123123/i74uyvnaefymtgyjp15sfzmgxy/onCreatePost/
      * @param subscriptionObject
      */
-    private void addSubscriptionObject(String topic, SubscriptionObject subscriptionObject) {
-        synchronized (subscriptionsByTopic_addLock) {
-            Set<SubscriptionObject> subscriptionObjects = getSubscriptionObjects(topic);
-            HashSet<SubscriptionObject> set = new HashSet<>(subscriptionObjects);
-            set.add(subscriptionObject);
-            Log.d(TAG, "Adding subscription watcher " + subscriptionObject + " to topic " + topic + " total topics: " + set.size());
-            subscriptionsByTopic.get(topic).set(set);
+    private void addSubscriptionObjectToTopic(String topic, SubscriptionObject subscriptionObject) {
+        synchronized (subscriptionsByTopicLock) {
+            Set<SubscriptionObject> subscriptionObjectsSet = getSubscriptionObjectSetFromTopicMap(topic);
+            if (subscriptionObjectsSet == null ) {
+                subscriptionObjectsSet = createSubscriptionsObjectSetinTopicMap(topic);
+            }
+            subscriptionObjectsSet.add(subscriptionObject);
+            Log.d(TAG, "Subscription Infrastructure: Adding subscription object " + subscriptionObject + " to topic " + topic + ". Total subscription objects: " + subscriptionObjectsSet.size());
         }
     }
 
@@ -130,18 +136,33 @@ public class RealSubscriptionManager implements SubscriptionManager {
         subscriptionsByTopic.keySet().retainAll(activeTopicSet);
     }
 
-    public void addListener(Subscription subscription, AppSyncSubscriptionCall.Callback callback) {
-        SubscriptionObject subObject = getSubscriptionObject(subscription);
-        Log.d(TAG, "Adding " + callback.toString() + " listener to subObject: " + subscription + " got: " + subObject.subscription);
-        subObject.addListener(callback);
+    public void addListener(Subscription subscription, AppSyncSubscriptionCall.Callback listener) {
+        synchronized (subscriptionsByIdLock) {
+            SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
+            if ( subscriptionObject == null ) {
+                subscriptionObject = addSubscriptionObjectToIdMap(subscription);
+            }
+
+            Log.v(TAG, "Subscription Infrastructure: Adding listener [" + listener.toString() + "] to SubscriptionObject: " + subscription + " got: " + subscriptionObject.subscription);
+            subscriptionObject.addListener(listener);
+        }
     }
 
-    public void removeListener(Subscription subscription, AppSyncSubscriptionCall.Callback callback) {
-        SubscriptionObject subObject = getSubscriptionObject(subscription);
-        subObject.listeners.remove(callback);
-        if (subObject.listeners.size() == 0) {
-            for (Object topic : subObject.topics) {
-                getSubscriptionObjects((String) topic).remove(subObject);
+    public void removeListener(Subscription subscription, AppSyncSubscriptionCall.Callback listener) {
+        synchronized (subscriptionsByIdLock) {
+            SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
+            if (subscriptionObject == null ) {
+                return;
+            }
+
+            subscriptionObject.listeners.remove(listener);
+            if (subscriptionObject.listeners.size() == 0) {
+                for (Object topic : subscriptionObject.topics) {
+                    Set<SubscriptionObject> subscriptionObjectsSet = getSubscriptionObjectSetFromTopicMap(topic.toString());
+                    if (subscriptionObjectsSet != null ) {
+                        subscriptionObjectsSet.remove(subscriptionObject);
+                    }
+                }
             }
         }
     }
@@ -152,57 +173,71 @@ public class RealSubscriptionManager implements SubscriptionManager {
             @Nonnull final List<String> newTopics,
             @Nonnull SubscriptionResponse response,
             ResponseNormalizer<Map<String, Object>> mapResponseNormalizer) {
-        Log.d(TAG, "subscribe called " + newTopics);
+        Log.v(TAG, "Subscription Infrastructure: subscribe called for " + subscription);
 
-        SubscriptionObject subscriptionObject = getSubscriptionObject(subscription);
+        //Look up from or register subscription in the subscriptionsById map.
+        SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
+        if ( subscriptionObject == null ) {
+            subscriptionObject = addSubscriptionObjectToIdMap(subscription);
+        }
         subscriptionObject.subscription = subscription;
         subscriptionObject.normalizer = mapResponseNormalizer;
         subscriptionObject.scalarTypeAdapters = this.scalarTypeAdapters;
 
+        //Add the new topics to this Subscription Object
+        //and add the subscriptions to the topic map.
         for (String topic : newTopics) {
             subscriptionObject.topics.add(topic);
-            addSubscriptionObject(topic, subscriptionObject);
+            addSubscriptionObjectToTopic(topic, subscriptionObject);
         }
 
         final CountDownLatch allClientsConnectedLatch = new CountDownLatch(response.mqttInfos.size());
 
         // Create new clients, connections, and subscriptions
         final List<SubscriptionClient> newClients = new ArrayList<>();
-        Log.d(TAG, "Attempting to make [" + response.mqttInfos.size() + "] MQTT clients]");
+        Log.v(TAG, "Subscription Infrastructure: Attempting to make [" + response.mqttInfos.size() + "] MQTT clients]");
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
 
-            final SubscriptionClient client = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
+            final SubscriptionClient mqttClient = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
             // Silence new clients until swapped with old clients
-            client.setTransmitting(false);
-            client.connect(new SubscriptionClientCallback() {
+            mqttClient.setTransmitting(false);
+            Log.v(TAG, "Subscription Infrastructure: Connecting with Client ID[" + info.clientId +"]");
+            mqttClient.connect(new SubscriptionClientCallback() {
                 @Override
                 public void onConnect() {
                     Set<String> topicSet = subscriptionsByTopic.keySet();
-                    Log.d(TAG, String.format("Connection successful. Will subscribe up to %d topics", info.topics.length));
+                    Log.v(TAG, String.format("Subscription Infrastructure: Connection successful for clientID [" + info.clientId + "]. Will subscribe up to %d topics", info.topics.length));
                     for (String topic : info.topics) {
                         if (topicSet.contains(topic)) {
-                            Log.d(TAG, String.format("Connecting to topic:[%s]", topic));
-                            client.subscribe(topic, 0, mainMessageCallback);
+                            Log.v(TAG, String.format("Subscription Infrastructure: Subscribing to MQTT topic:[%s]", topic));
+                            mqttClient.subscribe(topic, 1, mainMessageCallback);
                         }
                     }
-                    newClients.add(client);
+                    newClients.add(mqttClient);
                     allClientsConnectedLatch.countDown();
                 }
 
                 @Override
                 public void onError(Exception e) {
+                    //Don't do any clean up.
+
+                    /*
                     Map<SubscriptionObject, AppSyncSubscriptionCall.Callback> unsubscribeMap = new HashMap<>();
-                    for (String topic : info.topics) {
-                        Set<SubscriptionObject> subscriptionObjects =
-                                new HashSet<>(getSubscriptionObjects(topic));
-                        for (SubscriptionObject subObj : subscriptionObjects) {
+                    for (String topic : newTopics) {
+                        if ( getSubscriptionObjectSetFromTopicMap(topic) == null ) {
+                            continue;
+                        }
+                        Set<SubscriptionObject> subscriptionObjectsSet =
+                                new HashSet<>(getSubscriptionObjectSetFromTopicMap(topic));
+
+                        for (SubscriptionObject subObj : subscriptionObjectsSet) {
                             if (e instanceof SubscriptionDisconnectedException) {
-                                subObj.onFailure(new ApolloException("Subscription terminated", e));
+                                subObj.onFailure(new ApolloException("Subscription Infrastructure: Subscription terminated for clientID [" + info.clientId + "]", e));
                                 for (Object c : subObj.getListeners()) {
                                     unsubscribeMap.put(subObj, ((AppSyncSubscriptionCall.Callback)c));
                                 }
                             } else {
-                                subObj.onFailure(new ApolloException("Failed to create client for subscription", e));
+                                subObj.onFailure(new ApolloException("Subscription Infrastructure: Failed to create client for subscription for clientID [" + info.clientId + "]", e));
                             }
                         }
                     }
@@ -210,6 +245,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                         RealSubscriptionManager.this.removeListener(subObj.subscription, unsubscribeMap.get(subObj));
                         RealSubscriptionManager.this.unsubscribe(subObj.subscription);
                     }
+                    */
                     allClientsConnectedLatch.countDown();
                 }
             });
@@ -218,24 +254,24 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
         try {
             allClientsConnectedLatch.await();
-            Log.d(TAG, "Made [" + newClients.size() + "] MQTT clients");
+            Log.v(TAG, "Subscription Infrastructure: Made [" + newClients.size() + "] MQTT clients");
 
-            // Silence the old clients
-            Log.d(TAG, "Muting the old clients [ " + clients.size() + "] in total");
-            for (final SubscriptionClient client : clients) {
-                client.setTransmitting(false);
-            }
-
-            Log.d(TAG, "Unmuting the new clients [" + newClients.size() + "] in total");
-            // Unmute new clients
+            Log.v(TAG, "Subscription Infrastructure: Unmuting the new clients [" + newClients.size() + "] in total");
+            // Unmute new clients.
             for (final SubscriptionClient client : newClients) {
                 client.setTransmitting(true);
             }
 
-            // Close old clients
-            Log.d(TAG, "Closing the old clients [" + clients.size() + "] in total");
+            // Silence the old clients
+            Log.v(TAG, "Subscription Infrastructure: Muting the old clients [ " + clients.size() + "] in total");
             for (final SubscriptionClient client : clients) {
-                Log.d(TAG, "Closing client: " + client);
+                client.setTransmitting(false);
+            }
+
+            // Close old clients
+            Log.v(TAG, "Subscription Infrastructure: Closing the old clients [" + clients.size() + "] in total");
+            for (final SubscriptionClient client : clients) {
+                Log.v(TAG, "Subscription Infrastructure: Closing client: " + client);
                 client.close();
             }
 
@@ -243,48 +279,60 @@ public class RealSubscriptionManager implements SubscriptionManager {
             clients.clear();
             clients.addAll(newClients);
         } catch (InterruptedException e) {
-            throw new RuntimeException("Failed to wait for all clients to finish connecting.", e);
+            throw new RuntimeException("Subscription Infrastructure: Failed to wait for all clients to finish connecting.", e);
         }
-
-//        Set<String> activeTopicSet = new HashSet<>();
-//        for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
-//            Collections.addAll(activeTopicSet, info.topics);
-//        }
-//        removeUnusedTopics(activeTopicSet);
     }
 
     final private SubscriptionCallback mainMessageCallback = new SubscriptionCallback() {
         @Override
         public void onMessage(String topic, String message) {
-            final Set<SubscriptionObject> subscriptionSet = getSubscriptionObjects(topic);
-
-            if (subscriptionSet == null || subscriptionSet.size() == 0) {
-                Log.w(TAG, "No listeners for message: " + message + " from topic: " + topic);
+            Log.v(TAG, "Subscription Infrastructure: Received message on topic [" + topic +"]. Message is \n" + message);
+            final Set<SubscriptionObject> subscriptionObjectsSet = getSubscriptionObjectSetFromTopicMap(topic);
+            if (subscriptionObjectsSet == null ) {
+                Log.w(TAG, "Subscription Infrastructure: No subscription objects found for topic [" + topic+"]");
             }
-
-            for (SubscriptionObject subObj : subscriptionSet) {
-                Log.d(TAG, "Send " + subObj.subscription + " msg " + message + " for topic" + topic);
-                subObj.onMessage(message);
+            else {
+                for (SubscriptionObject subscriptionObject : subscriptionObjectsSet) {
+                    Log.v(TAG, "Subscription Infrastructure: Propagating message received on topic " + topic + " to " + subscriptionObject.subscription);
+                    subscriptionObject.onMessage(message);
+                }
             }
         }
 
         @Override
         public void onError(String topic, Exception e) {
-            for (SubscriptionObject subObj : getSubscriptionObjects(topic)) {
-                subObj.onFailure(new ApolloException("Failed to subscribe to topic", e));
+            final Set<SubscriptionObject> subscriptionObjects = getSubscriptionObjectSetFromTopicMap(topic);
+            if (subscriptionObjects == null || subscriptionObjects.size() == 0) {
+                Log.w(TAG, "No subscription objects found for topic [" + topic+"]");
+            }
+            else {
+                for (SubscriptionObject subscriptionObject : subscriptionObjects) {
+                    subscriptionObject.onFailure(new ApolloException("Failed to subscribe to topic", e));
+                }
             }
         }
     };
 
     @Override
     public void unsubscribe(@Nonnull Subscription<?, ?, ?> subscription) {
-        SubscriptionObject subObject = getSubscriptionObject(subscription);
-        for (Object topic : subObject.getTopics()) {
-            getSubscriptionObjects((String) topic).remove(subObject);
-
+        //Get matching subscription object from the subscriptionsById map
+        SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
+        if (subscriptionObject == null ) {
+            return;
         }
-        subObject.getTopics().clear();
-        subscriptionsById.remove(subObject);
+
+        //Remove subscriptionObject from all associated topics
+        for (Object topic : subscriptionObject.getTopics()) {
+            synchronized (subscriptionsByTopicLock) {
+                Set<SubscriptionObject> subscriptionObjectsSet = getSubscriptionObjectSetFromTopicMap(topic.toString());
+                if (subscriptionObjectsSet != null ) {
+                    subscriptionObjectsSet.remove(subscriptionObject);
+                }
+            }
+        }
+
+        //Remove Subscription Object from subscriptionsById map
+        removeSubscriptionObjectFromIdMap(subscriptionObject);
     }
 
     @Override

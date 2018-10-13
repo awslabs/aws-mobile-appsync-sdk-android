@@ -20,6 +20,8 @@ package com.amazonaws.mobileconnectors.appsync.cache.normalized.sql;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+
 
 public class AppSyncSqlHelper extends SQLiteOpenHelper {
 
@@ -30,6 +32,7 @@ public class AppSyncSqlHelper extends SQLiteOpenHelper {
 
   private static final String DATABASE_NAME = "appsync.db";
   private static final int DATABASE_VERSION = 1;
+  private static final String TAG = AppSyncSqlHelper.class.getSimpleName();
 
   // Database creation sql statement
   private static final String DATABASE_CREATE = String.format(
@@ -58,12 +61,14 @@ public class AppSyncSqlHelper extends SQLiteOpenHelper {
 
   @Override
   public void onCreate(SQLiteDatabase database) {
+    Log.d(TAG, "In onCreate for [" + DATABASE_NAME + "]. Will create tables now");
     database.execSQL(DATABASE_CREATE);
     database.execSQL(CREATE_KEY_INDEX);
   }
 
   @Override
   public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    Log.d(TAG, "In onUpgrae for [" + DATABASE_NAME + "]. Will drop tables now");
     db.execSQL("DROP TABLE IF EXISTS " + TABLE_RECORDS);
     onCreate(db);
   }

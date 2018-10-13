@@ -53,11 +53,19 @@ public class MqttSubscriptionClient implements SubscriptionClient {
     ClientConnectionListener clientConnectionListener;
 
     public MqttSubscriptionClient(Context applicationContext, String wssURL, String clientId) {
+
         mMqttAndroidClient = new MqttAndroidClient(applicationContext, wssURL, clientId, new MemoryPersistence());
         subsMap = new HashMap<>();
+
+        //Setup message Listener at the connection level.
         msgListener = new MessageListener();
         msgListener.client = this;
-        msgListener.setTransmitting(false);
+        msgListener.setClientID(clientId);
+        setTransmitting(false);
+
+        //Setup connection status Listener
+        clientConnectionListener = new ClientConnectionListener();
+        clientConnectionListener.setClientID(clientId);
     }
 
     @Override
@@ -66,11 +74,11 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
             mqttConnectOptions.setMqttVersion(MqttConnectOptions.MQTT_VERSION_3_1_1);
             mqttConnectOptions.setCleanSession(true);
-            mqttConnectOptions.setAutomaticReconnect(true);
+            mqttConnectOptions.setAutomaticReconnect(false);
             mqttConnectOptions.setKeepAliveInterval(30);
-            clientConnectionListener = new ClientConnectionListener(callback);
+            clientConnectionListener.setCallback(callback);
             mMqttAndroidClient.setCallback(clientConnectionListener);
-            Log.d(TAG, "Calling MQTT Connect with actual endpoint");
+            Log.v(TAG, "Subscription Infrastructure: Calling MQTT Connect with actual endpoint for client ID[" + mMqttAndroidClient.getClientId() + "]");
             mMqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
@@ -87,7 +95,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                 }
             });
         } catch (MqttException e) {
-            Log.e("TAG", "Failed to connect mqtt client for subscriptions", e);
+            Log.e("TAG", "Subscription Infrastructure: Failed to connect mqtt client for clientID [" + mMqttAndroidClient.getClientId() + "]" , e);
             callback.onError(e);
         }
     }
@@ -95,7 +103,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
     @Override
     public void subscribe(final String topic, int qos, final SubscriptionCallback callback) {
         try {
-            Log.d(TAG, this + " Attempt to subscribe to topic " + topic);
+            Log.d(TAG, this + "Subscription Infrastructure: Attempt to subscribe to topic " + topic + " on clientID [" + mMqttAndroidClient.getClientId() + "]");
             if (msgListener != null) {
                 msgListener.setCallback(callback);
             }
@@ -129,8 +137,8 @@ public class MqttSubscriptionClient implements SubscriptionClient {
         if (msgListener != null) {
             msgListener.setTransmitting(isTransmitting);
         }
-        if (this.clientConnectionListener != null) {
-            this.clientConnectionListener.isTransmitting = isTransmitting;
+        if (clientConnectionListener != null) {
+            clientConnectionListener.setTransmitting(isTransmitting);
         }
     }
 
@@ -144,16 +152,16 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
                             mMqttAndroidClient.close();
-                            Log.d(TAG, "Successfully closed the connection.");
+                            Log.d(TAG, "Subscription Infrastructure: Successfully closed the connection. Client ID [" + mMqttAndroidClient.getClientId() + "]");
                         }
 
                         @Override
                         public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-                            Log.w(TAG, "Got exception [" + exception +"] when attempting to disconnect." );
+                            Log.w(TAG, "Subscription Infrastructure: Got exception [" + exception +"] when attempting to disconnect clientID " + mMqttAndroidClient.getClientId() + "]" );
                         }
                     });
         } catch (Exception e) {
-            Log.w(TAG, "Closing " + clientRepresentation + " mqtt client", e);
+            Log.w(TAG, "Closing " + clientRepresentation + " mqtt client [" + mMqttAndroidClient.getClientId() + "]", e);
         }
     }
 
@@ -161,20 +169,27 @@ public class MqttSubscriptionClient implements SubscriptionClient {
         public MqttSubscriptionClient client;
         SubscriptionCallback callback;
         private boolean isTransmitting;
+        private String clientID;
 
         public void setCallback(SubscriptionCallback callback) {
             this.callback = callback;
         }
 
+
+        public void setClientID(String clientID) {
+            this.clientID = clientID;
+        }
+
         public void setTransmitting(boolean truth) {
-            Log.d(TAG, "Set transmit " + truth + " " + client);
+            Log.v(TAG, "Subscription Infrastructure: Set Message transmitting to " + truth + " for client [" + clientID + "]");
             this.isTransmitting = truth;
         }
 
         @Override
         public void messageArrived(String topic, MqttMessage message) throws Exception {
-            Log.d(TAG, client + " transmit: " + isTransmitting + " mqttL: " + this + "subL: " + callback + " Topic: " + topic + " Msg: " + message.toString());
+            Log.v(TAG, "Subscription Infrastructure: Received message on client ["  + clientID + "]");
             if (isTransmitting) {
+                Log.v(TAG, "Subscription Infrastructure: Transmitting message from client ["  + clientID + "] mqttL: " + this + "subL: " + callback + " Topic: " + topic + " Msg: " + message.toString());
                 callback.onMessage(topic, message.toString());
             }
         }
@@ -182,17 +197,32 @@ public class MqttSubscriptionClient implements SubscriptionClient {
 
     class ClientConnectionListener implements MqttCallback {
         private boolean isTransmitting;
-        final SubscriptionClientCallback callback;
+        SubscriptionClientCallback callback;
+        private String clientID;
 
-        public ClientConnectionListener(final SubscriptionClientCallback callback) {
-            this.callback = callback;
+
+        public ClientConnectionListener( ) {
             isTransmitting = true;
+        }
+
+        public void setCallback(SubscriptionClientCallback callback) {
+            this.callback = callback;
+        }
+
+        public void setClientID(String clientID) {
+            this.clientID = clientID;
+        }
+
+        public void setTransmitting(boolean truth) {
+            Log.v(TAG, "Subscription Infrastructure: Set Connection transmitting to " + truth + " for client [" + clientID + "]");
+            this.isTransmitting = truth;
         }
 
         @Override
         public void connectionLost(Throwable cause) {
-            Log.d(TAG, "connection lost isTransmitting: " + isTransmitting);
+            Log.v(TAG, "Subscription Infrastructure: client connection lost for client [" + clientID + "]");
             if (isTransmitting) {
+                Log.v(TAG, "Subscription Infrastructure: Transmitting client connection lost for client [" + clientID +  "]");
                 callback.onError(new SubscriptionDisconnectedException("Client disconnected", cause));
             }
         }

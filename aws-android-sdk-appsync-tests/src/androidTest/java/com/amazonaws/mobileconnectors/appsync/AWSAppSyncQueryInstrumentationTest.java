@@ -42,6 +42,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
+import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
@@ -78,6 +79,8 @@ public class AWSAppSyncQueryInstrumentationTest {
     private static final String TAG = AWSAppSyncQueryInstrumentationTest.class.getSimpleName();
 
     private Response<GetPostQuery.Data> getPostQueryResponse;
+    private Response<AllPostsQuery.Data> allPostsResponse;
+
     private Response<AddPostMutation.Data> addPostMutationResponse;
     private Response<AddPostRequiredFieldsOnlyMutation.Data> addPostRequiredFieldsOnlyMutationResponse;
     private Response<AddPostMissingRequiredFieldsMutation.Data> addPostMissingRequiredFieldsResponse;
@@ -108,6 +111,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             JSONObject config = new JSONObject(sb.toString());
             String endPoint = config.getString("AppSyncEndpoint");
             String appSyncRegion = config.getString("AppSyncRegion");
+            Log.d(TAG, "Connecting to " + endPoint + ", region: " + appSyncRegion + ", using IAM");
             String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId");
             String cognitoRegion = config.getString("CognitoIdentityPoolRegion");
 
@@ -424,7 +428,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     }
 
-    @Test
+
     public void testAddSubscriptionWithApiKeyAuthModel() {
         AWSAppSyncClient awsAppSyncClient1 = createAppSyncClientWithAPIKEY();
         final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
@@ -612,7 +616,118 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
+    @Test
+    public void testDeltaSyncOnlyBaseQuery() {
+        final CountDownLatch deltaSyncLatch = new CountDownLatch(1);
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
 
+        Query<AllPostsQuery.Data, AllPostsQuery.Data, com.apollographql.apollo.api.Operation.Variables> baseQuery =  AllPostsQuery.builder().build();
+        GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                allPostsResponse  =  response;
+                deltaSyncLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+
+            }
+        };
+
+        awsAppSyncClient.deltaSync(baseQuery, baseQueryCallback, null, null, null, null, 0,0);
+
+        try {
+            deltaSyncLatch.await();
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+        assertNotNull(allPostsResponse);
+        assertNotNull(allPostsResponse.data());
+        assertNotNull(allPostsResponse.data().listPosts());
+        assertNotNull(allPostsResponse.data().listPosts().items());
+        assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
+        Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
+
+    }
+
+
+    public void testDeltaSyncOnlyBaseAndDeltaQuery() {
+        final CountDownLatch baseQueryLatch = new CountDownLatch(1);
+        final CountDownLatch deltaQueryLatch = new CountDownLatch(1);
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
+        Query baseQuery =  AllPostsQuery.builder().build();
+        GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                allPostsResponse  =  response;
+                baseQueryLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                assertNull(e);
+                baseQueryLatch.countDown();
+            }
+        };
+
+        final Query deltaQuery = GetPostQuery.builder().id("ce228ceb-c2fc-483e-8c3e-3d33fb8dd61f").build();
+        GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<GetPostQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<GetPostQuery.Data> response) {
+                getPostQueryResponse = response;
+                deltaQueryLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                assertNull(e);
+                deltaQueryLatch.countDown();
+            }
+        };
+
+        awsAppSyncClient.deltaSync(baseQuery, baseQueryCallback,null, null, deltaQuery, deltaQueryCallback, 0,0);
+
+        try {
+            baseQueryLatch.await(10, TimeUnit.SECONDS);
+            deltaQueryLatch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+        assertNotNull(allPostsResponse);
+        assertNotNull(allPostsResponse.data());
+        assertNotNull(allPostsResponse.data().listPosts());
+        assertNotNull(allPostsResponse.data().listPosts().items());
+        assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
+        Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
+
+    }
+
+
+
+    public void testCache() {
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+        String postID = "ce228ceb-c2fc-483e-8c3e-3d33fb8dd61f";
+
+        queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
+        assertNotNull(getPostQueryResponse);
+        assertNotNull(getPostQueryResponse.data());
+        assertNotNull(getPostQueryResponse.data().getPost());
+        assertEquals(postID, getPostQueryResponse.data().getPost().id());
+        getPostQueryResponse = null;
+
+        queryPost(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY,postID);
+        assertNotNull(getPostQueryResponse);
+        assertNotNull(getPostQueryResponse.data());
+        assertNotNull(getPostQueryResponse.data().getPost());
+        assertEquals(postID, getPostQueryResponse.data().getPost().id());
+
+
+    }
 
     @Test
     public void testCRUD() {
@@ -710,7 +825,6 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNull(getPostQueryResponse.data().getPost());
     }
 
-
     private void queryPosts(AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher) {
 
         final CountDownLatch queryCountDownLatch = new CountDownLatch(1);
@@ -737,6 +851,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             iex.printStackTrace();
         }
     }
+
 
     private void queryPost( AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher, final String id) {
 

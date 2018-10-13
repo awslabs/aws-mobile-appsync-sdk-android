@@ -127,7 +127,6 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         //write the body to a byte array stream.
         final Buffer buffer = new Buffer();
         req.body().writeTo(buffer);
-
         dr.setContent(buffer.inputStream());
 
         Buffer body = buffer.clone();

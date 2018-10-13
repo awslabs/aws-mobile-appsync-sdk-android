@@ -161,7 +161,7 @@ public final class ApolloClient
   @Override
   public <D extends Subscription.Data, T, V extends Subscription.Variables> AppSyncSubscriptionCall<T> subscribe(
       @Nonnull Subscription<D, T, V> subscription) {
-        return new RealAppSyncSubscriptionCall<T>(subscription, subscriptionManager, this, newCall(subscription));
+        return new RealAppSyncSubscriptionCall<T>(subscription, subscriptionManager, this, this.logger, newCall(subscription));
   }
 
   /**

@@ -37,6 +37,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.util.BinaryUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
+import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
@@ -124,6 +125,8 @@ public class AWSAppSyncClient {
     private AWSAppSyncClient(AWSAppSyncClient.Builder builder) {
         applicationContext = builder.mContext.getApplicationContext();
 
+        //Create the Signer interceptor. The notion of "Signer" is overloaded here as apart
+        //from the SigV4 signer, the other signers add request headers and don't sign the request per se
         AppSyncSigV4SignerInterceptor appSyncSigV4SignerInterceptor = null;
         if (builder.mCredentialsProvider != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mCredentialsProvider, builder.mRegion.getName());
@@ -137,6 +140,7 @@ public class AWSAppSyncClient {
             throw new RuntimeException("Client requires credentials. Please use #apiKey() #credentialsProvider() or #cognitoUserPoolsAuthProvider() to set the credentials.");
         }
 
+        //Create the HTTP client
         OkHttpClient.Builder okHttpClientBuilder;
         if (builder.mOkHttpClient == null) {
             okHttpClientBuilder = new OkHttpClient.Builder();
@@ -144,11 +148,13 @@ public class AWSAppSyncClient {
             okHttpClientBuilder = builder.mOkHttpClient.newBuilder();
         }
 
+        //Add the signer and retry handler to the OKHTTP chain
         OkHttpClient okHttpClient = okHttpClientBuilder
                 .addInterceptor(new RetryInterceptor())
                 .addInterceptor(appSyncSigV4SignerInterceptor)
                 .build();
 
+        //Setup up the local store
         AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, defaultMutationSqlStoreName);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
         mutationMap = new HashMap<>();
@@ -524,5 +530,37 @@ public class AWSAppSyncClient {
 
     public S3ObjectManager getS3ObjectManager() {
         return mS3ObjectManager;
+    }
+
+    public <D extends Query.Data, T, V extends Query.Variables> AWSAppSyncDeltaSync deltaSync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            Subscription<D,T,V> subscription,
+            AppSyncSubscriptionCall.Callback subscriptionCallback,
+            Query<D,T,V> deltaQuery,
+            GraphQLCall.Callback<Query.Data> deltaQueryCallback,
+            int deltaSyncWindowInSeconds,
+            long periodicRefreshIntervalInSeconds) {
+        Log.d(TAG,"Context is [" + applicationContext + "]");
+        AWSAppSyncDeltaSync helper = new AWSAppSyncDeltaSync(baseQuery,this, applicationContext);
+
+        helper.setBaseQueryCallback(baseQueryCallback);
+
+        helper.setSubscription(subscription);
+        helper.setSubscriptionCallback( subscriptionCallback);
+
+        if ( deltaQuery == null ||deltaQueryCallback == null ) {
+            Log.d(TAG, "One of the follwing is null - Delta Qeury or Delta Query callback. Will switch to using the base query & callback");
+            helper.setDeltaQuery(baseQuery);
+            helper.setDeltaQueryCallback(baseQueryCallback);
+        }
+        else {
+            helper.setDeltaQuery(deltaQuery);
+            helper.setDeltaQueryCallback(deltaQueryCallback);
+        }
+
+        helper.setDeltaSyncWindowInSeconds(deltaSyncWindowInSeconds);
+        helper.setPeriodicRefreshIntervalInSeconds(periodicRefreshIntervalInSeconds);
+        return helper.execute(false);
     }
 }

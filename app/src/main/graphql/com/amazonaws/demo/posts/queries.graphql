@@ -1,0 +1,79 @@
+# this is an auto generated file. This will be overwritten
+query SinglePost($id: ID!) {
+  singlePost(id: $id) {
+    id
+    author
+    title
+    content
+    url
+    ups
+    downs
+    version
+  }
+}
+query GetPost($id: ID!) {
+  getPost(id: $id) {
+    id
+    author
+    title
+    content
+    url
+    ups
+    downs
+    version
+  }
+}
+query ListPosts(
+  $filter: TablePostFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listPosts(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      author
+      title
+      content
+      url
+      ups
+      downs
+      version
+    }
+    nextToken
+  }
+}
+query GetArticle($id: ID!) {
+  getArticle(id: $id) {
+    id
+    author
+    title
+    version
+  }
+}
+query ListArticles(
+  $filter: TableArticleFilterInput
+  $limit: Int
+  $nextToken: String
+) {
+  listArticles(filter: $filter, limit: $limit, nextToken: $nextToken) {
+    items {
+      id
+      author
+      title
+      version
+    }
+    nextToken
+  }
+}
+query SyncPosts($lastSync: String!) {
+  syncPosts(lastSync: $lastSync) {
+    id
+    author
+    title
+    content
+    url
+    ups
+    downs
+    version
+  }
+}

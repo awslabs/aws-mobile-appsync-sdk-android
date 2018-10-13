@@ -37,18 +37,28 @@ public class RetryInterceptor implements Interceptor {
 
     @Override
     public Response intercept(Chain chain) throws IOException {
+
         // The first call does not count towards retry count
         int retryCount = -1;
-        Response response;
+        Response response = null;
         int waitMillis = 0;
+        IOException ioException = null;
+
         Log.d(TAG, "Retry Interceptor called");
         do {
+            ioException = null;
+            response = null;
             sleep(waitMillis);
             //Send the request on to the next link in the chain of processors
-            response = chain.proceed(chain.request());
+            try {
+                response = chain.proceed(chain.request());
+            } catch (IOException ioe ) {
+                Log.d(TAG, "proceed threw IO Exception. Will retry");
+                ioException = ioe;
+            }
 
             //Exit function if response was successful
-            if (response.isSuccessful()) {
+            if (response != null && response.isSuccessful()) {
                 Log.i(TAG, "Returning network response: success");
                 return response;
             }
@@ -57,7 +67,11 @@ public class RetryInterceptor implements Interceptor {
 
             //Check if server has sent a Retry-After header attribute in the response.
             //If so, respect that!
-            final String retryAfterHeaderValue = response.header("Retry-After");
+            String retryAfterHeaderValue = null;
+            if (response != null ) {
+                retryAfterHeaderValue = response.header("Retry-After");
+            }
+
             if (retryAfterHeaderValue != null) {
                 try {
                     waitMillis = Integer.parseInt(retryAfterHeaderValue) * 1000;
@@ -68,9 +82,10 @@ public class RetryInterceptor implements Interceptor {
                 }
             }
 
+
             //Compute backoff and sleep if error is retriable
-            if ((response.code() >= 500 && response.code() < 600)
-                    || response.code() == 429 ) {
+            if ( ioException != null  || (response != null && response.code() >= 500 && response.code() < 600)
+                    || ( response != null && response.code() == 429 )) {
                 waitMillis = (int) (Math.pow(2, retryCount) * BASE_RETRY_WAIT_MILLIS + (Math.random() * JITTER));
                 continue;
             }
@@ -81,9 +96,14 @@ public class RetryInterceptor implements Interceptor {
 
         } while (waitMillis < MAX_RETRY_WAIT_MILLIS);
 
+        if (ioException != null ) {
+            Log.i(TAG, "Propagating iOException, retries exhausted");
+            throw ioException;
+        }
         Log.i(TAG, "Returning network response, retries exhausted");
         return response;
     }
+
 
     private void sleep(int waitMillis) {
         try {
