@@ -48,7 +48,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             mContentView = (TextView) v.findViewById(R.id.postContent);
             mUpsView = (TextView) v.findViewById(R.id.postUps);
             mDownsView = (TextView) v.findViewById(R.id.postDowns);
-            mShareView = (TextView) v.findViewById(R.id.postUrl);
         }
     }
 
@@ -216,7 +215,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
 
         client.deltaSync(baseQuery, baseQueryCallback, onCreatePostSubscription, onCreatePostCallback, deltaQuery, deltaQueryCallback, 20 * 60, 24 * 3600 );
-        //client.deltaSync(baseQuery, baseQueryCallback, null, null, null , null, 20 * 60, 24 * 3600 );
 
         //Setup Update Post Subscription
         setupUpdatePostSubscription();
@@ -290,23 +288,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         holder.mContentView.setText(item.content);
         holder.mUpsView.setText(item.ups + " Ups");
         holder.mDownsView.setText(item.downs + " Downs");
-        holder.mShareView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent sendIntent = new Intent()
-                        .setAction(Intent.ACTION_SEND)
-                        .putExtra(Intent.EXTRA_SUBJECT, item.url)
-                        .putExtra(Intent.EXTRA_TEXT, item.url)
-                        .setType("text/plain");
-                view.getContext().startActivity(sendIntent);
-            }
-        });
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                UpdatePostActivity.startActivity(view.getContext(), item, position);
-            }
-        });
+
+
         holder.mUpsView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {

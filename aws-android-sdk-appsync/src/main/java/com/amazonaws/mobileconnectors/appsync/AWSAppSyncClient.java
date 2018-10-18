@@ -201,10 +201,11 @@ public class AWSAppSyncClient {
             clientBuilder.defaultResponseFetcher(builder.mDefaultResponseFetcher);
         }
 
-        SubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
+        RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
         clientBuilder.subscriptionManager(subscriptionManager);
 
         mApolloClient = clientBuilder.build();
+        subscriptionManager.setApolloClient(mApolloClient);
 
         mSyncStore = new AppSyncStore(mApolloClient.apolloStore());
 
@@ -532,7 +533,7 @@ public class AWSAppSyncClient {
         return mS3ObjectManager;
     }
 
-    public <D extends Query.Data, T, V extends Query.Variables> AWSAppSyncDeltaSync deltaSync(
+    public <D extends Query.Data, T, V extends Query.Variables> Long deltaSync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
             Subscription<D,T,V> subscription,
@@ -550,7 +551,7 @@ public class AWSAppSyncClient {
         helper.setSubscriptionCallback( subscriptionCallback);
 
         if ( deltaQuery == null ||deltaQueryCallback == null ) {
-            Log.d(TAG, "One of the follwing is null - Delta Qeury or Delta Query callback. Will switch to using the base query & callback");
+            Log.d(TAG, "One of the following is null - Delta Query or Delta Query callback. Will switch to using the base query & callback");
             helper.setDeltaQuery(baseQuery);
             helper.setDeltaQueryCallback(baseQueryCallback);
         }
@@ -562,5 +563,9 @@ public class AWSAppSyncClient {
         helper.setDeltaSyncWindowInSeconds(deltaSyncWindowInSeconds);
         helper.setPeriodicRefreshIntervalInSeconds(periodicRefreshIntervalInSeconds);
         return helper.execute(false);
+    }
+
+    public void cancelDeltaSync(Long id) {
+        AWSAppSyncDeltaSync.cancel(id);
     }
 }

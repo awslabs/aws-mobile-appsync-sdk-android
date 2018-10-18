@@ -44,6 +44,7 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     public Set<AppSyncSubscriptionCall.Callback> listeners;
     public ScalarTypeAdapters scalarTypeAdapters;
     public ResponseNormalizer<Map<String,Object>> normalizer;
+    private boolean cancelled = false;
 
     public SubscriptionObject() {
         //Initialize topics and listeners.
@@ -65,6 +66,16 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     public void addListener(AppSyncSubscriptionCall.Callback l) {
         Log.v(TAG, "Adding listener to " + this);
         listeners.add(l);
+    }
+
+    //Set cancelled status
+    void setCancelled() {
+        cancelled = true;
+    }
+
+    //get cancelled status
+    boolean isCancelled() {
+        return cancelled;
     }
 
     public void onMessage(final String msg) {
@@ -105,6 +116,7 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     //Convenience method to notify all registered listeners that the subscription has been terminated.
     private void notifyDisconnectionEventToAllListeners() {
         for (AppSyncSubscriptionCall.Callback listener : listeners) {
+            //Let all listeners know the connection was disconnected.
             listener.onCompleted();
         }
     }

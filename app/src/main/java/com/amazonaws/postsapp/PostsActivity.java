@@ -45,7 +45,6 @@ public class PostsActivity extends AppCompatActivity {
         mSwipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
             @Override
             public void onRefresh() {
-                queryData();
                 mSwipeContainer.setRefreshing(false);
             }
         });
@@ -60,43 +59,14 @@ public class PostsActivity extends AppCompatActivity {
     }
 
 
-
-    private AppSyncSubscriptionCall.Callback subCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
-        @Override
-        public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
-            Log.d("Response", response.data().toString());
-            // Further code can update UI or act upon this new comment
-        }
-
-        @Override
-        public void onFailure(@Nonnull ApolloException e) {
-            Log.e("Error", "Subscription failure", e);
-        }
-
-        @Override
-        public void onCompleted() {
-            Log.d("Completed", "Completed");
-        }
-    };
-
     @Override
     protected void onStop() {
         super.onStop();
-
-        // TODO: Here for subscriptions
     }
 
     @Override
     public void onResume() {
         super.onResume();
-
-        // TODO: Here for query
-        queryData();
-    }
-
-    public void queryData() {
-        // TODO: Here for query
-
     }
 
     // TODO: Here for query

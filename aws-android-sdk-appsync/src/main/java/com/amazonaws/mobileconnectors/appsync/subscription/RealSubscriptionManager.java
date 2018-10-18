@@ -22,22 +22,22 @@ import android.util.Log;
 
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
 import com.amazonaws.mobileconnectors.appsync.subscription.mqtt.MqttSubscriptionClient;
+import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.cache.normalized.ApolloStore;
 import com.apollographql.apollo.exception.ApolloException;
+import com.apollographql.apollo.internal.RealAppSyncSubscriptionCall;
 import com.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nonnull;
 
@@ -47,6 +47,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
     private Context applicationContext;
     private ApolloStore apolloStore;
     private ScalarTypeAdapters scalarTypeAdapters;
+    private ApolloClient mApolloClient = null;
 
     final List<SubscriptionClient> clients;
 
@@ -63,6 +64,10 @@ public class RealSubscriptionManager implements SubscriptionManager {
         clients = new ArrayList<>();
     }
 
+    public void setApolloClient(ApolloClient apolloClient) {
+        this.mApolloClient = apolloClient;
+    }
+
     //Return associated SubscriptionObject from subscriptionsById map using the Subscription.
     private SubscriptionObject getSubscriptionObjectFromIdMap(Subscription subscription) {
         synchronized (subscriptionsByIdLock) {
@@ -72,7 +77,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
     //Return associated SubscriptionObject from subscriptionsById map using the Subscription.
     //Create and Add a subscription object if required
-    private SubscriptionObject addSubscriptionObjectToIdMap(Subscription subscription) {
+    private SubscriptionObject createAndAddSubscriptionObjectToIdMap(Subscription subscription) {
         synchronized (subscriptionsByIdLock) {
             SubscriptionObject sub = subscriptionsById.get(subscription);
             if (sub == null) {
@@ -140,7 +145,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         synchronized (subscriptionsByIdLock) {
             SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
             if ( subscriptionObject == null ) {
-                subscriptionObject = addSubscriptionObjectToIdMap(subscription);
+                subscriptionObject = createAndAddSubscriptionObjectToIdMap(subscription);
             }
 
             Log.v(TAG, "Subscription Infrastructure: Adding listener [" + listener.toString() + "] to SubscriptionObject: " + subscription + " got: " + subscriptionObject.subscription);
@@ -178,7 +183,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         //Look up from or register subscription in the subscriptionsById map.
         SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
         if ( subscriptionObject == null ) {
-            subscriptionObject = addSubscriptionObjectToIdMap(subscription);
+            subscriptionObject = createAndAddSubscriptionObjectToIdMap(subscription);
         }
         subscriptionObject.subscription = subscription;
         subscriptionObject.normalizer = mapResponseNormalizer;
@@ -219,33 +224,31 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
                 @Override
                 public void onError(Exception e) {
-                    //Don't do any clean up.
 
-                    /*
-                    Map<SubscriptionObject, AppSyncSubscriptionCall.Callback> unsubscribeMap = new HashMap<>();
-                    for (String topic : newTopics) {
-                        if ( getSubscriptionObjectSetFromTopicMap(topic) == null ) {
-                            continue;
+                    Log.v(TAG, "Subscription Infrastructure: onError called");
+                    if ( e instanceof SubscriptionDisconnectedException) {
+                        Log.v(TAG, "Subscription Infrastructure: Disconnect received.");
+
+                        //Grab any  subscription object to retry.
+                        SubscriptionObject subscriptionToRetry = null;
+                        for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
+                            if (!subscriptionObject.isCancelled()){
+                                subscriptionToRetry = subscriptionObject;
+                            }
                         }
-                        Set<SubscriptionObject> subscriptionObjectsSet =
-                                new HashSet<>(getSubscriptionObjectSetFromTopicMap(topic));
 
-                        for (SubscriptionObject subObj : subscriptionObjectsSet) {
-                            if (e instanceof SubscriptionDisconnectedException) {
-                                subObj.onFailure(new ApolloException("Subscription Infrastructure: Subscription terminated for clientID [" + info.clientId + "]", e));
-                                for (Object c : subObj.getListeners()) {
-                                    unsubscribeMap.put(subObj, ((AppSyncSubscriptionCall.Callback)c));
-                                }
+                        //Initiate Retry if required
+                        if (subscriptionToRetry != null ) {
+                            Log.v(TAG, "Subscription Infrastructure: Disconnect received on a uncancelled subscription. Initiating reconnect");
+                            //Initiate reconnect if a connect is not already in progress
+                            if (RealAppSyncSubscriptionCall.subscriptionSemaphore.availablePermits() != 0) {
+                                Log.v(TAG, "Subscription Infrastructure: Reconnecting...");
+                                mApolloClient.subscribe(subscriptionToRetry.subscription).execute((AppSyncSubscriptionCall.Callback) subscriptionToRetry.getListeners().iterator().next());
                             } else {
-                                subObj.onFailure(new ApolloException("Subscription Infrastructure: Failed to create client for subscription for clientID [" + info.clientId + "]", e));
+                                Log.v(TAG, "Subscription Infrastructure: Connection in progress. Deferring to the ongoing request");
                             }
                         }
                     }
-                    for (SubscriptionObject subObj: unsubscribeMap.keySet()) {
-                        RealSubscriptionManager.this.removeListener(subObj.subscription, unsubscribeMap.get(subObj));
-                        RealSubscriptionManager.this.unsubscribe(subObj.subscription);
-                    }
-                    */
                     allClientsConnectedLatch.countDown();
                 }
             });
@@ -303,11 +306,11 @@ public class RealSubscriptionManager implements SubscriptionManager {
         public void onError(String topic, Exception e) {
             final Set<SubscriptionObject> subscriptionObjects = getSubscriptionObjectSetFromTopicMap(topic);
             if (subscriptionObjects == null || subscriptionObjects.size() == 0) {
-                Log.w(TAG, "No subscription objects found for topic [" + topic+"]");
+                Log.w(TAG, "Subscription Infrastructure: No subscription objects found for topic [" + topic+"]");
             }
             else {
                 for (SubscriptionObject subscriptionObject : subscriptionObjects) {
-                    subscriptionObject.onFailure(new ApolloException("Failed to subscribe to topic", e));
+                    subscriptionObject.onFailure(new ApolloException("Subscription Infrastructure: onError called for Subscription [" + subscriptionObject +"]", e));
                 }
             }
         }
@@ -320,7 +323,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         if (subscriptionObject == null ) {
             return;
         }
-
+        subscriptionObject.setCancelled();
         //Remove subscriptionObject from all associated topics
         for (Object topic : subscriptionObject.getTopics()) {
             synchronized (subscriptionsByTopicLock) {

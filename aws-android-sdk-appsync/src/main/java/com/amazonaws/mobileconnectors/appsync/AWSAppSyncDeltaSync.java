@@ -20,6 +20,7 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.content.Context;
 import android.util.Log;
 
+import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionDisconnectedException;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
@@ -182,7 +183,7 @@ class AWSAppSyncDeltaSync  {
         return  "" + baseQuery + subscription + deltaQuery;
     }
 
-    AWSAppSyncDeltaSync execute(final boolean forceFetch) {
+    Long execute(final boolean forceFetch) {
 
         //Initialize the Delta Sync Machinery if required.
         initializeIfRequired();
@@ -300,24 +301,24 @@ class AWSAppSyncDeltaSync  {
 
                         @Override
                         public void onFailure(@Nonnull ApolloException e) {
+//
+//                            if (e.getCause() instanceof SubscriptionDisconnectedException ) {
+//                                //Got an error indicating the the subscription creation failed.
+//                                //This could be due to a server error or local network drop.
+//                                //The local network drop will be handled by the NetworkListener
+//                                //The following code will retry the connection only if the network was up and deltaSync wasn't cancelled.
+//
+//                                synchronized (networkLock) {
+//                                    if (networkUp && !cancelled) {
+//                                        Log.d(TAG, "Delta Sync [" + id + "]: Received Unable to create subscription error. Will try again.");
+//                                      //  deltaSyncSubscriptionWatcher = awsAppSyncClient.subscribe(subscription);
+//                                       // deltaSyncSubscriptionWatcher.execute(this);
+//
+//                                    }
+//                                }
+//                                return;
+//                            }
 
-                            /*
-                            if ("Subscription Infrastructure: Failed to create client for subscription".equals(e.getLocalizedMessage())) {
-                                //Got an error indicating the the subscription creation failed.
-                                //This could be due to a server error or local network drop.
-                                //The local network drop will be handled by the NetworkListener
-                                //The following code will retry the connection only if the network was up.
-                                synchronized (networkLock) {
-                                    if (networkUp && !cancelled) {
-                                        Log.d(TAG, "Delta Sync [" + id + "]: Received Unable to create subscription error. Will try again.");
-                                        deltaSyncSubscriptionWatcher = awsAppSyncClient.subscribe(subscription);
-                                        deltaSyncSubscriptionWatcher.execute(this);
-
-                                    }
-                                }
-                                return;
-                            }
-                            */
                             Log.e(TAG, "Delta Sync: onFailure executed with exception: [" + e.getLocalizedMessage() + "]");
                             //Propagate
                             if (subscriptionCallback != null ) {
@@ -330,16 +331,16 @@ class AWSAppSyncDeltaSync  {
                         public void onCompleted() {
                             //Resubscribe if there was an error
                             if (!cancelled) {
-                                synchronized (networkLock) {
-                                    if (networkUp) {
-                                        Log.v(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Network is up. Will reconnect.");
-                                        deltaSyncSubscriptionWatcher = awsAppSyncClient.subscribe(subscription);
-                                        deltaSyncSubscriptionWatcher.execute(this);
-                                    }
-                                    else {
-                                        Log.d(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Network is down. Will defer to the NetworkListener to setup the connection.");
-                                    }
-                                }
+//                                synchronized (networkLock) {
+//                                    if (networkUp) {
+//                                        Log.v(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Network is up. Will reconnect.");
+//                                      //  deltaSyncSubscriptionWatcher = awsAppSyncClient.subscribe(subscription);
+//                                      //  deltaSyncSubscriptionWatcher.execute(this);
+//                                    }
+//                                    else {
+//                                        Log.d(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Network is down. Will defer to the NetworkListener to setup the connection.");
+//                                    }
+//                                }
                             }
                             //Otherwise propagate
                             else {
@@ -419,10 +420,11 @@ class AWSAppSyncDeltaSync  {
             }
         }).start();
 
-        return this;
+        return id;
     }
 
     void cancel() {
+         Log.i(TAG, "Cancelling Delta Sync operation [" + id + "]");
         cancelled = true;
         if (deltaSyncSubscriptionWatcher != null ) {
             deltaSyncSubscriptionWatcher.cancel();
@@ -431,6 +433,12 @@ class AWSAppSyncDeltaSync  {
         dbHelper.deleteRecord(id);
     }
 
+    public static void cancel(Long id) {
+         AWSAppSyncDeltaSync deltaSync = deltaSyncObjects.get(id);
+         if (deltaSync != null ) {
+             deltaSync.cancel();
+         }
+    }
 
     /*
         This method should be called when the device/app transitions from being offline to online
