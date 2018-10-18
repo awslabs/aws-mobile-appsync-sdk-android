@@ -8,8 +8,10 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.arch.lifecycle.ProcessLifecycleOwner;
 
 import com.amazonaws.demo.posts.OnCreatePostSubscription;
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncAppLifecycleObserver;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
 import com.apollographql.apollo.api.Response;
@@ -30,6 +32,9 @@ public class PostsActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(new AWSAppSyncAppLifecycleObserver());
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_posts);
         mRecyclerView = (RecyclerView) findViewById(R.id.my_recycler_view);

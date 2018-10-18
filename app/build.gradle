@@ -48,6 +48,8 @@ dependencies {
     implementation 'com.amazonaws:aws-android-sdk-core:2.7.+'
     implementation 'com.amazonaws:aws-android-sdk-s3:2.7.+'
 
-
+    def lifecycle_version = "1.1.1"
+    implementation("android.arch.lifecycle:runtime:$lifecycle_version")
+    implementation("android.arch.lifecycle:extensions:$lifecycle_version")
 
 }

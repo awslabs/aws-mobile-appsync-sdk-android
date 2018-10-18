@@ -20,11 +20,10 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.content.Context;
 import android.util.Log;
 
-import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionDisconnectedException;
+import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
-import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
@@ -43,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
-class AWSAppSyncDeltaSync  {
+class AWSAppSyncDeltaSync {
     //Constant for Logging
     private static final String TAG = AWSAppSyncDeltaSync.class.getSimpleName();
 
@@ -544,4 +543,5 @@ class AWSAppSyncDeltaSync  {
         }
         return aq;
     }
+
 }
