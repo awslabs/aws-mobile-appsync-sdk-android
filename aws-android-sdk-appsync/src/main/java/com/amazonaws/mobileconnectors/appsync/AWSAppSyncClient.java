@@ -533,14 +533,13 @@ public class AWSAppSyncClient {
         return mS3ObjectManager;
     }
 
-    public <D extends Query.Data, T, V extends Query.Variables> Long deltaSync(
+    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
             Subscription<D,T,V> subscription,
             AppSyncSubscriptionCall.Callback subscriptionCallback,
             Query<D,T,V> deltaQuery,
             GraphQLCall.Callback<Query.Data> deltaQueryCallback,
-            int deltaSyncWindowInSeconds,
             long periodicRefreshIntervalInSeconds) {
         Log.d(TAG,"Context is [" + applicationContext + "]");
         AWSAppSyncDeltaSync helper = new AWSAppSyncDeltaSync(baseQuery,this, applicationContext);
@@ -560,12 +559,11 @@ public class AWSAppSyncClient {
             helper.setDeltaQueryCallback(deltaQueryCallback);
         }
 
-        helper.setDeltaSyncWindowInSeconds(deltaSyncWindowInSeconds);
         helper.setPeriodicRefreshIntervalInSeconds(periodicRefreshIntervalInSeconds);
         return helper.execute(false);
     }
 
-    public void cancelDeltaSync(Long id) {
+    public void cancelSync(Long id) {
         AWSAppSyncDeltaSync.cancel(id);
     }
 }

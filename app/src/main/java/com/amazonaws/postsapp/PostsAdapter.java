@@ -214,7 +214,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         };
 
 
-        client.deltaSync(baseQuery, baseQueryCallback, onCreatePostSubscription, onCreatePostCallback, deltaQuery, deltaQueryCallback, 20 * 60, 24 * 3600 );
+        client.sync(baseQuery, baseQueryCallback, onCreatePostSubscription, onCreatePostCallback, deltaQuery, deltaQueryCallback, 20 * 60 );
 
         //Setup Update Post Subscription
         setupUpdatePostSubscription();

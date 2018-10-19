@@ -20,7 +20,6 @@ package com.apollographql.apollo.internal.interceptor;
 import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionResponse;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.ResponseFieldMapper;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
@@ -28,12 +27,9 @@ import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
 import com.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
 import com.apollographql.apollo.internal.json.ApolloJsonReader;
 import com.apollographql.apollo.internal.json.BufferedSourceJsonReader;
-import com.apollographql.apollo.internal.json.JsonWriter;
 import com.apollographql.apollo.internal.json.ResponseJsonStreamReader;
-import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -75,7 +71,6 @@ public class AppSyncSubscriptionInterceptor implements ApolloInterceptor {
                         try {
                             ResponseJsonStreamReader responseStreamReader = ApolloJsonReader.responseJsonStreamReader(new BufferedSourceJsonReader(response.httpResponse.get().body().source()));
                             responseMap = responseStreamReader.toMap();
-                            System.out.println("Subscription response: " + responseMap.toString());
 
                             /* The response is of the form
                                extensions

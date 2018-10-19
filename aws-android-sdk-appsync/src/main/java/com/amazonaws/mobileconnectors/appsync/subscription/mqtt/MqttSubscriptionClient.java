@@ -139,12 +139,12 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mMqttAndroidClient.unsubscribe(topic, null, new IMqttActionListener() {
                 @Override
                 public void onSuccess(IMqttToken asyncActionToken) {
-
+                    Log.v(TAG, "Subscription Infrastructure: Disconnected from topic [" + topic +"]");
                 }
 
                 @Override
                 public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
-
+                    Log.v(TAG, "Subscription Infrastructure: Errror [" + exception + "] when disconnecting from topic [" + topic +"]");
                 }
             });
         } catch (MqttException e) {

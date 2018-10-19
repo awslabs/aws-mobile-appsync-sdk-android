@@ -617,8 +617,8 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
     @Test
-    public void testDeltaSyncOnlyBaseQuery() {
-        final CountDownLatch deltaSyncLatch = new CountDownLatch(1);
+    public void testSyncOnlyBaseQuery() {
+        final CountDownLatch syncLatch = new CountDownLatch(1);
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
 
@@ -627,7 +627,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
                 allPostsResponse  =  response;
-                deltaSyncLatch.countDown();
+                syncLatch.countDown();
             }
 
             @Override
@@ -636,10 +636,10 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         };
 
-        awsAppSyncClient.deltaSync(baseQuery, baseQueryCallback, null, null, null, null, 0,0);
+        awsAppSyncClient.sync(baseQuery, baseQueryCallback, null, null, null, null, 0);
 
         try {
-            deltaSyncLatch.await();
+            syncLatch.await();
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -653,7 +653,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
 
-    public void testDeltaSyncOnlyBaseAndDeltaQuery() {
+    public void testSyncOnlyBaseAndDeltaQuery() {
         final CountDownLatch baseQueryLatch = new CountDownLatch(1);
         final CountDownLatch deltaQueryLatch = new CountDownLatch(1);
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
@@ -689,7 +689,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         };
 
-        awsAppSyncClient.deltaSync(baseQuery, baseQueryCallback,null, null, deltaQuery, deltaQueryCallback, 0,0);
+        awsAppSyncClient.sync(baseQuery, baseQueryCallback,null, null, deltaQuery, deltaQueryCallback, 0);
 
         try {
             baseQueryLatch.await(10, TimeUnit.SECONDS);

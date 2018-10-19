@@ -53,6 +53,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
     final Map<Subscription, SubscriptionObject> subscriptionsById;
     final Map<String, HashSet<SubscriptionObject>> subscriptionsByTopic;
+    final Map<String, MqttSubscriptionClient> topicConnectionMap;
 
     private final Object subscriptionsByIdLock = new Object();
     private final Object subscriptionsByTopicLock = new Object();
@@ -61,6 +62,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         this.applicationContext = applicationContext.getApplicationContext();
         subscriptionsById = new ConcurrentHashMap<>();
         subscriptionsByTopic = new ConcurrentHashMap<>();
+        topicConnectionMap = new ConcurrentHashMap<>();
         clients = new ArrayList<>();
     }
 
@@ -203,7 +205,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         Log.v(TAG, "Subscription Infrastructure: Attempting to make [" + response.mqttInfos.size() + "] MQTT clients]");
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
 
-            final SubscriptionClient mqttClient = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
+            final MqttSubscriptionClient mqttClient = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
             // Silence new clients until swapped with old clients
             mqttClient.setTransmitting(false);
             Log.v(TAG, "Subscription Infrastructure: Connecting with Client ID[" + info.clientId +"]");
@@ -216,6 +218,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                         if (topicSet.contains(topic)) {
                             Log.v(TAG, String.format("Subscription Infrastructure: Subscribing to MQTT topic:[%s]", topic));
                             mqttClient.subscribe(topic, 1, mainMessageCallback);
+                            topicConnectionMap.put(topic, mqttClient);
                         }
                     }
                     newClients.add(mqttClient);
@@ -229,7 +232,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                     if ( e instanceof SubscriptionDisconnectedException) {
                         Log.v(TAG, "Subscription Infrastructure: Disconnect received.");
 
-                        //Grab any  subscription object to retry.
+                        //Grab any subscription object to retry.
                         SubscriptionObject subscriptionToRetry = null;
                         for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
                             if (!subscriptionObject.isCancelled()){
@@ -323,7 +326,10 @@ public class RealSubscriptionManager implements SubscriptionManager {
         if (subscriptionObject == null ) {
             return;
         }
+
+        // Mark subscriptionObject as cancelled.
         subscriptionObject.setCancelled();
+
         //Remove subscriptionObject from all associated topics
         for (Object topic : subscriptionObject.getTopics()) {
             synchronized (subscriptionsByTopicLock) {
@@ -333,9 +339,35 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 }
             }
         }
-
         //Remove Subscription Object from subscriptionsById map
         removeSubscriptionObjectFromIdMap(subscriptionObject);
+
+        //Sweep through all the topics. Unsubscribe all topics that have 0 subscriptions.
+        synchronized (subscriptionsByTopicLock) {
+            for (String topic: subscriptionsByTopic.keySet() ) {
+                Set<SubscriptionObject> subscriptionObjectsSet = getSubscriptionObjectSetFromTopicMap(topic);
+                if ( subscriptionObjectsSet != null && subscriptionObjectsSet.size() > 0 ) {
+                    Log.v(TAG, "Subscription Infrastructure: SubscriptionObjects still exist for topic [" + topic + "]. Will not unsubscribe at the MQTT level");
+                    continue;
+                }
+
+                Log.v(TAG, "Subscription Infrastructure: Number of SubscriptionObjects for topic [" + topic + "] is 0. Unsubscribing at the MQTT Level...");
+                //Get connection from the topic to Connection map.
+                MqttSubscriptionClient client = topicConnectionMap.get(topic);
+                if (client == null ) {
+                    continue;
+                }
+                //Call unsubscribe at the MQTT level
+                client.unsubscribe(topic);
+
+                //Check if the client has any topics left. If not, close it.
+                if (client.getTopics() == null || client.getTopics().size() == 0) {
+                    Log.v(TAG, "Subscription Infrastructure: MQTT Client has no active topics. Disconnecting...");
+                    client.close();
+                }
+            }
+        }
+
     }
 
     @Override

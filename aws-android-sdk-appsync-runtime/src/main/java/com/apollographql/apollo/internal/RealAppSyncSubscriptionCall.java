@@ -38,7 +38,7 @@ import static com.apollographql.apollo.internal.CallState.IDLE;
 
 public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T> {
 
-    public static Semaphore subscriptionSemaphore = new Semaphore(1);
+    public static Semaphore subscriptionSemaphore = new Semaphore(1, true);
     private static int MAX_WAIT_TIME = 30;
 
     private final ApolloLogger logger;
@@ -95,15 +95,12 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
         try {
             if (subscriptionSemaphore.tryAcquire(MAX_WAIT_TIME, TimeUnit.SECONDS)) {
                 logger.d("Subscription Infrastructure: Acquired subscription Semaphore. Continuing");
-                System.out.println("Subscription Infrastructure: Acquired subscription Semaphore. Continuing");
             } else {
                 logger.d("Subscription Infrastructure: Did not acquire subscription Semaphore after waiting for [" + MAX_WAIT_TIME + "] seconds. Will continue");
-                System.out.println("Subscription Infrastructure: Did not acquire subscription Semaphore after waiting for [" + MAX_WAIT_TIME + "] seconds. Will continue");
 
             }
         } catch (InterruptedException e) {
             logger.e(e, "Subscription Infrastructure:Got exception while waiting to acquire subscription Semaphore. Will continue without waiting");
-            System.out.println("Subscription Infrastructure:Got exception while waiting to acquire subscription Semaphore. Will continue without waiting");
         }
 
 
@@ -111,7 +108,6 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
         this.subscriptionMetadataRequest.enqueue(new GraphQLCall.Callback<T>() {
             @Override
             public void onResponse(@Nonnull Response<T> response) {
-                System.out.println("Subscription Infrastructure: On Response called for Subscription Meta Data request");
                 subscriptionSemaphore.release();
                 // Do nothing. Internal code has been kicked off.
             }
@@ -119,7 +115,6 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
             @Override
             public void onFailure(@Nonnull ApolloException e) {
                 subscriptionSemaphore.release();
-                System.out.println("Subscription Infrastructure: On Failure called for Subscription Meta Data request");
                 callback.onFailure(e);
             }
         });

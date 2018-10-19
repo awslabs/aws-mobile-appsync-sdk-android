@@ -29,7 +29,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
         long id;
         String key;
         long lastRunTimeInMilliSeconds;
-        long deltaSyncWindowInSeconds;
         long periodicRefreshIntervalInSeconds;
     }
 
@@ -37,16 +36,14 @@ final class AWSAppSyncDeltaSyncDBOperations {
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID,
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY,
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME,
-            AWSAppSyncDeltaSyncSqlHelper.COLUMN_SYNC_WINDOW_IN_SECONDS,
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_PERIODIC_RUN_INTERVAL_IN_SECONDS
     };
 
     private static final String INSERT_STATEMENT =
-            String.format("INSERT INTO %S ( %s, %s, %s, %s) VALUES (?,?,?,?)",
+            String.format("INSERT INTO %S ( %s, %s, %s) VALUES (?,?,?)",
                     AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
                     AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY,
                     AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME,
-                    AWSAppSyncDeltaSyncSqlHelper.COLUMN_SYNC_WINDOW_IN_SECONDS,
                     AWSAppSyncDeltaSyncSqlHelper.COLUMN_PERIODIC_RUN_INTERVAL_IN_SECONDS);
 
     private static final String DELETE_STATEMENT =
@@ -91,12 +88,11 @@ final class AWSAppSyncDeltaSyncDBOperations {
     /*
         Create Record for Delta Sync in the Database
      */
-    long createRecord(String key, long lastRunTime, long deltaSyncWindow, long periodInterval)
+    long createRecord(String key, long lastRunTime,long periodicIntervalInSeconds)
     {
         insertStatement.bindString(1, key);
         insertStatement.bindLong (2, lastRunTime);
-        insertStatement.bindLong(3, deltaSyncWindow);
-        insertStatement.bindLong(4, periodInterval);
+        insertStatement.bindLong(3, periodicIntervalInSeconds);
         long recordId = insertStatement.executeInsert();
         return recordId;
     }
@@ -139,7 +135,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
             record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
             record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
             record.periodicRefreshIntervalInSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_PERIODIC_RUN_INTERVAL_IN_SECONDS));
-            record.deltaSyncWindowInSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_SYNC_WINDOW_IN_SECONDS));
         }
         cursor.close();
         return record;
@@ -165,7 +160,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
             record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
             record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
             record.periodicRefreshIntervalInSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_PERIODIC_RUN_INTERVAL_IN_SECONDS));
-            record.deltaSyncWindowInSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_SYNC_WINDOW_IN_SECONDS));
         }
         cursor.close();
         return record;

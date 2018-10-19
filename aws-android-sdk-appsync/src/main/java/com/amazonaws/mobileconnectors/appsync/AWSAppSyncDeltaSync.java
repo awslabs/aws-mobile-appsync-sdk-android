@@ -72,8 +72,7 @@ class AWSAppSyncDeltaSync {
     private AppSyncSubscriptionCall.Callback subscriptionCallback;
     private Query deltaQuery = null;
     private long lastRunTimeInMilliSeconds = 0;
-    private long periodicRefreshIntervalInSeconds = 0;
-    private long deltaSyncWindowInSeconds = 0;
+    private long periodicRefreshIntervalInSeconds = 24 * 60 * 60;
     private GraphQLCall.Callback<Query.Data> deltaQueryCallback = null;
     private Long id;
 
@@ -130,13 +129,12 @@ class AWSAppSyncDeltaSync {
 
                 AWSAppSyncDeltaSyncDBOperations.DeltaSyncRecord record;
                 if ((record = dbHelper.getRecordByKey(getKey())) == null ) {
-                    this.id = dbHelper.createRecord(getKey(), lastRunTimeInMilliSeconds, deltaSyncWindowInSeconds,periodicRefreshIntervalInSeconds);
+                    this.id = dbHelper.createRecord(getKey(), lastRunTimeInMilliSeconds,periodicRefreshIntervalInSeconds);
                 }
                 else {
                     this.id = record.id;
                     this.lastRunTimeInMilliSeconds = record.lastRunTimeInMilliSeconds;
                     this.periodicRefreshIntervalInSeconds = record.periodicRefreshIntervalInSeconds;
-                    this.deltaSyncWindowInSeconds = record.deltaSyncWindowInSeconds;
                 }
                 deltaSyncObjects.put(id,this);
                 recordCreatedOrFound = true;
@@ -174,10 +172,6 @@ class AWSAppSyncDeltaSync {
         this.periodicRefreshIntervalInSeconds = periodicRefreshIntervalInSeconds;
     }
 
-    void setDeltaSyncWindowInSeconds(long deltaSyncWindowInSeconds) {
-        this.deltaSyncWindowInSeconds = deltaSyncWindowInSeconds;
-    }
-
     private String getKey( ) {
         return  "" + baseQuery + subscription + deltaQuery;
     }
@@ -209,7 +203,7 @@ class AWSAppSyncDeltaSync {
                     //Check if the call needs to be from the cache or from the network
                     long deltaInSeconds = (System.currentTimeMillis() - (lastRunTimeInMilliSeconds - 2000)) / 1000;
                     Log.v(TAG, "Delta Sync: Time since last sync [" + deltaInSeconds + "] seconds");
-                    if (deltaInSeconds > deltaSyncWindowInSeconds) {
+                    if (deltaInSeconds > periodicRefreshIntervalInSeconds) {
                         f = AppSyncResponseFetchers.NETWORK_ONLY;
                         Log.v(TAG, "Delta Sync: Setting basequery cache mode to NETWORK_ONLY");
                     } else {
@@ -423,7 +417,7 @@ class AWSAppSyncDeltaSync {
     }
 
     void cancel() {
-         Log.i(TAG, "Cancelling Delta Sync operation [" + id + "]");
+         Log.i(TAG, "Delta Sync: Cancelling Delta Sync operation [" + id + "]");
         cancelled = true;
         if (deltaSyncSubscriptionWatcher != null ) {
             deltaSyncSubscriptionWatcher.cancel();
@@ -450,7 +444,7 @@ class AWSAppSyncDeltaSync {
             if ( !networkUp ) {
                 networkUp = true;
                 for (Map.Entry<Long, AWSAppSyncDeltaSync> ds : deltaSyncObjects.entrySet()) {
-                    Log.d(TAG, "Network Up detected. Running DeltaSync for ds object [" + ds.getKey() + "]");
+                    Log.d(TAG, "Delta Sync: Network Up detected. Running DeltaSync for ds object [" + ds.getKey() + "]");
                     ds.getValue().execute(false);
                 }
             }
@@ -463,7 +457,7 @@ class AWSAppSyncDeltaSync {
     static void handleNetworkDownEvent() {
         synchronized (networkLock) {
             if (networkUp) {
-                Log.d(TAG, "Network Down detected.");
+                Log.d(TAG, "Delta Sync: Network Down detected.");
                 networkUp = false;
             }
         }
@@ -480,7 +474,7 @@ class AWSAppSyncDeltaSync {
             if ( !appInForeground ) {
                 appInForeground = true;
                 for (Map.Entry<Long, AWSAppSyncDeltaSync> ds : deltaSyncObjects.entrySet()) {
-                    Log.d(TAG, "Foreground transition detected. Running DeltaSync for ds object [" + ds.getKey() + "]");
+                    Log.d(TAG, "Delta Sync: Foreground transition detected. Running DeltaSync for ds object [" + ds.getKey() + "]");
                     ds.getValue().execute(false);
                 }
             }
@@ -494,7 +488,7 @@ class AWSAppSyncDeltaSync {
         //Guard against multiple notifications of app transitioning to background.
         synchronized (foregroundLock) {
             if (appInForeground) {
-                Log.d(TAG, "Background transition detected.");
+                Log.d(TAG, "Delta Sync: Background transition detected.");
                 appInForeground = false;
             }
         }
@@ -507,7 +501,7 @@ class AWSAppSyncDeltaSync {
      */
     private void scheduleFutureSync() {
         if (periodicRefreshIntervalInSeconds <= 0 ) {
-            Log.i(TAG, "Invalid value for periodicRefreshIntervalInSeconds[" + periodicRefreshIntervalInSeconds + "]. Must be greater than 0");
+            Log.i(TAG, "Delta Sync: Invalid value for periodicRefreshIntervalInSeconds[" + periodicRefreshIntervalInSeconds + "]. Must be greater than 0");
             return;
         }
         if (nextRun != null ) {
