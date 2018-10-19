@@ -31,7 +31,7 @@ class AWSAppSyncDeltaSyncSqlHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ID = "_id";
     public static final String COLUMN_DELTA_SYNC_KEY = "delta_sync_key";
     public static final String COLUMN_LAST_RUN_TIME = "last_run_time";
-    public static final String COLUMN_PERIODIC_RUN_INTERVAL_IN_SECONDS = "periodic_run_interval_in_seconds";
+    public static final String COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS = "base_refresh_interval_in_seconds";
 
     private static final String DATABASE_NAME = "appsync_deltasync_db";
     private static final int DATABASE_VERSION = 1;
@@ -43,7 +43,7 @@ class AWSAppSyncDeltaSyncSqlHelper extends SQLiteOpenHelper {
             COLUMN_ID,
             COLUMN_DELTA_SYNC_KEY,
             COLUMN_LAST_RUN_TIME,
-            COLUMN_PERIODIC_RUN_INTERVAL_IN_SECONDS);
+            COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS);
 
 
     //Constructor

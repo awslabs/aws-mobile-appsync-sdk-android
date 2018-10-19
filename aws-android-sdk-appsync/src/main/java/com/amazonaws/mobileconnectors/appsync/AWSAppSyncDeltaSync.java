@@ -72,7 +72,7 @@ class AWSAppSyncDeltaSync {
     private AppSyncSubscriptionCall.Callback subscriptionCallback;
     private Query deltaQuery = null;
     private long lastRunTimeInMilliSeconds = 0;
-    private long periodicRefreshIntervalInSeconds = 24 * 60 * 60;
+    private long baseRefreshIntervalInSeconds = 24 * 60 * 60;
     private GraphQLCall.Callback<Query.Data> deltaQueryCallback = null;
     private Long id;
 
@@ -129,12 +129,12 @@ class AWSAppSyncDeltaSync {
 
                 AWSAppSyncDeltaSyncDBOperations.DeltaSyncRecord record;
                 if ((record = dbHelper.getRecordByKey(getKey())) == null ) {
-                    this.id = dbHelper.createRecord(getKey(), lastRunTimeInMilliSeconds,periodicRefreshIntervalInSeconds);
+                    this.id = dbHelper.createRecord(getKey(), lastRunTimeInMilliSeconds,baseRefreshIntervalInSeconds);
                 }
                 else {
                     this.id = record.id;
                     this.lastRunTimeInMilliSeconds = record.lastRunTimeInMilliSeconds;
-                    this.periodicRefreshIntervalInSeconds = record.periodicRefreshIntervalInSeconds;
+                    this.baseRefreshIntervalInSeconds = record.baseRefreshIntervalInSeconds;
                 }
                 deltaSyncObjects.put(id,this);
                 recordCreatedOrFound = true;
@@ -168,8 +168,8 @@ class AWSAppSyncDeltaSync {
         this.deltaQueryCallback = callback;
     }
 
-    void setPeriodicRefreshIntervalInSeconds(long periodicRefreshIntervalInSeconds) {
-        this.periodicRefreshIntervalInSeconds = periodicRefreshIntervalInSeconds;
+    void setBaseRefreshIntervalInSeconds(long baseRefreshIntervalInSeconds) {
+        this.baseRefreshIntervalInSeconds = baseRefreshIntervalInSeconds;
     }
 
     private String getKey( ) {
@@ -203,7 +203,7 @@ class AWSAppSyncDeltaSync {
                     //Check if the call needs to be from the cache or from the network
                     long deltaInSeconds = (System.currentTimeMillis() - (lastRunTimeInMilliSeconds - 2000)) / 1000;
                     Log.v(TAG, "Delta Sync: Time since last sync [" + deltaInSeconds + "] seconds");
-                    if (deltaInSeconds > periodicRefreshIntervalInSeconds) {
+                    if (deltaInSeconds > baseRefreshIntervalInSeconds) {
                         f = AppSyncResponseFetchers.NETWORK_ONLY;
                         Log.v(TAG, "Delta Sync: Setting basequery cache mode to NETWORK_ONLY");
                     } else {
@@ -500,8 +500,8 @@ class AWSAppSyncDeltaSync {
        after periodicRefreshIntervalInSeconds
      */
     private void scheduleFutureSync() {
-        if (periodicRefreshIntervalInSeconds <= 0 ) {
-            Log.i(TAG, "Delta Sync: Invalid value for periodicRefreshIntervalInSeconds[" + periodicRefreshIntervalInSeconds + "]. Must be greater than 0");
+        if (baseRefreshIntervalInSeconds <= 0 ) {
+            Log.i(TAG, "Delta Sync: Invalid value for baseRefreshIntervalInSeconds[" + baseRefreshIntervalInSeconds + "]. Must be greater than 0");
             return;
         }
         if (nextRun != null ) {
@@ -515,7 +515,7 @@ class AWSAppSyncDeltaSync {
                     thisObjectRef.get().execute(true);
                 }
             }
-        }, periodicRefreshIntervalInSeconds, TimeUnit.SECONDS);
+        }, baseRefreshIntervalInSeconds, TimeUnit.SECONDS);
     }
 
 

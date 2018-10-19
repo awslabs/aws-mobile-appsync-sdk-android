@@ -52,7 +52,6 @@ import com.apollographql.apollo.cache.normalized.NormalizedCacheFactory;
 import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
-import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import org.json.JSONObject;
 
@@ -540,7 +539,7 @@ public class AWSAppSyncClient {
             AppSyncSubscriptionCall.Callback subscriptionCallback,
             Query<D,T,V> deltaQuery,
             GraphQLCall.Callback<Query.Data> deltaQueryCallback,
-            long periodicRefreshIntervalInSeconds) {
+            long baseRefreshIntervalInSeconds) {
         Log.d(TAG,"Context is [" + applicationContext + "]");
         AWSAppSyncDeltaSync helper = new AWSAppSyncDeltaSync(baseQuery,this, applicationContext);
 
@@ -559,7 +558,7 @@ public class AWSAppSyncClient {
             helper.setDeltaQueryCallback(deltaQueryCallback);
         }
 
-        helper.setPeriodicRefreshIntervalInSeconds(periodicRefreshIntervalInSeconds);
+        helper.setBaseRefreshIntervalInSeconds(baseRefreshIntervalInSeconds);
         return helper.execute(false);
     }
 
