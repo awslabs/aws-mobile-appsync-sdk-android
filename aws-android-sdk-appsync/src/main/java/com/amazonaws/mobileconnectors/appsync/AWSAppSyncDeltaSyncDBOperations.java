@@ -29,22 +29,19 @@ final class AWSAppSyncDeltaSyncDBOperations {
         long id;
         String key;
         long lastRunTimeInMilliSeconds;
-        long baseRefreshIntervalInSeconds;
     }
 
     private final String[] allColumns = {
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID,
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY,
             AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME,
-            AWSAppSyncDeltaSyncSqlHelper.COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS
     };
 
     private static final String INSERT_STATEMENT =
-            String.format("INSERT INTO %S ( %s, %s, %s) VALUES (?,?,?)",
+            String.format("INSERT INTO %S ( %s, %s) VALUES (?,?)",
                     AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
                     AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY,
-                    AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME,
-                    AWSAppSyncDeltaSyncSqlHelper.COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS);
+                    AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME);
 
     private static final String DELETE_STATEMENT =
             String.format("DELETE FROM %s WHERE %s = ?",
@@ -88,11 +85,10 @@ final class AWSAppSyncDeltaSyncDBOperations {
     /*
         Create Record for Delta Sync in the Database
      */
-    long createRecord(String key, long lastRunTime,long baseRefreshIntervalInSeconds)
+    long createRecord(String key, long lastRunTime)
     {
         insertStatement.bindString(1, key);
         insertStatement.bindLong (2, lastRunTime);
-        insertStatement.bindLong(3, baseRefreshIntervalInSeconds);
         long recordId = insertStatement.executeInsert();
         return recordId;
     }
@@ -134,7 +130,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
             record.id = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID));
             record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
             record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
-            record.baseRefreshIntervalInSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS));
         }
         cursor.close();
         return record;
@@ -159,7 +154,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
             record.id = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID));
             record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
             record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
-            record.baseRefreshIntervalInSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS));
         }
         cursor.close();
         return record;

@@ -320,7 +320,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
     };
 
     @Override
-    public void unsubscribe(@Nonnull Subscription<?, ?, ?> subscription) {
+    public synchronized void unsubscribe(@Nonnull Subscription<?, ?, ?> subscription) {
         //Get matching subscription object from the subscriptionsById map
         SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
         if (subscriptionObject == null ) {
@@ -342,6 +342,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
         //Remove Subscription Object from subscriptionsById map
         removeSubscriptionObjectFromIdMap(subscriptionObject);
 
+
         //Sweep through all the topics. Unsubscribe all topics that have 0 subscriptions.
         synchronized (subscriptionsByTopicLock) {
             for (String topic: subscriptionsByTopic.keySet() ) {
@@ -359,6 +360,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 }
                 //Call unsubscribe at the MQTT level
                 client.unsubscribe(topic);
+                subscriptionsByTopic.remove(topic);
 
                 //Check if the client has any topics left. If not, close it.
                 if (client.getTopics() == null || client.getTopics().size() == 0) {

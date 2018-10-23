@@ -169,7 +169,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
 
     @Override
     public void close() {
-        final String clientRepresentation = mMqttAndroidClient.toString();
+        Log.v(TAG, "Closing MQTT client [" + mMqttAndroidClient.getClientId() + "");
         try {
             //Disconnect the connection with quiese timeout set to 0, which means disconnect immediately.
             //Issue the close connection on the callback - this ensures that the connection is properly closed out before resources are freed/reclaimed by the close method.
@@ -186,7 +186,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                         }
                     });
         } catch (Exception e) {
-            Log.w(TAG, "Closing " + clientRepresentation + " mqtt client [" + mMqttAndroidClient.getClientId() + "]", e);
+            Log.w(TAG, "Got exception when closing MQTT client [" + mMqttAndroidClient.getClientId() + "]", e);
         }
     }
 

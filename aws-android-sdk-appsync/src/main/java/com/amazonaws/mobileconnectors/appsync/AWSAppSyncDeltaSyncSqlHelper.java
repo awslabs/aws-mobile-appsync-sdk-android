@@ -31,19 +31,17 @@ class AWSAppSyncDeltaSyncSqlHelper extends SQLiteOpenHelper {
     public static final String COLUMN_ID = "_id";
     public static final String COLUMN_DELTA_SYNC_KEY = "delta_sync_key";
     public static final String COLUMN_LAST_RUN_TIME = "last_run_time";
-    public static final String COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS = "base_refresh_interval_in_seconds";
 
     private static final String DATABASE_NAME = "appsync_deltasync_db";
     private static final int DATABASE_VERSION = 1;
 
     //Database Create Statement
     private static final String DATABASE_CREATE = String.format(
-            "create table %s( %s integer primary key autoincrement, %s text not null, %s Integer, %s Integer);",
+            "create table %s( %s integer primary key autoincrement, %s text not null, %s Integer);",
             TABLE_DELTA_SYNC,
             COLUMN_ID,
             COLUMN_DELTA_SYNC_KEY,
-            COLUMN_LAST_RUN_TIME,
-            COLUMN_BASE_REFRESH_INTERVAL_IN_SECONDS);
+            COLUMN_LAST_RUN_TIME);
 
 
     //Constructor

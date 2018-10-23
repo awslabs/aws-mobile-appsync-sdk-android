@@ -366,34 +366,30 @@ public class AWSAppSyncQueryInstrumentationTest {
         OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
         AppSyncSubscriptionCall addSubWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
         addSubWatcher.execute(onCreatePostSubscriptionCallback);
-        sleep(5*1000);
 
         OnUpdatePostSubscription onUpdatePostSubscription = OnUpdatePostSubscription.builder().build();
         AppSyncSubscriptionCall updateSubWatcher = awsAppSyncClient.subscribe(onUpdatePostSubscription);
         updateSubWatcher.execute(onUpdatePostSubscriptionCallback);
-        sleep(5*1000);
 
 
         OnDeletePostSubscription onDeletePostSubscription = OnDeletePostSubscription.builder().build();
         AppSyncSubscriptionCall deleteSubWatcher = awsAppSyncClient.subscribe(onDeletePostSubscription);
         deleteSubWatcher.execute(onDeletePostSubscriptionCallback);
-        sleep(5*1000);
 
         OnCreateArticleSubscription onCreateArticleSubscription = OnCreateArticleSubscription.builder().build();
         AppSyncSubscriptionCall addArticleSubWatcher = awsAppSyncClient.subscribe(onCreateArticleSubscription);
         addArticleSubWatcher.execute(onCreateArticleSubscriptionCallback);
-        sleep(5*1000);
 
         OnUpdateArticleSubscription onUpdateArticleSubscription = OnUpdateArticleSubscription.builder().build();
         AppSyncSubscriptionCall updateArticleSubWatcher = awsAppSyncClient.subscribe(onUpdateArticleSubscription);
         updateArticleSubWatcher.execute(onUpdateArticleSubscriptionCallback);
-        sleep(5*1000);
+
 
         OnDeleteArticleSubscription onDeleteArticleSubscription = OnDeleteArticleSubscription.builder().build();
         AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
         deleteArticleSubWatcher.execute(onDeleteArticleCallback);
-        sleep(5*1000);
 
+        sleep(30 * 1000);
         Log.d(TAG, "Subscribed and setup callback handlers.");
 
         addPost(awsAppSyncClient,title,author,url,content);
@@ -422,10 +418,12 @@ public class AWSAppSyncQueryInstrumentationTest {
         addSubWatcher.cancel();
         updateSubWatcher.cancel();
         deleteSubWatcher.cancel();
+        addArticleSubWatcher.cancel();
+        updateArticleSubWatcher.cancel();
+        deleteArticleSubWatcher.cancel();
 
-        sleep (3*1000);
-
-
+        //Sleep for 45 seconds - Connections are pinged every 30 seconds; this sleep will help verify through manual inspection that the connections are indeed freed.
+        sleep (45*1000);
     }
 
 
