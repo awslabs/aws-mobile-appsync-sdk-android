@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
@@ -212,6 +213,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
             mqttClient.connect(new SubscriptionClientCallback() {
                 @Override
                 public void onConnect() {
+                    reportSuccessfulConnection();
                     Set<String> topicSet = subscriptionsByTopic.keySet();
                     Log.v(TAG, String.format("Subscription Infrastructure: Connection successful for clientID [" + info.clientId + "]. Will subscribe up to %d topics", info.topics.length));
                     for (String topic : info.topics) {
@@ -227,30 +229,11 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
                 @Override
                 public void onError(Exception e) {
-
                     Log.v(TAG, "Subscription Infrastructure: onError called");
                     if ( e instanceof SubscriptionDisconnectedException) {
-                        Log.v(TAG, "Subscription Infrastructure: Disconnect received.");
-
-                        //Grab any subscription object to retry.
-                        SubscriptionObject subscriptionToRetry = null;
-                        for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
-                            if (!subscriptionObject.isCancelled()){
-                                subscriptionToRetry = subscriptionObject;
-                            }
-                        }
-
-                        //Initiate Retry if required
-                        if (subscriptionToRetry != null ) {
-                            Log.v(TAG, "Subscription Infrastructure: Disconnect received on a uncancelled subscription. Initiating reconnect");
-                            //Initiate reconnect if a connect is not already in progress
-                            if (RealAppSyncSubscriptionCall.subscriptionSemaphore.availablePermits() != 0) {
-                                Log.v(TAG, "Subscription Infrastructure: Reconnecting...");
-                                mApolloClient.subscribe(subscriptionToRetry.subscription).execute((AppSyncSubscriptionCall.Callback) subscriptionToRetry.getListeners().iterator().next());
-                            } else {
-                                Log.v(TAG, "Subscription Infrastructure: Connection in progress. Deferring to the ongoing request");
-                            }
-                        }
+                        Log.v(TAG, "Subscription Infrastructure: Disconnect received. Unexpected - Initiating reconnect sequence.");
+                        reportConnectionError();
+                        initiateReconnectSequence();
                     }
                     allClientsConnectedLatch.countDown();
                 }
@@ -380,5 +363,116 @@ public class RealSubscriptionManager implements SubscriptionManager {
     @Override
     public void setScalarTypeAdapters(ScalarTypeAdapters scalarTypeAdapters) {
         this.scalarTypeAdapters = scalarTypeAdapters;
+    }
+
+    //Reconnection management
+    Thread reconnectThread = null;
+    Object reconnectionLock = new Object();
+    boolean reconnectionInProgress = false;
+    private CountDownLatch reconnectCountdownLatch = null;
+
+    private static final int BASE_RETRY_WAIT_MILLIS = 100;
+    private static final int MAX_RETRY_WAIT_MILLIS = 300 * 1000; //Five Minutes
+    private static final int JITTER = 100;
+
+    void initiateReconnectSequence() {
+        
+        synchronized(reconnectionLock) {
+            if (reconnectionInProgress) {
+                return;
+            }
+            reconnectionInProgress = true;
+            reconnectThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    int retryCount = 0;
+                    long waitMillis = 0;
+                    Log.v(TAG, "Subscription Infrastructure: Initiating reconnect sequence");
+                    while (reconnectionInProgress) {
+                        //Calculate backoff value
+                        if (waitMillis < MAX_RETRY_WAIT_MILLIS ) {
+                            waitMillis = Math.min((long) (Math.pow(2, retryCount) * BASE_RETRY_WAIT_MILLIS + (Math.random() * JITTER)), MAX_RETRY_WAIT_MILLIS);
+                        }
+                        try {
+                            Log.v(TAG, "Subscription Infrastructure: Sleeping for [" + (waitMillis/1000)+ "] seconds");
+                            Thread.sleep(waitMillis);
+                        }
+                        catch (InterruptedException ie) {
+                            Log.v(TAG, "SubscriptionInfrastructure: Thread.sleep was interrupted in the exponential backoff for reconnects");
+                        }
+                        //Grab any subscription object to retry.
+                        SubscriptionObject subscriptionToRetry = null;
+                        for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
+                            if (!subscriptionObject.isCancelled()) {
+                                subscriptionToRetry = subscriptionObject;
+                            }
+                        }
+
+                        //Initiate Retry if required
+                        if (subscriptionToRetry != null) {
+                            Log.v(TAG, "Subscription Infrastructure: Attempting to reconnect");
+                            reconnectCountdownLatch = new CountDownLatch(1);
+                            mApolloClient.subscribe(subscriptionToRetry.subscription).execute((AppSyncSubscriptionCall.Callback) subscriptionToRetry.getListeners().iterator().next());
+
+                            try {
+                                reconnectCountdownLatch.await(1, TimeUnit.MINUTES);
+                            } catch (InterruptedException ioe) {
+                                Log.v(TAG, "Subscription Infrastructure: Wait interrupted.");
+                            }
+                        }
+                        else {
+                            reconnectionInProgress = false;
+                        }
+                        retryCount++;
+                    }
+                }
+            });
+            reconnectThread.start();
+        }
+    }
+
+    void reportSuccessfulConnection() {
+        synchronized (reconnectionLock) {
+            if (!reconnectionInProgress) {
+                return;
+            }
+            Log.v(TAG, "Subscription Infrastructure: Successful connection reported!");
+            reconnectionInProgress = false;
+
+            if (reconnectCountdownLatch != null ) {
+                Log.v(TAG, "Subscription Infrastructure: Counting down the latch");
+                reconnectCountdownLatch.countDown();
+            }
+            if (reconnectThread != null && Thread.State.TERMINATED != reconnectThread.getState()) {
+                Log.v(TAG, "Subscription Infrastructure: Interrupting the thread.");
+                reconnectThread.interrupt();
+            }
+        }
+    }
+
+    public void reportConnectionError() {
+        synchronized (reconnectionLock) {
+            if (!reconnectionInProgress) {
+                return;
+            }
+            Log.v(TAG, "Subscription Infrastructure: Connection Error reported!");
+
+            if ( reconnectCountdownLatch != null ) {
+                Log.v(TAG, "Subscription Infrastructure: Counting down the latch");
+                reconnectCountdownLatch.countDown();
+            }
+        }
+    }
+
+    public void reportNetworkUp() {
+        synchronized (reconnectionLock) {
+            if (!reconnectionInProgress) {
+                return;
+            }
+            if (reconnectThread != null && Thread.State.TERMINATED != reconnectThread.getState()) {
+                Log.v(TAG, "Subscription Infrastructure: Network is up. Interrupting the thread for immediate reconnect.");
+                reconnectThread.interrupt();
+            }
+        }
     }
 }

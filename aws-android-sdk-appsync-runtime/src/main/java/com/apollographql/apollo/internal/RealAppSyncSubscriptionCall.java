@@ -26,6 +26,8 @@ import com.apollographql.apollo.exception.ApolloCanceledException;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -115,10 +117,33 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
             @Override
             public void onFailure(@Nonnull ApolloException e) {
                 subscriptionSemaphore.release();
+                reportFailureToSubscriptionManager();
                 callback.onFailure(e);
             }
         });
     }
+
+    void  reportFailureToSubscriptionManager () {
+        logger.d("Trying to report failure to Subscription Manager");
+        System.out.println("Trying to report failure to Subscription Manager");
+        try {
+            //Use Reflection to call reportConnectionError on RealSubscriptionManager
+            Method method = subscriptionManager.getClass().getDeclaredMethod("reportConnectionError");
+            method.invoke(subscriptionManager);
+        }
+        catch (NoSuchMethodException noe ){
+            logger.d("Exception [" + noe + "] trying to call reportConnectionError in subscriptionManager");
+            System.out.println("Exception [" + noe + "] trying to call reportConnectionError in subscriptionManager");
+
+        }
+        catch (InvocationTargetException ite) {
+            System.out.println("Exception [" + ite + "] trying to call reportConnectionError in subscriptionManager");
+        }
+        catch (IllegalAccessException iae) {
+            System.out.println("Exception [" + iae + "] trying to call reportConnectionError in subscriptionManager");
+        }
+    }
+
 
     @Override
     public void cancel() {
