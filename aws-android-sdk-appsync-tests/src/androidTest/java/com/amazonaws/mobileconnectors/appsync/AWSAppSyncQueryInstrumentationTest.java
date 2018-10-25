@@ -614,7 +614,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
-    @Test
+
     public void testSyncOnlyBaseQuery() {
         final CountDownLatch syncLatch = new CountDownLatch(1);
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();

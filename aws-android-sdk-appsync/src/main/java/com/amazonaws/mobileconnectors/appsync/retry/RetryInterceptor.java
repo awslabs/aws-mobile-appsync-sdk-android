@@ -45,8 +45,14 @@ public class RetryInterceptor implements Interceptor {
         do {
             sleep(waitMillis);
             //Send the request on to the next link in the chain of processors
-            response = chain.proceed(chain.request());
-
+            try {
+                response = chain.proceed(chain.request());
+            }
+            catch (IOException ioe) {
+                //Log Exception and propagate it back
+                Log.w(TAG,"Encountered IO Exception making HTTP call [" + ioe + "]");
+                throw ioe;
+            }
             //Exit function if response was successful
             if (response.isSuccessful()) {
                 Log.i(TAG, "Returning network response: success");

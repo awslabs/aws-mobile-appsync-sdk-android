@@ -20,7 +20,6 @@ import com.amazonaws.demo.posts.type.DeletePostInput;
 import com.amazonaws.demo.posts.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
-import com.amazonaws.mobileconnectors.appsync.subscription.AppSyncSubscription;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
@@ -62,21 +61,21 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
     private AppSyncSubscriptionCall onDeletePostSubscriptionWatcher;
 
     private static final String TAG = PostsAdapter.class.getSimpleName();
-    private Query baseQuery = null;
+    private Query listPostsQuery = null;
 
     public PostsAdapter(final PostsActivity display) {
         this.display = display;
-        mPostIDs = new ArrayList<String>();
 
+        mPostIDs = new ArrayList<String>();
         allPosts = new HashMap<String, ListPostsQuery.Item>();
 
         //Create the client
         final AWSAppSyncClient client = ClientFactory.getInstance(display.getApplicationContext());
 
 
-        //Base Query
-        baseQuery = ListPostsQuery.builder().build();
-        GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<ListPostsQuery.Data>() {
+        //Setup the List Posts Query
+        listPostsQuery = ListPostsQuery.builder().build();
+        GraphQLCall.Callback listPostsQueryCallback = new GraphQLCall.Callback<ListPostsQuery.Data>() {
             @Override
             public void onResponse(@Nonnull final Response<ListPostsQuery.Data> response) {
                 if (response == null  || response.data() == null || response.data().listPosts() == null || response.data().listPosts().items() == null ) {
@@ -99,7 +98,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                        notifyDataSetChanged();
                    }
                });
-
             }
 
             @Override
@@ -147,10 +145,10 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         };
 
 
-        //Delta  Query
-        Query deltaQuery = SyncPostsQuery.builder().lastSync("0").build();
+        //Setup the Delta Query to get posts incrementally
+        Query syncPostsQuery = SyncPostsQuery.builder().lastSync("0").build();
 
-        GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<SyncPostsQuery.Data>() {
+        GraphQLCall.Callback syncPostsQueryCallback = new GraphQLCall.Callback<SyncPostsQuery.Data>() {
             @Override
             public void onResponse(@Nonnull final Response<SyncPostsQuery.Data> response) {
                 if (response == null  || response.data() == null || response.data().syncPosts() == null ) {
@@ -165,8 +163,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                     public void run() {
                         for (SyncPostsQuery.SyncPost p: response.data().syncPosts() ) {
                             if ( "DELETE".equalsIgnoreCase(p.aws_ds())) {
-                                allPosts.remove(p.id());
                                 mPostIDs.remove(p.id());
+                                allPosts.remove(p.id());
                                 continue;
                             }
 
@@ -187,13 +185,19 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             }
         };
 
-        client.sync(baseQuery, baseQueryCallback, onCreatePostSubscription, onCreatePostCallback, deltaQuery, deltaQueryCallback, 20 * 60 );
+        client.sync(listPostsQuery, listPostsQueryCallback, onCreatePostSubscription, onCreatePostCallback, syncPostsQuery, syncPostsQueryCallback, 20 * 60 );
 
-        //Setup Update Post Subscription
-        setupUpdatePostSubscription();
+        //Setup the Update and Delete Post Subscriptions in a background thread
+        new Thread( new Runnable() {
+            @Override
+            public void run() {
+                //Setup Update Post Subscription
+                setupUpdatePostSubscription();
 
-        //Setup Delete Post Subscription
-        setupDeletePostSubscription();
+                //Setup Delete Post Subscription
+                setupDeletePostSubscription();
+            }
+        }).start();
     }
 
     private void setupUpdatePostSubscription() {
@@ -293,11 +297,15 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
-        if ( allPosts.size() < position ) {
+        if ( mPostIDs.size() < position ) {
             return;
         }
 
         final ListPostsQuery.Item  item  = allPosts.get(mPostIDs.get(position));
+        if (item == null ) {
+            return;
+        }
+
         holder.mTitleView.setText(item.title());
         holder.mAuthorView.setText(item.author());
         holder.mContentView.setText(item.content());
@@ -342,7 +350,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                     @Override
                     public void run() {
                         Toast.makeText(display, "Deleted!", Toast.LENGTH_SHORT).show();
-                        markPostAsDeleteInDeltaTable(ClientFactory.getInstance(display.getApplicationContext()), p);
+                        markPostAsDeletedInDeltaTable(ClientFactory.getInstance(display.getApplicationContext()), p);
                     }
                 });
             }
@@ -363,8 +371,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         display.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                allPosts.remove(p.id());
                 mPostIDs.remove(position);
+                allPosts.remove(p.id());
                 updateListPostsQueryCache();
                 notifyDataSetChanged();
             }
@@ -476,7 +484,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
     @Override
     public int getItemCount() {
-        return allPosts.size();
+        return mPostIDs.size();
     }
 
     private void updateDeltaPost(AWSAppSyncClient client, Response <UpdatePostMutation.Data> response ) {
@@ -508,9 +516,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
     }
 
-    private void markPostAsDeleteInDeltaTable(AWSAppSyncClient client, ListPostsQuery.Item p) {
+    private void markPostAsDeletedInDeltaTable(AWSAppSyncClient client, ListPostsQuery.Item p) {
         DeltaPostMutation.Data expected = new DeltaPostMutation.Data(null);
-        String awsDS = "";
 
         DeltaPostMutation deltaPostMutation = DeltaPostMutation.builder()
                 .id(p.id())
@@ -541,6 +548,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         List<ListPostsQuery.Item> items = new ArrayList<>();
         items.addAll(allPosts.values());
         ListPostsQuery.Data data  = new ListPostsQuery.Data( new ListPostsQuery.ListPosts("PostConnection",items, null));
-        ClientFactory.getInstance(display.getApplicationContext()).getStore().write(baseQuery, data).enqueue(null);
+        ClientFactory.getInstance(display.getApplicationContext()).getStore().write(listPostsQuery, data).enqueue(null);
     }
 }

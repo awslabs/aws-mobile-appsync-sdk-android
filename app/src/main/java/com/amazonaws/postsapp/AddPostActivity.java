@@ -95,6 +95,7 @@ public class AddPostActivity extends AppCompatActivity {
                             public void run() {
                                 Toast.makeText(display, "Added!", Toast.LENGTH_SHORT).show();
                                 createDeltaEntry(client, response);
+                                display.finish();
                             }
                         });
                     }
@@ -105,6 +106,7 @@ public class AddPostActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 Toast.makeText(display, "Failed to add post!", Toast.LENGTH_SHORT).show();
+                                display.finish();
                             }
                         });
                         Log.d(TAG, "Post add failed with [" + e.getLocalizedMessage() + "]");
