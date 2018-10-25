@@ -75,5 +75,6 @@ query SyncPosts($lastSync: String!) {
     ups
     downs
     version
+    aws_ds
   }
 }

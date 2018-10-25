@@ -20,10 +20,10 @@ import com.apollographql.apollo.exception.ApolloException;
 import javax.annotation.Nonnull;
 
 public class UpdatePostActivity extends AppCompatActivity {
-    private static PostsAdapter.PostObject sPost;
+    private static ListPostsQuery.Item sPost;
     private static int sPosition;
 
-    public static void startActivity(Context context, PostsAdapter.PostObject post, int position) {
+    public static void startActivity(Context context, ListPostsQuery.Item post, int position) {
         Intent updatePostIntent = new Intent(context, UpdatePostActivity.class);
         sPost = post;
         sPosition = position;
@@ -35,10 +35,10 @@ public class UpdatePostActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_update_post);
 
-        ((EditText) findViewById(R.id.updateTitle)).setText(sPost.title);
-        ((EditText) findViewById(R.id.updateAuthor)).setText(sPost.author);
-        ((EditText) findViewById(R.id.updateUrl)).setText(sPost.url);
-        ((EditText) findViewById(R.id.updateContent)).setText(sPost.content);
+        ((EditText) findViewById(R.id.updateTitle)).setText(sPost.title());
+        ((EditText) findViewById(R.id.updateAuthor)).setText(sPost.author());
+        ((EditText) findViewById(R.id.updateUrl)).setText(sPost.url());
+        ((EditText) findViewById(R.id.updateContent)).setText(sPost.content());
     }
 
     @Override
@@ -62,10 +62,7 @@ public class UpdatePostActivity extends AppCompatActivity {
 
     private void save() {
         // TODO: Here for update post mutation
-
     }
-
     // TODO: Here for update post callback
-
 
 }

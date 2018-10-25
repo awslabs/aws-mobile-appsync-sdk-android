@@ -126,6 +126,8 @@ public class AddPostActivity extends AppCompatActivity {
                 .downs(response.data().createPost().downs())
                 .content(response.data().createPost().content())
                 .version(response.data().createPost().version())
+                .url(response.data().createPost().url())
+                .aws_ds("PUT")
                 .build();
 
         client.mutate(deltaPostMutation, expected)

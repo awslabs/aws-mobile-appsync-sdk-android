@@ -42,6 +42,14 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:text="Downs"/>
+        <TextView
+            android:id="@+id/deletePost"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:textAlignment="center"
+            android:text="Delete"
+            />
     </LinearLayout>
 
     <View

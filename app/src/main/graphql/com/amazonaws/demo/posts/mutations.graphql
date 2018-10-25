@@ -69,6 +69,7 @@ mutation DeltaPost(
   $ups: Int
   $downs: Int
   $version: Int
+  $aws_ds: String
 ) {
   deltaPost(
     id: $id
@@ -79,6 +80,7 @@ mutation DeltaPost(
     ups: $ups
     downs: $downs
     version: $version
+    aws_ds: $aws_ds
   ) {
     id
     author
@@ -88,5 +90,6 @@ mutation DeltaPost(
     ups
     downs
     version
+    aws_ds
   }
 }
