@@ -65,7 +65,7 @@ query ListArticles(
     nextToken
   }
 }
-query SyncPosts($lastSync: String!) {
+query SyncPosts($lastSync: AWSTimestamp!) {
   syncPosts(lastSync: $lastSync) {
     id
     author

@@ -195,7 +195,7 @@
                                         "name": null,
                                         "ofType": {
                                             "kind": "SCALAR",
-                                            "name": "String",
+                                            "name": "AWSTimestamp",
                                             "ofType": null
                                         }
                                     },
@@ -1003,6 +1003,16 @@
                             "defaultValue": null
                         }
                     ],
+                    "interfaces": null,
+                    "enumValues": null,
+                    "possibleTypes": null
+                },
+                {
+                    "kind": "SCALAR",
+                    "name": "AWSTimestamp",
+                    "description": "The `AWSTimestamp` scalar type provided by AWS AppSync, represents the number of seconds that have elapsed since `1970-01-01T00:00Z`. Negative values are also accepted and these represent the number of seconds till `1970-01-01T00:00Z`.  Timestamps are serialized and deserialized as integers. The minimum supported timestamp value is **`-31557014167219200`** which corresponds to `-1000000000-01-01T00:00Z`. The maximum supported timestamp value is **`31556889864403199`** which corresponds to `1000000000-12-31T23:59:59.999999999Z`.",
+                    "fields": null,
+                    "inputFields": null,
                     "interfaces": null,
                     "enumValues": null,
                     "possibleTypes": null
@@ -1986,6 +1996,47 @@
                 },
                 {
                     "kind": "INPUT_OBJECT",
+                    "name": "TableBooleanFilterInput",
+                    "description": null,
+                    "fields": null,
+                    "inputFields": [
+                        {
+                            "name": "ne",
+                            "description": null,
+                            "type": {
+                                "kind": "SCALAR",
+                                "name": "Boolean",
+                                "ofType": null
+                            },
+                            "defaultValue": null
+                        },
+                        {
+                            "name": "eq",
+                            "description": null,
+                            "type": {
+                                "kind": "SCALAR",
+                                "name": "Boolean",
+                                "ofType": null
+                            },
+                            "defaultValue": null
+                        }
+                    ],
+                    "interfaces": null,
+                    "enumValues": null,
+                    "possibleTypes": null
+                },
+                {
+                    "kind": "SCALAR",
+                    "name": "Boolean",
+                    "description": "Built-in Boolean",
+                    "fields": null,
+                    "inputFields": null,
+                    "interfaces": null,
+                    "enumValues": null,
+                    "possibleTypes": null
+                },
+                {
+                    "kind": "INPUT_OBJECT",
                     "name": "TableFloatFilterInput",
                     "description": null,
                     "fields": null,
@@ -2093,47 +2144,6 @@
                     "kind": "SCALAR",
                     "name": "Float",
                     "description": "Built-in Float",
-                    "fields": null,
-                    "inputFields": null,
-                    "interfaces": null,
-                    "enumValues": null,
-                    "possibleTypes": null
-                },
-                {
-                    "kind": "INPUT_OBJECT",
-                    "name": "TableBooleanFilterInput",
-                    "description": null,
-                    "fields": null,
-                    "inputFields": [
-                        {
-                            "name": "ne",
-                            "description": null,
-                            "type": {
-                                "kind": "SCALAR",
-                                "name": "Boolean",
-                                "ofType": null
-                            },
-                            "defaultValue": null
-                        },
-                        {
-                            "name": "eq",
-                            "description": null,
-                            "type": {
-                                "kind": "SCALAR",
-                                "name": "Boolean",
-                                "ofType": null
-                            },
-                            "defaultValue": null
-                        }
-                    ],
-                    "interfaces": null,
-                    "enumValues": null,
-                    "possibleTypes": null
-                },
-                {
-                    "kind": "SCALAR",
-                    "name": "Boolean",
-                    "description": "Built-in Boolean",
                     "fields": null,
                     "inputFields": null,
                     "interfaces": null,
@@ -3022,32 +3032,6 @@
                     "onField": true
                 },
                 {
-                    "name": "aws_publish",
-                    "description": "Tells the service which subscriptions will be published to when this mutation is called. This directive is deprecated use @aws_susbscribe directive instead.",
-                    "locations": [
-                        "FIELD_DEFINITION"
-                    ],
-                    "args": [
-                        {
-                            "name": "subscriptions",
-                            "description": "List of subscriptions which will be published to when this mutation is called.",
-                            "type": {
-                                "kind": "LIST",
-                                "name": null,
-                                "ofType": {
-                                    "kind": "SCALAR",
-                                    "name": "String",
-                                    "ofType": null
-                                }
-                            },
-                            "defaultValue": null
-                        }
-                    ],
-                    "onOperation": false,
-                    "onFragment": false,
-                    "onField": false
-                },
-                {
                     "name": "deprecated",
                     "description": null,
                     "locations": [
@@ -3106,6 +3090,32 @@
                         {
                             "name": "cognito_groups",
                             "description": "List of cognito user pool groups which have access on this field",
+                            "type": {
+                                "kind": "LIST",
+                                "name": null,
+                                "ofType": {
+                                    "kind": "SCALAR",
+                                    "name": "String",
+                                    "ofType": null
+                                }
+                            },
+                            "defaultValue": null
+                        }
+                    ],
+                    "onOperation": false,
+                    "onFragment": false,
+                    "onField": false
+                },
+                {
+                    "name": "aws_publish",
+                    "description": "Tells the service which subscriptions will be published to when this mutation is called. This directive is deprecated use @aws_susbscribe directive instead.",
+                    "locations": [
+                        "FIELD_DEFINITION"
+                    ],
+                    "args": [
+                        {
+                            "name": "subscriptions",
+                            "description": "List of subscriptions which will be published to when this mutation is called.",
                             "type": {
                                 "kind": "LIST",
                                 "name": null,

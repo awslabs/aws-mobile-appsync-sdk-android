@@ -146,7 +146,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
 
         //Setup the Delta Query to get posts incrementally
-        Query syncPostsQuery = SyncPostsQuery.builder().lastSync("0").build();
+        Query syncPostsQuery = SyncPostsQuery.builder().lastSync(0).build();
 
         GraphQLCall.Callback syncPostsQueryCallback = new GraphQLCall.Callback<SyncPostsQuery.Data>() {
             @Override

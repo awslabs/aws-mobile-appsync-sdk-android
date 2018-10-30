@@ -532,6 +532,20 @@ public class AWSAppSyncClient {
         return mS3ObjectManager;
     }
 
+    /**
+     * Provides the ability to sync using a baseQuery, deltaQuery, subscription, and a refresh interval
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param subscription subscription to get changes on the fly
+     * @param subscriptionCallback callback to handle the subscription messages
+     * @param deltaQuery the catchup query
+     * @param deltaQueryCallback callback to handle the deltaQuery results
+     * @param baseRefreshIntervalInSeconds time duration (specified in seconds) when the base query will be re-run to get an updated baseline state.
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a syncId that can be used later to cancel the sync operation.
+     */
     public <D extends Query.Data, T, V extends Query.Variables> Long sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
@@ -540,7 +554,6 @@ public class AWSAppSyncClient {
             Query<D,T,V> deltaQuery,
             GraphQLCall.Callback<Query.Data> deltaQueryCallback,
             long baseRefreshIntervalInSeconds) {
-        Log.d(TAG,"Context is [" + applicationContext + "]");
         AWSAppSyncDeltaSync helper = new AWSAppSyncDeltaSync(baseQuery,this, applicationContext);
 
         helper.setBaseQueryCallback(baseQueryCallback);
@@ -562,7 +575,72 @@ public class AWSAppSyncClient {
         return helper.execute(false);
     }
 
+    /**
+     * Provides the ability to sync using a baseQuery and a refresh interval
+     *
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param baseRefreshIntervalInSeconds time duration (specified in seconds) when the base query will be re-run to get an updated baseline state.
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a syncId that can be used later to cancel the sync operation.
+     */
+
+    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            long baseRefreshIntervalInSeconds) {
+
+        return this.sync(baseQuery, baseQueryCallback,null, null,null, null, baseRefreshIntervalInSeconds);
+    }
+
+
+    /**
+     * Provides the ability to sync using a baseQuery, deltaQuery, and a refresh interval
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param deltaQuery the catchup query
+     * @param deltaQueryCallback callback to handle the deltaQuery results
+     * @param baseRefreshIntervalInSeconds time duration (specified in seconds) when the base query will be re-run to get an updated baseline state.
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a syncId that can be used later to cancel the sync operation.
+     */
+    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            Query<D,T,V> deltaQuery,
+            GraphQLCall.Callback<Query.Data> deltaQueryCallback,
+            long baseRefreshIntervalInSeconds) {
+        return this.sync(baseQuery, baseQueryCallback, null, null, deltaQuery, deltaQueryCallback, baseRefreshIntervalInSeconds);
+    }
+
+
+    /**
+     * Provides the ability to sync using a baseQuery and Subscription
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param subscription subscription to get changes on the fly
+     * @param subscriptionCallback callback to handle the subscription messages
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a syncId that can be used later to cancel the sync operation.
+     */
+    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            Subscription<D,T,V> subscription,
+            AppSyncSubscriptionCall.Callback subscriptionCallback
+            ) {
+        return this.sync(baseQuery, baseQueryCallback, subscription, subscriptionCallback, null, null, 0 );
+    }
+
     public void cancelSync(Long id) {
         AWSAppSyncDeltaSync.cancel(id);
     }
+
+
 }

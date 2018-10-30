@@ -338,7 +338,7 @@ class AWSAppSyncDeltaSync {
     private void scheduleFutureSync( long offset) {
         //Calculate the offset
         if (baseRefreshIntervalInSeconds <= 0 ) {
-            Log.i(TAG, "Delta Sync: Invalid value for baseRefreshIntervalInSeconds[" + baseRefreshIntervalInSeconds + "]. Must be greater than 0");
+            Log.i(TAG, "Delta Sync: baseRefreshIntervalInSeconds value is [" + baseRefreshIntervalInSeconds + "]. Will not schedule future Deltasync");
             return;
         }
         if (nextRun != null ) {
@@ -367,7 +367,7 @@ class AWSAppSyncDeltaSync {
             Operation.Variables v = aq.variables();
             Field f = v.getClass().getDeclaredField("lastSync");
             f.setAccessible(true);
-            f.set(v,""+ lastRunTimeInMilliSeconds);
+            f.set(v,lastRunTimeInMilliSeconds);
             Log.v(TAG, "Delta Sync: set lastSync in DeltaQuery to [" + lastRunTimeInMilliSeconds + "]");
 
         } catch (NoSuchFieldException e) {
