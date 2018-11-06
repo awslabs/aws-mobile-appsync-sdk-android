@@ -41,6 +41,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -78,6 +79,7 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
     Operation currentMutation;
     String clientState;
     String recordIdentifier;
+    private static final String TAG = InterceptorCallback.class.getSimpleName();
 
     public InterceptorCallback(ApolloInterceptor.CallBack customerCallBack, Handler handler,
                                final Operation originalMutation,
@@ -95,29 +97,33 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
     @Override
     public void onResponse(@Nonnull ApolloInterceptor.InterceptorResponse response) {
-        Log.d("AppSync", "onResponse()");
+        Log.d(TAG, "onResponse()");
         //The conditional request failed
-        if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().errors().size() >= 1)) {
-            Log.d("AppSync", "onResponse -- found error");
-            if ( response.parsedResponse.get().errors().get(0).toString().contains("The conditional request failed")) {
-                Log.d("AppSync", "onResponse -- string match");
+        if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().hasErrors())) {
+            Log.d(TAG, "onResponse -- found error");
+            if ( response.parsedResponse.get().errors().get(0).toString().contains("The conditional request failed") ) {
+                Log.d(TAG, "onResponse -- Got a string match in the errors for \"The conditional request failed\".");
                 // if !shouldRetry AND conflict detected
                 if (shouldRetry) {
-                    String conflictString = new JSONObject((Map)((Error) response.parsedResponse.get().errors().get(0)).customAttributes().get("data")).toString();
-                    Log.d("AppSync", "Conflict String: " + conflictString);
-                    Log.d("AppSync", "Client String: " + clientState);
-                    Message message = new Message();
-                    MutationInterceptorMessage msg = new MutationInterceptorMessage(originalMutation, currentMutation);
-                    msg.serverState = conflictString;
-                    msg.clientState = clientState;
-                    msg.requestIdentifier = recordIdentifier;
-                    msg.requestClassName = currentMutation.getClass().getSimpleName();
-                    //msg.requestIdentifier = originalMutation.un
-                    message.obj = msg;
-                    message.what = MessageNumberUtil.RETRY_EXEC;
-                    handler.sendMessage(message);
-                    shouldRetry = false;
-                    return;
+                    Map data = (Map)((Error) response.parsedResponse.get().errors().get(0)).customAttributes().get("data");
+                    //Verify that data was passed as per the contract from the server for mutation conflicts.
+                    if (data != null ) {
+                        String conflictString = new JSONObject(data).toString();
+                        Log.d(TAG, "Conflict String: " + conflictString);
+                        Log.d(TAG, "Client String: " + clientState);
+                        Message message = new Message();
+                        MutationInterceptorMessage msg = new MutationInterceptorMessage(originalMutation, currentMutation);
+                        msg.serverState = conflictString;
+                        msg.clientState = clientState;
+                        msg.requestIdentifier = recordIdentifier;
+                        msg.requestClassName = currentMutation.getClass().getSimpleName();
+                        //msg.requestIdentifier = originalMutation.un
+                        message.obj = msg;
+                        message.what = MessageNumberUtil.RETRY_EXEC;
+                        handler.sendMessage(message);
+                        shouldRetry = false;
+                        return;
+                    }
                 }
             }
         }

@@ -182,7 +182,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                     for (String topic : info.topics) {
                         if (topicSet.contains(topic)) {
                             Log.d(TAG, String.format("Connecting to topic:[%s]", topic));
-                            client.subscribe(topic, 0, mainMessageCallback);
+                            client.subscribe(topic, 1, mainMessageCallback);
                         }
                     }
                     newClients.add(client);
