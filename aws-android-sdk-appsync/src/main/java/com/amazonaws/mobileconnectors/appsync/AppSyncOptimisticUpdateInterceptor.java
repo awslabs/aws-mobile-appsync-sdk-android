@@ -33,13 +33,12 @@ import javax.annotation.Nonnull;
  */
 
 class AppSyncOptimisticUpdateInterceptor implements ApolloInterceptor {
-
+    private static final String TAG = AppSyncOptimisticUpdateInterceptor.class.getSimpleName();
     private ApolloStore store;
 
     public void setStore(ApolloStore store) {
         this.store = store;
     }
-
 
     @Override
     public void interceptAsync(@Nonnull final InterceptorRequest request,
@@ -52,15 +51,14 @@ class AppSyncOptimisticUpdateInterceptor implements ApolloInterceptor {
                     @Override
                     public void run() {
                         try {
-                            Log.d("AppSync", "Starting to do optimistic update!");
+                            Log.d(TAG, "Starting to do optimistic update!");
                             store.write(request.operation, data).execute();
                         } catch (Exception e) {
-                            Log.e("AppSync", "failed to write operation optimistic updates, for: " + request.operation);
+                            Log.e(TAG, "failed to write operation optimistic updates, for: " + request.operation);
                         }
                     }
                 });
         }
-
         chain.proceedAsync(request, dispatcher, callBack);
     }
 

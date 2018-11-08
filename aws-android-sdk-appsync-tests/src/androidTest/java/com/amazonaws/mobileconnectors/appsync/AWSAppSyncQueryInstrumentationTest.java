@@ -42,6 +42,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
+import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
@@ -58,6 +59,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -708,6 +710,25 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNull(getPostQueryResponse.data().getPost());
     }
 
+    @Test
+    public void testUpdateWithInvalidID() {
+
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
+        //Try to update a Post with a Fake ID
+        final String updatedContent = "New content coming up @" + System.currentTimeMillis();
+        final String randomID = UUID.randomUUID().toString();
+        updatePost(awsAppSyncClient, randomID, updatedContent);
+        assertNotNull(updatePostMutationResponse);
+        assertNull(updatePostMutationResponse.data().updatePost());
+        assertNotNull(updatePostMutationResponse.errors());
+        Error error = updatePostMutationResponse.errors().get(0);
+        assertNotNull(error);
+        assertNotNull(error.message());
+        assertTrue(error.message().contains("Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ConditionalCheckFailedException;"));
+
+    }
 
     private void queryPosts(AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher) {
 
@@ -1023,10 +1044,10 @@ public class AWSAppSyncQueryInstrumentationTest {
 
                 UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
                         "Post",
+                        postID,
                         "",
                         "",
-                        "",
-                        "",
+                        content,
                         "",
                          0
                 ));
@@ -1054,6 +1075,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
                             @Override
                             public void onFailure(@Nonnull final ApolloException e) {
+                                Log.d(TAG, "On error called");
                                 e.printStackTrace();
                                 //Set to null to indicate failure
                                 updatePostMutationResponse = null;

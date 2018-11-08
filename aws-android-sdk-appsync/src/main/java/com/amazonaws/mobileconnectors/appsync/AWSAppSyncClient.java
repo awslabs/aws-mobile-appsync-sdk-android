@@ -144,6 +144,7 @@ public class AWSAppSyncClient {
             okHttpClientBuilder = builder.mOkHttpClient.newBuilder();
         }
 
+        //Create the OK HTTP Client and add our Retry and Signer Interceptors to it.
         OkHttpClient okHttpClient = okHttpClientBuilder
                 .addInterceptor(new RetryInterceptor())
                 .addInterceptor(appSyncSigV4SignerInterceptor)

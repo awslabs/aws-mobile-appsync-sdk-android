@@ -1,5 +1,12 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.6.27](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.27)
+
+### Bug Fixes
+* Fixed bug in subscribe call that was setting the QoS to be 0. It is now correctly set to QoS 1. See [issue #54](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/54)
+* Fixed bug that was causing a ConcurrentModificationException in the logic to handle connection loss. See [PR #41](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/41) and [issue #53](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/53)
+* Fixed null pointer exception in the AppSyncOfflineMutationInterceptor. See [issue #51](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/51)
+
 ## [Release 2.6.26](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.26)
 
 ### New Features
