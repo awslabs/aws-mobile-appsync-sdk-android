@@ -9,7 +9,7 @@ The AWS AppSync SDK for Android enables you to access your AWS AppSync backend a
 
 1. A sample app using the events sample schema can be found here: https://github.com/aws-samples/aws-mobile-appsync-events-starter-android
 
-2. A step by step walkthrough of a posts app can be found here: https://docs.aws.amazon.com/appsync/latest/devguide/building-a-client-app-android.html
+Step by step documentation can be found here: https://aws-amplify.github.io/docs/android/api
 
 ## Setup
 
