@@ -297,8 +297,9 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, final int position) {
-        if ( mPostIDs.size() < position ) {
+    public void onBindViewHolder(final ViewHolder holder, int position) {
+        final int iPosition = position;
+        if ( mPostIDs.size() < iPosition ) {
             return;
         }
 
@@ -317,14 +318,14 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             @Override
             public void onClick(View view) {
                 Toast.makeText(display, "Sending up vote", Toast.LENGTH_SHORT).show();
-                upVotePost(view, position, item);
+                upVotePost(view, iPosition, item);
             }
         });
         holder.mDownsView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Toast.makeText(display, "Sending down vote", Toast.LENGTH_SHORT).show();
-                downVotePost(view, position, item);
+                downVotePost(view, iPosition, item);
             }
         });
 
@@ -332,7 +333,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             @Override
             public void onClick(View view) {
                 Toast.makeText(display, "Deleting post", Toast.LENGTH_SHORT).show();
-                deletePost(view, position, item);
+                deletePost(view, iPosition, item);
             }
         });
     }
