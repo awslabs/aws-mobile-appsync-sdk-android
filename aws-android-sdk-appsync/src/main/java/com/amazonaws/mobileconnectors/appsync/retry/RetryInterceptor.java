@@ -31,6 +31,7 @@ import okhttp3.Response;
  */
 public class RetryInterceptor implements Interceptor {
     private static final String TAG = RetryInterceptor.class.getSimpleName();
+    private static final int MAX_RETRY_COUNT = 12;
     private static final int BASE_RETRY_WAIT_MILLIS = 100;
     private static final int MAX_RETRY_WAIT_MILLIS = 300 * 1000; //Five Minutes
     private static final int JITTER = 100;
@@ -77,7 +78,7 @@ public class RetryInterceptor implements Interceptor {
             //Compute backoff and sleep if error is retriable
             if ((response.code() >= 500 && response.code() < 600)
                     || response.code() == 429 ) {
-                waitMillis = (int) (Math.pow(2, retryCount) * BASE_RETRY_WAIT_MILLIS + (Math.random() * JITTER));
+                waitMillis = calculateBackoff(retryCount);
                 continue;
             }
 
@@ -100,6 +101,13 @@ public class RetryInterceptor implements Interceptor {
         } catch (InterruptedException e) {
             Log.e(TAG, "Retry **wait** interrupted.");
         }
+    }
+
+    public static int calculateBackoff(int retryCount) {
+        if ( retryCount >= MAX_RETRY_COUNT ) {
+            return MAX_RETRY_WAIT_MILLIS;
+        }
+        return (int) Math.min((Math.pow(2, retryCount) * BASE_RETRY_WAIT_MILLIS + (Math.random() * JITTER)), MAX_RETRY_WAIT_MILLIS);
     }
 }
 

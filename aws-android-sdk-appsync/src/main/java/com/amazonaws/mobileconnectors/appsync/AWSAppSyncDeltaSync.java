@@ -21,6 +21,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
@@ -98,12 +99,13 @@ class AWSAppSyncDeltaSync {
 
     //Scheduled Sync
     private ScheduledExecutorService scheduledExecutorService;
-    private ScheduledFuture nextRun = null;
+    private ScheduledFuture nextScheduledRun = null;
 
     //Exponential backoff
-    long exponentialBackoff = 0;
+    int retryAttempt = 0;
+    private ScheduledFuture nextRetryAttempt = null;
 
-    private AppSyncSubscriptionCall.Callback scb;
+    private AppSyncSubscriptionCall.Callback scb = null;
 
     //Construtor
      <D extends Query.Data, T, V extends Query.Variables> AWSAppSyncDeltaSync(
@@ -184,6 +186,11 @@ class AWSAppSyncDeltaSync {
         //Initialize the Delta Sync Machinery if required.
         initializeIfRequired();
 
+        if (cancelled) {
+            Log.v(TAG, "Delta Sync: Cancelled. Quitting Delta Sync process for id [" + id + "]");
+            return id;
+        }
+
         this.deltaSyncOperationFailed = false;
         new Thread( new Runnable() {
             @Override
@@ -194,6 +201,7 @@ class AWSAppSyncDeltaSync {
                 //Run base query from the cache
                 runBaseQuery(AppSyncResponseFetchers.CACHE_ONLY);
                 if (deltaSyncOperationFailed ) {
+                    scheduleRetry();
                     return;
                 }
 
@@ -202,6 +210,7 @@ class AWSAppSyncDeltaSync {
                     mode = QUEUING_MODE;
                     subscribe();
                     if (deltaSyncOperationFailed) {
+                        scheduleRetry();
                         return;
                     }
                 }
@@ -231,6 +240,11 @@ class AWSAppSyncDeltaSync {
                     runDeltaQuery();
                 }
 
+                if (deltaSyncOperationFailed) {
+                    scheduleRetry();
+                    return;
+                }
+
                 //Propagate all messages received so far and put subscription in processing mode
                 synchronized (processingLock) {
                     Log.v(TAG, "Delta Sync: Delta query completed. Will propagate any queued messages on subscription");
@@ -244,6 +258,8 @@ class AWSAppSyncDeltaSync {
                     Log.d(TAG, "Delta Sync: All queued messages propagated. Flipping mode to PROCESSING");
                     mode = PROCESSING_MODE;
                 }
+
+                retryAttempt = 0;
             }
         }).start();
 
@@ -255,6 +271,14 @@ class AWSAppSyncDeltaSync {
         cancelled = true;
         if (deltaSyncSubscriptionWatcher != null ) {
             deltaSyncSubscriptionWatcher.cancel();
+        }
+        if (nextRetryAttempt != null ) {
+            nextRetryAttempt.cancel(true);
+            nextRetryAttempt = null;
+        }
+        if (nextScheduledRun != null ) {
+            nextScheduledRun.cancel(true);
+            nextScheduledRun = null;
         }
         deltaSyncObjects.remove(id);
     }
@@ -278,6 +302,7 @@ class AWSAppSyncDeltaSync {
                 networkUp = true;
                 for (Map.Entry<Long, AWSAppSyncDeltaSync> ds : deltaSyncObjects.entrySet()) {
                     Log.d(TAG, "Delta Sync: Network Up detected. Running DeltaSync for ds object [" + ds.getKey() + "]");
+                    ds.getValue().cancelRetry();
                     ds.getValue().execute(false);
                 }
             }
@@ -310,6 +335,7 @@ class AWSAppSyncDeltaSync {
                     if (networkUp ) {
                         for (Map.Entry<Long, AWSAppSyncDeltaSync> ds : deltaSyncObjects.entrySet()) {
                             Log.d(TAG, "Delta Sync: Foreground transition detected. Running DeltaSync for ds object [" + ds.getKey() + "]");
+                            ds.getValue().cancelRetry();
                             ds.getValue().execute(false);
                         }
                     }
@@ -342,15 +368,15 @@ class AWSAppSyncDeltaSync {
             Log.i(TAG, "Delta Sync: baseRefreshIntervalInSeconds value is [" + baseRefreshIntervalInSeconds + "]. Will not schedule future Deltasync");
             return;
         }
-        if (nextRun != null ) {
-            nextRun.cancel(false);
+        if (nextScheduledRun != null ) {
+            nextScheduledRun.cancel(false);
         }
 
         long runAtTime = (offset - System.currentTimeMillis())/1000 + baseRefreshIntervalInSeconds;
         Log.v(TAG, "Delta Sync: Scheduling next run of the DeltaSync [" + runAtTime + "] seconds from now");
 
         final WeakReference<AWSAppSyncDeltaSync> thisObjectRef = new WeakReference<AWSAppSyncDeltaSync>(this);
-        nextRun = scheduledExecutorService.schedule(new Runnable() {
+        nextScheduledRun = scheduledExecutorService.schedule(new Runnable() {
             @Override
             public void run() {
                 if (thisObjectRef.get() != null ) {
@@ -360,16 +386,47 @@ class AWSAppSyncDeltaSync {
         }, runAtTime, TimeUnit.SECONDS);
     }
 
+    private void scheduleRetry( )
+    {
+        long runAtTime = RetryInterceptor.calculateBackoff(retryAttempt);
+        Log.v(TAG, "Delta Sync: Scheduling retry of the DeltaSync [" + runAtTime + "] milliseconds from now");
+
+        final WeakReference<AWSAppSyncDeltaSync> thisObjectRef = new WeakReference<AWSAppSyncDeltaSync>(this);
+        nextRetryAttempt = scheduledExecutorService.schedule(new Runnable() {
+            @Override
+            public void run() {
+                if (thisObjectRef.get() != null ) {
+                    thisObjectRef.get().execute(false);
+                }
+            }
+        }, runAtTime, TimeUnit.MILLISECONDS);
+
+        //increment RetryAttempt
+        retryAttempt++;
+    }
+
+    void cancelRetry() {
+        // cancel any future retry attempts.
+        // This is to cover the case of a new delta sync being triggered by an event (network event, foreground event or periodic)
+        // while the previous attempt is still kicking around in the retry sequence.
+
+        if (nextRetryAttempt != null ) {
+            nextRetryAttempt.cancel(false);
+            nextRetryAttempt = null;
+        }
+        retryAttempt = 0;
+    }
 
     Query adjust(Query deltaQuery) {
-        Log.v(TAG, "Delta Sync: Attempting to set lastSync in DeltaQuery to [" + lastRunTimeInMilliSeconds + "]");
+        long lastRunTime = lastRunTimeInMilliSeconds/1000;
+        Log.v(TAG, "Delta Sync: Attempting to set lastSync in DeltaQuery to [" + lastRunTime + "]");
         Query aq = deltaQuery;
         try {
             Operation.Variables v = aq.variables();
             Field f = v.getClass().getDeclaredField("lastSync");
             f.setAccessible(true);
-            f.set(v,lastRunTimeInMilliSeconds);
-            Log.v(TAG, "Delta Sync: set lastSync in DeltaQuery to [" + lastRunTimeInMilliSeconds + "]");
+            f.set(v,lastRunTime);
+            Log.v(TAG, "Delta Sync: set lastSync in DeltaQuery to [" + lastRunTime + "]");
 
         } catch (NoSuchFieldException e) {
             Log.v(TAG, "Delta Sync: field 'lastSync' not present in query. Skipping adjustment");
@@ -447,46 +504,48 @@ class AWSAppSyncDeltaSync {
         //Setup an internal callback for the handoff
         Log.v(TAG, "Delta Sync: Setting mode to QUEUING");
 
-        scb = new AppSyncSubscriptionCall.Callback() {
-            @Override
-            public void onResponse(@Nonnull Response response) {
-                Log.d(TAG, "Got a Message. Current mode is " + mode);
-                synchronized (processingLock) {
-                    if (mode == QUEUING_MODE) {
-                        Log.v(TAG, "Delta Sync: Message received while in QUEUING mode. Adding to queue");
-                        messageQueue.add(response);
-                    } else {
-                        Log.v(TAG, "Delta Sync: Message received while in PROCESSING mode.");
-                        lastRunTimeInMilliSeconds = System.currentTimeMillis();
-                        dbHelper.updateLastRunTime(id,lastRunTimeInMilliSeconds);
-                        Log.v(TAG, "Delta Sync: Updating lastRunTime to [" + lastRunTimeInMilliSeconds + "]");
-                        if (subscriptionCallback != null ) {
-                            Log.v(TAG, "Delta Sync: Propagating received message");
-                            subscriptionCallback.onResponse(response);
+        if (scb == null ) {
+            scb = new AppSyncSubscriptionCall.Callback() {
+                @Override
+                public void onResponse(@Nonnull Response response) {
+                    Log.d(TAG, "Got a Message. Current mode is " + mode);
+                    synchronized (processingLock) {
+                        if (mode == QUEUING_MODE) {
+                            Log.v(TAG, "Delta Sync: Message received while in QUEUING mode. Adding to queue");
+                            messageQueue.add(response);
+                        } else {
+                            Log.v(TAG, "Delta Sync: Message received while in PROCESSING mode.");
+                            lastRunTimeInMilliSeconds = System.currentTimeMillis();
+                            dbHelper.updateLastRunTime(id, lastRunTimeInMilliSeconds);
+                            Log.v(TAG, "Delta Sync: Updating lastRunTime to [" + lastRunTimeInMilliSeconds + "]");
+                            if (subscriptionCallback != null) {
+                                Log.v(TAG, "Delta Sync: Propagating received message");
+                                subscriptionCallback.onResponse(response);
+                            }
                         }
                     }
                 }
-            }
 
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Delta Sync: onFailure executed with exception: [" + e.getLocalizedMessage() + "]");
-                //Propagate
-                if (subscriptionCallback != null ) {
-                    Log.v(TAG, "Delta Sync: Propagating onFailure");
-                    subscriptionCallback.onFailure(e);
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Delta Sync: onFailure executed with exception: [" + e.getLocalizedMessage() + "]");
+                    //Propagate
+                    if (subscriptionCallback != null) {
+                        Log.v(TAG, "Delta Sync: Propagating onFailure");
+                        subscriptionCallback.onFailure(e);
+                    }
                 }
-            }
 
-            @Override
-            public void onCompleted() {
-                //Resubscribe if there was an error
-                if (cancelled) {
-                    Log.d(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Expected. Will propagate.");
-                    subscriptionCallback.onCompleted();
+                @Override
+                public void onCompleted() {
+                    //Resubscribe if there was an error
+                    if (cancelled) {
+                        Log.d(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Expected. Will propagate.");
+                        subscriptionCallback.onCompleted();
+                    }
                 }
-            }
-        };
+            };
+        }
 
         Log.d(TAG,"Delta Sync: Setting up Delta Sync Subscription Watcher");
         deltaSyncSubscriptionWatcher = awsAppSyncClient.subscribe(subscription);
@@ -535,6 +594,7 @@ class AWSAppSyncDeltaSync {
         }
         catch(InterruptedException iex) {
             Log.e(TAG, "Delta Sync: Delta Query wait failed with [" + iex + "]");
+            deltaSyncOperationFailed = true;
         }
     }
 
