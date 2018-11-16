@@ -125,7 +125,6 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
 
     void  reportFailureToSubscriptionManager () {
         logger.d("Trying to report failure to Subscription Manager");
-        System.out.println("Trying to report failure to Subscription Manager");
         try {
             //Use Reflection to call reportConnectionError on RealSubscriptionManager
             Method method = subscriptionManager.getClass().getDeclaredMethod("reportConnectionError");
@@ -133,14 +132,12 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
         }
         catch (NoSuchMethodException noe ){
             logger.d("Exception [" + noe + "] trying to call reportConnectionError in subscriptionManager");
-            System.out.println("Exception [" + noe + "] trying to call reportConnectionError in subscriptionManager");
-
         }
         catch (InvocationTargetException ite) {
-            System.out.println("Exception [" + ite + "] trying to call reportConnectionError in subscriptionManager");
+            logger.d("Exception [" + ite + "] trying to call reportConnectionError in subscriptionManager");
         }
         catch (IllegalAccessException iae) {
-            System.out.println("Exception [" + iae + "] trying to call reportConnectionError in subscriptionManager");
+            logger.d("Exception [" + iae + "] trying to call reportConnectionError in subscriptionManager");
         }
     }
 

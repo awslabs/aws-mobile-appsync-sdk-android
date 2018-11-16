@@ -100,6 +100,9 @@ class AWSAppSyncDeltaSync {
     private ScheduledExecutorService scheduledExecutorService;
     private ScheduledFuture nextRun = null;
 
+    //Exponential backoff
+    long exponentialBackoff = 0;
+
     private AppSyncSubscriptionCall.Callback scb;
 
     //Construtor
@@ -178,7 +181,6 @@ class AWSAppSyncDeltaSync {
     }
 
     Long execute(final boolean forceFetch) {
-
         //Initialize the Delta Sync Machinery if required.
         initializeIfRequired();
 
@@ -255,7 +257,6 @@ class AWSAppSyncDeltaSync {
             deltaSyncSubscriptionWatcher.cancel();
         }
         deltaSyncObjects.remove(id);
-        dbHelper.deleteRecord(id);
     }
 
     public static void cancel(Long id) {

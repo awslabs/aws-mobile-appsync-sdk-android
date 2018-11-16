@@ -46,6 +46,7 @@ import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
+import com.apollographql.apollo.internal.util.Cancelable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -614,7 +615,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
-
+    @Test
     public void testSyncOnlyBaseQuery() {
         final CountDownLatch syncLatch = new CountDownLatch(1);
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
@@ -630,12 +631,13 @@ public class AWSAppSyncQueryInstrumentationTest {
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
-
+                allPostsResponse = null;
+                syncLatch.countDown();
             }
         };
 
-        awsAppSyncClient.sync(baseQuery, baseQueryCallback, null, null, null, null, 0);
-
+        Cancelable handle = awsAppSyncClient.sync(baseQuery, baseQueryCallback,0);
+        assertFalse(handle.isCanceled());
         try {
             syncLatch.await();
         } catch (InterruptedException iex) {
@@ -648,9 +650,15 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
         Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
 
+        handle.cancel();
+        assertTrue(handle.isCanceled());
+
+        //This should be a NoOp. Test to make sure.
+        handle.cancel();
+
     }
 
-
+    @Test
     public void testSyncOnlyBaseAndDeltaQuery() {
         final CountDownLatch baseQueryLatch = new CountDownLatch(1);
         final CountDownLatch deltaQueryLatch = new CountDownLatch(1);
@@ -672,11 +680,11 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         };
 
-        final Query deltaQuery = GetPostQuery.builder().id("ce228ceb-c2fc-483e-8c3e-3d33fb8dd61f").build();
-        GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<GetPostQuery.Data>() {
+        final Query deltaQuery = AllPostsQuery.builder().build();
+        GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
             @Override
-            public void onResponse(@Nonnull Response<GetPostQuery.Data> response) {
-                getPostQueryResponse = response;
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                allPostsResponse  =  response;
                 deltaQueryLatch.countDown();
             }
 
@@ -687,8 +695,8 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         };
 
-        awsAppSyncClient.sync(baseQuery, baseQueryCallback,null, null, deltaQuery, deltaQueryCallback, 0);
-
+        Cancelable handle = awsAppSyncClient.sync(baseQuery, baseQueryCallback, deltaQuery, deltaQueryCallback, 5);
+        assertFalse(handle.isCanceled());
         try {
             baseQueryLatch.await(10, TimeUnit.SECONDS);
             deltaQueryLatch.await(10, TimeUnit.SECONDS);
@@ -701,6 +709,11 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNotNull(allPostsResponse.data().listPosts().items());
         assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
         Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
+        handle.cancel();
+        assertTrue(handle.isCanceled());
+
+        //This should be a No op. Test to make sure that there are no unintended side effects
+        handle.cancel();
 
     }
 

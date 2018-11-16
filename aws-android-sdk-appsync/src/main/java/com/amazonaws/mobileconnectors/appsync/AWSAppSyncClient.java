@@ -52,6 +52,7 @@ import com.apollographql.apollo.cache.normalized.NormalizedCacheFactory;
 import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.apollographql.apollo.internal.util.Cancelable;
 
 import org.json.JSONObject;
 
@@ -532,6 +533,27 @@ public class AWSAppSyncClient {
         return mS3ObjectManager;
     }
 
+    public class AWSAppSyncDeltaSyncWatcher implements Cancelable {
+        boolean canceled = false;
+        long id;
+
+        public AWSAppSyncDeltaSyncWatcher( long id) {
+            this.id = id;
+        }
+        @Override
+        public void cancel() {
+            if (!canceled) {
+                AWSAppSyncDeltaSync.cancel(id);
+                canceled = true;
+            }
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return canceled;
+        }
+    }
+
     /**
      * Provides the ability to sync using a baseQuery, deltaQuery, subscription, and a refresh interval
      * @param baseQuery the base query to get the baseline state
@@ -544,9 +566,9 @@ public class AWSAppSyncClient {
      * @param <D>
      * @param <T>
      * @param <V>
-     * @return a syncId that can be used later to cancel the sync operation.
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
      */
-    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
             Subscription<D,T,V> subscription,
@@ -572,7 +594,8 @@ public class AWSAppSyncClient {
         }
 
         helper.setBaseRefreshIntervalInSeconds(baseRefreshIntervalInSeconds);
-        return helper.execute(false);
+
+        return new AWSAppSyncDeltaSyncWatcher(helper.execute(false));
     }
 
     /**
@@ -584,10 +607,10 @@ public class AWSAppSyncClient {
      * @param <D>
      * @param <T>
      * @param <V>
-     * @return a syncId that can be used later to cancel the sync operation.
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
      */
 
-    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
             long baseRefreshIntervalInSeconds) {
@@ -606,9 +629,9 @@ public class AWSAppSyncClient {
      * @param <D>
      * @param <T>
      * @param <V>
-     * @return a syncId that can be used later to cancel the sync operation.
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
      */
-    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
             Query<D,T,V> deltaQuery,
@@ -627,9 +650,9 @@ public class AWSAppSyncClient {
      * @param <D>
      * @param <T>
      * @param <V>
-     * @return a syncId that can be used later to cancel the sync operation.
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
      */
-    public <D extends Query.Data, T, V extends Query.Variables> Long sync(
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
             Subscription<D,T,V> subscription,
@@ -637,10 +660,5 @@ public class AWSAppSyncClient {
             ) {
         return this.sync(baseQuery, baseQueryCallback, subscription, subscriptionCallback, null, null, 0 );
     }
-
-    public void cancelSync(Long id) {
-        AWSAppSyncDeltaSync.cancel(id);
-    }
-
 
 }

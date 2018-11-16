@@ -24,6 +24,7 @@ import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
+import com.apollographql.apollo.internal.util.Cancelable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -185,7 +186,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             }
         };
 
-        client.sync(listPostsQuery, listPostsQueryCallback, onCreatePostSubscription, onCreatePostCallback, syncPostsQuery, syncPostsQueryCallback, 20 * 60 );
+        Cancelable handle = client.sync(listPostsQuery, listPostsQueryCallback, onCreatePostSubscription, onCreatePostCallback, syncPostsQuery, syncPostsQueryCallback, 20 * 60 );
 
         //Setup the Update and Delete Post Subscriptions in a background thread
         new Thread( new Runnable() {
