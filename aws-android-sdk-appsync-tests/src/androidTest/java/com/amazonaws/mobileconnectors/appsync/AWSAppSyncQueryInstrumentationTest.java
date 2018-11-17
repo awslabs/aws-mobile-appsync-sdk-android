@@ -42,7 +42,9 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
+
 import com.apollographql.apollo.api.Query;
+import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
@@ -60,6 +62,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -464,7 +467,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         //Sleep for a while to make sure the subscription goes through
         try {
-            Thread.sleep(5 * 1000);
+            Thread.sleep(10 * 1000);
         }
         catch (InterruptedException ie) {
             Log.d(TAG, "Sleep was interrupted");
@@ -520,18 +523,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         Log.d(TAG, "Subscribed and setup callback handler.");
 
         //Sleep for a while to make sure the subscription goes through
-        try {
-            Thread.sleep(5 * 1000);
-        }
-        catch (InterruptedException ie) {
-            Log.d(TAG, "Sleep was interrupted");
-        }
+        sleep(10*1000);
 
         addPostRequiredFieldsOnlyMutation(awsAppSyncClient,title,author,url,content);
         Log.d(TAG, "Added Post using addPostRequireFieldsOnlyMutation ");
 
         try {
-            assertTrue(message1ReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(message1ReceivedLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -541,10 +539,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         Log.d(TAG, "Added Post using addPostMissingRequiredFieldsMutation");
 
         try {
-            assertTrue(message2ExceptionReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(message2ExceptionReceivedLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
+        onCreatePostSubscriptionWatcher.cancel();
+        //Sleep for a while to make sure the cancel goes through
+        sleep(3 * 1000);
     }
 
 
@@ -587,7 +588,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         //Sleep for a while to make sure the subscription goes through
         try {
-            Thread.sleep(5 * 1000);
+            Thread.sleep(10 * 1000);
         }
         catch (InterruptedException ie) {
            Log.d(TAG, "Sleep was interrupted");
@@ -596,7 +597,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         Log.d(TAG, "Added Post");
 
         try {
-            assertTrue(message1ReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(message1ReceivedLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -606,10 +607,10 @@ public class AWSAppSyncQueryInstrumentationTest {
         onCreatePostSubscriptionWatcher.cancel();
 
 
-        //Add another post. The expectation is that we will not get a message (wait for 10 seconds to be sure)
+        //Add another post. The expectation is that we will not get a message (wait for 60 seconds to be sure)
         addPost(awsAppSyncClient,title,author,url,"Well, show me the way, to the next whisky bar @" + System.currentTimeMillis());
         try {
-            assertFalse(message2ReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertFalse(message2ReceivedLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -836,6 +837,29 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNull(getPostQueryResponse.data().getPost());
     }
 
+
+
+    @Test
+    public void testUpdateWithInvalidID() {
+
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
+        //Try to update a Post with a Fake ID
+        final String updatedContent = "New content coming up @" + System.currentTimeMillis();
+        final String randomID = UUID.randomUUID().toString();
+        updatePost(awsAppSyncClient, randomID, updatedContent);
+        assertNotNull(updatePostMutationResponse);
+        assertNull(updatePostMutationResponse.data().updatePost());
+        assertNotNull(updatePostMutationResponse.errors());
+        Error error = updatePostMutationResponse.errors().get(0);
+        assertNotNull(error);
+        assertNotNull(error.message());
+        assertTrue(error.message().contains("Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ConditionalCheckFailedException;"));
+
+    }
+
+
     private void queryPosts(AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher) {
 
         final CountDownLatch queryCountDownLatch = new CountDownLatch(1);
@@ -956,7 +980,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         Log.d(TAG, "Waiting for latch to be counted down");
         try {
-            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -1015,7 +1039,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         Log.d(TAG, "Waiting for latch to be counted down");
         try {
-            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -1075,7 +1099,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         Log.d(TAG, "Waiting for latch to be counted down");
         try {
-            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -1136,7 +1160,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         Log.d(TAG, "Waiting for latch to be counted down");
         try {
-            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
@@ -1151,10 +1175,10 @@ public class AWSAppSyncQueryInstrumentationTest {
 
                 UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
                         "Post",
+                        postID,
                         "",
                         "",
-                        "",
-                        "",
+                        content,
                         "",
                          0
                 ));
@@ -1182,6 +1206,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
                             @Override
                             public void onFailure(@Nonnull final ApolloException e) {
+                                Log.d(TAG, "On error called");
                                 e.printStackTrace();
                                 //Set to null to indicate failure
                                 updatePostMutationResponse = null;
@@ -1198,7 +1223,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         Log.d(TAG, "Waiting for latch to be counted down");
         try {
-            assertTrue(mCountDownLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
