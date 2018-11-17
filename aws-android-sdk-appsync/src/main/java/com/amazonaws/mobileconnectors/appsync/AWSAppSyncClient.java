@@ -37,6 +37,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.util.BinaryUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
+import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
@@ -51,7 +52,7 @@ import com.apollographql.apollo.cache.normalized.NormalizedCacheFactory;
 import com.apollographql.apollo.cache.normalized.sql.SqlNormalizedCacheFactory;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
-import com.apollographql.apollo.internal.subscription.SubscriptionManager;
+import com.apollographql.apollo.internal.util.Cancelable;
 
 import org.json.JSONObject;
 
@@ -124,6 +125,8 @@ public class AWSAppSyncClient {
     private AWSAppSyncClient(AWSAppSyncClient.Builder builder) {
         applicationContext = builder.mContext.getApplicationContext();
 
+        //Create the Signer interceptor. The notion of "Signer" is overloaded here as apart
+        //from the SigV4 signer, the other signers add request headers and don't sign the request per se
         AppSyncSigV4SignerInterceptor appSyncSigV4SignerInterceptor = null;
         if (builder.mCredentialsProvider != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mCredentialsProvider, builder.mRegion.getName());
@@ -137,6 +140,7 @@ public class AWSAppSyncClient {
             throw new RuntimeException("Client requires credentials. Please use #apiKey() #credentialsProvider() or #cognitoUserPoolsAuthProvider() to set the credentials.");
         }
 
+        //Create the HTTP client
         OkHttpClient.Builder okHttpClientBuilder;
         if (builder.mOkHttpClient == null) {
             okHttpClientBuilder = new OkHttpClient.Builder();
@@ -144,12 +148,13 @@ public class AWSAppSyncClient {
             okHttpClientBuilder = builder.mOkHttpClient.newBuilder();
         }
 
-        //Create the OK HTTP Client and add our Retry and Signer Interceptors to it.
+        //Add the signer and retry handler to the OKHTTP chain
         OkHttpClient okHttpClient = okHttpClientBuilder
                 .addInterceptor(new RetryInterceptor())
                 .addInterceptor(appSyncSigV4SignerInterceptor)
                 .build();
 
+        //Setup up the local store
         AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, defaultMutationSqlStoreName);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
         mutationMap = new HashMap<>();
@@ -196,10 +201,11 @@ public class AWSAppSyncClient {
             clientBuilder.defaultResponseFetcher(builder.mDefaultResponseFetcher);
         }
 
-        SubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
+        RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
         clientBuilder.subscriptionManager(subscriptionManager);
 
         mApolloClient = clientBuilder.build();
+        subscriptionManager.setApolloClient(mApolloClient);
 
         mSyncStore = new AppSyncStore(mApolloClient.apolloStore());
 
@@ -526,4 +532,133 @@ public class AWSAppSyncClient {
     public S3ObjectManager getS3ObjectManager() {
         return mS3ObjectManager;
     }
+
+    public class AWSAppSyncDeltaSyncWatcher implements Cancelable {
+        boolean canceled = false;
+        long id;
+
+        public AWSAppSyncDeltaSyncWatcher( long id) {
+            this.id = id;
+        }
+        @Override
+        public void cancel() {
+            if (!canceled) {
+                AWSAppSyncDeltaSync.cancel(id);
+                canceled = true;
+            }
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return canceled;
+        }
+    }
+
+    /**
+     * Provides the ability to sync using a baseQuery, deltaQuery, subscription, and a refresh interval
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param subscription subscription to get changes on the fly
+     * @param subscriptionCallback callback to handle the subscription messages
+     * @param deltaQuery the catchup query
+     * @param deltaQueryCallback callback to handle the deltaQuery results
+     * @param baseRefreshIntervalInSeconds time duration (specified in seconds) when the base query will be re-run to get an updated baseline state.
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
+     */
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            Subscription<D,T,V> subscription,
+            AppSyncSubscriptionCall.Callback subscriptionCallback,
+            Query<D,T,V> deltaQuery,
+            GraphQLCall.Callback<Query.Data> deltaQueryCallback,
+            long baseRefreshIntervalInSeconds) {
+        AWSAppSyncDeltaSync helper = new AWSAppSyncDeltaSync(baseQuery,this, applicationContext);
+
+        helper.setBaseQueryCallback(baseQueryCallback);
+
+        helper.setSubscription(subscription);
+        helper.setSubscriptionCallback( subscriptionCallback);
+
+        if ( deltaQuery == null ||deltaQueryCallback == null ) {
+            Log.d(TAG, "One of the following is null - Delta Query or Delta Query callback. Will switch to using the base query & callback");
+            helper.setDeltaQuery(baseQuery);
+            helper.setDeltaQueryCallback(baseQueryCallback);
+        }
+        else {
+            helper.setDeltaQuery(deltaQuery);
+            helper.setDeltaQueryCallback(deltaQueryCallback);
+        }
+
+        helper.setBaseRefreshIntervalInSeconds(baseRefreshIntervalInSeconds);
+
+        return new AWSAppSyncDeltaSyncWatcher(helper.execute(false));
+    }
+
+    /**
+     * Provides the ability to sync using a baseQuery and a refresh interval
+     *
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param baseRefreshIntervalInSeconds time duration (specified in seconds) when the base query will be re-run to get an updated baseline state.
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
+     */
+
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            long baseRefreshIntervalInSeconds) {
+
+        return this.sync(baseQuery, baseQueryCallback,null, null,null, null, baseRefreshIntervalInSeconds);
+    }
+
+
+    /**
+     * Provides the ability to sync using a baseQuery, deltaQuery, and a refresh interval
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param deltaQuery the catchup query
+     * @param deltaQueryCallback callback to handle the deltaQuery results
+     * @param baseRefreshIntervalInSeconds time duration (specified in seconds) when the base query will be re-run to get an updated baseline state.
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
+     */
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            Query<D,T,V> deltaQuery,
+            GraphQLCall.Callback<Query.Data> deltaQueryCallback,
+            long baseRefreshIntervalInSeconds) {
+        return this.sync(baseQuery, baseQueryCallback, null, null, deltaQuery, deltaQueryCallback, baseRefreshIntervalInSeconds);
+    }
+
+
+    /**
+     * Provides the ability to sync using a baseQuery and Subscription
+     * @param baseQuery the base query to get the baseline state
+     * @param baseQueryCallback callback to handle the baseQuery results
+     * @param subscription subscription to get changes on the fly
+     * @param subscriptionCallback callback to handle the subscription messages
+     * @param <D>
+     * @param <T>
+     * @param <V>
+     * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
+     */
+    public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
+            @Nonnull Query<D, T, V> baseQuery,
+            GraphQLCall.Callback<Query.Data> baseQueryCallback,
+            Subscription<D,T,V> subscription,
+            AppSyncSubscriptionCall.Callback subscriptionCallback
+            ) {
+        return this.sync(baseQuery, baseQueryCallback, subscription, subscriptionCallback, null, null, 0 );
+    }
+
 }

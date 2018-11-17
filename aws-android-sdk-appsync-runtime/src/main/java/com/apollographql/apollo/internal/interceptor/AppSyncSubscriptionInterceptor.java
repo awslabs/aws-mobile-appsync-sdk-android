@@ -20,7 +20,6 @@ package com.apollographql.apollo.internal.interceptor;
 import com.amazonaws.mobileconnectors.appsync.subscription.SubscriptionResponse;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.ResponseFieldMapper;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
@@ -28,12 +27,9 @@ import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
 import com.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
 import com.apollographql.apollo.internal.json.ApolloJsonReader;
 import com.apollographql.apollo.internal.json.BufferedSourceJsonReader;
-import com.apollographql.apollo.internal.json.JsonWriter;
 import com.apollographql.apollo.internal.json.ResponseJsonStreamReader;
-import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -76,17 +72,29 @@ public class AppSyncSubscriptionInterceptor implements ApolloInterceptor {
                             ResponseJsonStreamReader responseStreamReader = ApolloJsonReader.responseJsonStreamReader(new BufferedSourceJsonReader(response.httpResponse.get().body().source()));
                             responseMap = responseStreamReader.toMap();
 
-                            // MQTT connections
+                            /* The response is of the form
+                               extensions
+                                    subscription
+                                        mqttConnections
+                                            [ url, topics [], clientID ]
+                                        newSubscriptions
+                                            individualSub
+                                                topic, expireTime
+                               data
+                                    individualSubscriptions
+                             */
+
+                            // Get Subscription information by looking through the response
                             Map<String, LinkedHashMap> extensions = (Map) responseMap.get("extensions");
                             Map<String, Object> subscriptions = (Map) extensions.get("subscription");
                             List<Map<String, Object>> mqttConnections = (List) subscriptions.get("mqttConnections");
 
-                            // New topics
+                            // Collect all the topics listed under newSubscriptions in the newTopics var.
                             List<String> newTopics = new ArrayList<>();
                             Collection<Map> newSubscriptions = ((Map) subscriptions.get("newSubscriptions")).values();
-                            for (Map newSub : newSubscriptions) {
-                                if (newSub.containsKey("topic")) {
-                                    newTopics.add((String) newSub.get("topic"));
+                            for (Map subscriptionInstance : newSubscriptions) {
+                                if (subscriptionInstance.containsKey("topic")) {
+                                    newTopics.add((String) subscriptionInstance.get("topic"));
                                 }
                             }
 
@@ -94,9 +102,9 @@ public class AppSyncSubscriptionInterceptor implements ApolloInterceptor {
                             for (Map<String, Object> mqttConnection : mqttConnections) {
                                 final String clientId = (String) mqttConnection.get("client");
                                 final String wssURI = (String) mqttConnection.get("url");
-                                final String[] topics = ((List<String>) mqttConnection.get("topics")).toArray(new String[0]);
+                                final String[] preExistingTopics = ((List<String>) mqttConnection.get("topics")).toArray(new String[0]);
 
-                                subscriptionResponse.add(new SubscriptionResponse.MqttInfo(clientId, wssURI, topics));
+                                subscriptionResponse.add(new SubscriptionResponse.MqttInfo(clientId, wssURI, preExistingTopics));
                             }
                             AppSyncSubscriptionInterceptor.this.mSubscriptionManager.subscribe((Subscription) request.operation, newTopics, subscriptionResponse, mapResponseNormalizer);
 
@@ -122,6 +130,7 @@ public class AppSyncSubscriptionInterceptor implements ApolloInterceptor {
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
+
                 callBack.onFailure(e);
             }
 

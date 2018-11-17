@@ -42,10 +42,13 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
+
+import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
+import com.apollographql.apollo.internal.util.Cancelable;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,6 +83,8 @@ public class AWSAppSyncQueryInstrumentationTest {
     private static final String TAG = AWSAppSyncQueryInstrumentationTest.class.getSimpleName();
 
     private Response<GetPostQuery.Data> getPostQueryResponse;
+    private Response<AllPostsQuery.Data> allPostsResponse;
+
     private Response<AddPostMutation.Data> addPostMutationResponse;
     private Response<AddPostRequiredFieldsOnlyMutation.Data> addPostRequiredFieldsOnlyMutationResponse;
     private Response<AddPostMissingRequiredFieldsMutation.Data> addPostMissingRequiredFieldsResponse;
@@ -110,6 +115,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             JSONObject config = new JSONObject(sb.toString());
             String endPoint = config.getString("AppSyncEndpoint");
             String appSyncRegion = config.getString("AppSyncRegion");
+            Log.d(TAG, "Connecting to " + endPoint + ", region: " + appSyncRegion + ", using IAM");
             String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId");
             String cognitoRegion = config.getString("CognitoIdentityPoolRegion");
 
@@ -364,34 +370,30 @@ public class AWSAppSyncQueryInstrumentationTest {
         OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
         AppSyncSubscriptionCall addSubWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
         addSubWatcher.execute(onCreatePostSubscriptionCallback);
-        sleep(5*1000);
 
         OnUpdatePostSubscription onUpdatePostSubscription = OnUpdatePostSubscription.builder().build();
         AppSyncSubscriptionCall updateSubWatcher = awsAppSyncClient.subscribe(onUpdatePostSubscription);
         updateSubWatcher.execute(onUpdatePostSubscriptionCallback);
-        sleep(5*1000);
 
 
         OnDeletePostSubscription onDeletePostSubscription = OnDeletePostSubscription.builder().build();
         AppSyncSubscriptionCall deleteSubWatcher = awsAppSyncClient.subscribe(onDeletePostSubscription);
         deleteSubWatcher.execute(onDeletePostSubscriptionCallback);
-        sleep(5*1000);
 
         OnCreateArticleSubscription onCreateArticleSubscription = OnCreateArticleSubscription.builder().build();
         AppSyncSubscriptionCall addArticleSubWatcher = awsAppSyncClient.subscribe(onCreateArticleSubscription);
         addArticleSubWatcher.execute(onCreateArticleSubscriptionCallback);
-        sleep(5*1000);
 
         OnUpdateArticleSubscription onUpdateArticleSubscription = OnUpdateArticleSubscription.builder().build();
         AppSyncSubscriptionCall updateArticleSubWatcher = awsAppSyncClient.subscribe(onUpdateArticleSubscription);
         updateArticleSubWatcher.execute(onUpdateArticleSubscriptionCallback);
-        sleep(5*1000);
+
 
         OnDeleteArticleSubscription onDeleteArticleSubscription = OnDeleteArticleSubscription.builder().build();
         AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
         deleteArticleSubWatcher.execute(onDeleteArticleCallback);
-        sleep(5*1000);
 
+        sleep(30 * 1000);
         Log.d(TAG, "Subscribed and setup callback handlers.");
 
         addPost(awsAppSyncClient,title,author,url,content);
@@ -420,13 +422,15 @@ public class AWSAppSyncQueryInstrumentationTest {
         addSubWatcher.cancel();
         updateSubWatcher.cancel();
         deleteSubWatcher.cancel();
+        addArticleSubWatcher.cancel();
+        updateArticleSubWatcher.cancel();
+        deleteArticleSubWatcher.cancel();
 
-        sleep (3*1000);
-
-
+        //Sleep for 45 seconds - Connections are pinged every 30 seconds; this sleep will help verify through manual inspection that the connections are indeed freed.
+        sleep (45*1000);
     }
 
-    @Test
+
     public void testAddSubscriptionWithApiKeyAuthModel() {
         AWSAppSyncClient awsAppSyncClient1 = createAppSyncClientWithAPIKEY();
         final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
@@ -612,7 +616,130 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
+    @Test
+    public void testSyncOnlyBaseQuery() {
+        final CountDownLatch syncLatch = new CountDownLatch(1);
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
 
+        Query<AllPostsQuery.Data, AllPostsQuery.Data, com.apollographql.apollo.api.Operation.Variables> baseQuery =  AllPostsQuery.builder().build();
+        GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                allPostsResponse  =  response;
+                syncLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                allPostsResponse = null;
+                syncLatch.countDown();
+            }
+        };
+
+        Cancelable handle = awsAppSyncClient.sync(baseQuery, baseQueryCallback,0);
+        assertFalse(handle.isCanceled());
+        try {
+            syncLatch.await();
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+        assertNotNull(allPostsResponse);
+        assertNotNull(allPostsResponse.data());
+        assertNotNull(allPostsResponse.data().listPosts());
+        assertNotNull(allPostsResponse.data().listPosts().items());
+        assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
+        Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
+
+        handle.cancel();
+        assertTrue(handle.isCanceled());
+
+        //This should be a NoOp. Test to make sure.
+        handle.cancel();
+
+    }
+
+    @Test
+    public void testSyncOnlyBaseAndDeltaQuery() {
+        final CountDownLatch baseQueryLatch = new CountDownLatch(1);
+        final CountDownLatch deltaQueryLatch = new CountDownLatch(1);
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
+        Query baseQuery =  AllPostsQuery.builder().build();
+        GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                allPostsResponse  =  response;
+                baseQueryLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                assertNull(e);
+                baseQueryLatch.countDown();
+            }
+        };
+
+        final Query deltaQuery = AllPostsQuery.builder().build();
+        GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                allPostsResponse  =  response;
+                deltaQueryLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                assertNull(e);
+                deltaQueryLatch.countDown();
+            }
+        };
+
+        Cancelable handle = awsAppSyncClient.sync(baseQuery, baseQueryCallback, deltaQuery, deltaQueryCallback, 5);
+        assertFalse(handle.isCanceled());
+        try {
+            baseQueryLatch.await(10, TimeUnit.SECONDS);
+            deltaQueryLatch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+        assertNotNull(allPostsResponse);
+        assertNotNull(allPostsResponse.data());
+        assertNotNull(allPostsResponse.data().listPosts());
+        assertNotNull(allPostsResponse.data().listPosts().items());
+        assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
+        Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
+        handle.cancel();
+        assertTrue(handle.isCanceled());
+
+        //This should be a No op. Test to make sure that there are no unintended side effects
+        handle.cancel();
+
+    }
+
+
+
+    public void testCache() {
+        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+        String postID = "ce228ceb-c2fc-483e-8c3e-3d33fb8dd61f";
+
+        queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
+        assertNotNull(getPostQueryResponse);
+        assertNotNull(getPostQueryResponse.data());
+        assertNotNull(getPostQueryResponse.data().getPost());
+        assertEquals(postID, getPostQueryResponse.data().getPost().id());
+        getPostQueryResponse = null;
+
+        queryPost(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY,postID);
+        assertNotNull(getPostQueryResponse);
+        assertNotNull(getPostQueryResponse.data());
+        assertNotNull(getPostQueryResponse.data().getPost());
+        assertEquals(postID, getPostQueryResponse.data().getPost().id());
+
+
+    }
 
     @Test
     public void testCRUD() {
@@ -710,6 +837,8 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNull(getPostQueryResponse.data().getPost());
     }
 
+
+
     @Test
     public void testUpdateWithInvalidID() {
 
@@ -729,6 +858,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertTrue(error.message().contains("Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ConditionalCheckFailedException;"));
 
     }
+
 
     private void queryPosts(AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher) {
 
@@ -756,6 +886,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             iex.printStackTrace();
         }
     }
+
 
     private void queryPost( AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher, final String id) {
 

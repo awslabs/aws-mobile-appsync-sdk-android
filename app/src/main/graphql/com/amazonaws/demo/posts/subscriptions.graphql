@@ -1,0 +1,52 @@
+subscription OnCreatePost {
+  onCreatePost {
+    id
+    author
+    title
+    content
+    url
+    ups
+    downs
+    version
+  }
+}
+
+subscription OnUpdatePost {
+  onUpdatePost {
+      id
+        author
+        title
+        content
+        url
+        ups
+        downs
+        version
+  }
+}
+
+subscription OnDeletePost {
+  onDeletePost {
+    id
+  }
+}
+
+subscription OnCreateArticle {
+  onCreateArticle {
+    id
+    author
+    title
+  }
+}
+
+subscription OnUpdateArticle {
+  onUpdateArticle {
+    id
+    author
+  }
+}
+
+subscription OnDeleteArticle {
+  onDeleteArticle {
+    id
+  }
+}

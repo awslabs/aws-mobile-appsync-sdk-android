@@ -201,10 +201,16 @@ class AppSyncOfflineMutationManager {
                 Log.d("AppSync", "Internet connected.");
                 shouldProcess = true;
                 processNextInQueueMutation();
+
+                //Trigger DeltaSync to handle Network up events.
+                AWSAppSyncDeltaSync.handleNetworkUpEvent();
             } else if (msg.what == MSG_DISCONNECT) {
                 // disconnect, pause mutations
                 Log.d("AppSync", "Internet DISCONNECTED.");
                 shouldProcess = false;
+                //Propagate network down event to DeltaSync
+                AWSAppSyncDeltaSync.handleNetworkDownEvent();
+
             } else {
                 // ignore case
             }
