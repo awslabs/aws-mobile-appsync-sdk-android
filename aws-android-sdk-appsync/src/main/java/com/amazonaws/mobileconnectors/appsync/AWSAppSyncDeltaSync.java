@@ -283,7 +283,7 @@ class AWSAppSyncDeltaSync {
         deltaSyncObjects.remove(id);
     }
 
-    public static void cancel(Long id) {
+    static void cancel(Long id) {
          AWSAppSyncDeltaSync deltaSync = deltaSyncObjects.get(id);
          if (deltaSync != null ) {
              deltaSync.cancel();
@@ -538,11 +538,7 @@ class AWSAppSyncDeltaSync {
 
                 @Override
                 public void onCompleted() {
-                    //Resubscribe if there was an error
-                    if (cancelled) {
-                        Log.d(TAG, "Delta Sync [" + id + "]: Received disconnect for subscription. Expected. Will propagate.");
-                        subscriptionCallback.onCompleted();
-                    }
+
                 }
             };
         }
