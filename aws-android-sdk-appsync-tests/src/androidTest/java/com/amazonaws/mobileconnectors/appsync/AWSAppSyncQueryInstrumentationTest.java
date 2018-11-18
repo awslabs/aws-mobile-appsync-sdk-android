@@ -622,17 +622,18 @@ public class AWSAppSyncQueryInstrumentationTest {
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
 
+        boolean success = false;
         Query<AllPostsQuery.Data, AllPostsQuery.Data, com.apollographql.apollo.api.Operation.Variables> baseQuery =  AllPostsQuery.builder().build();
         GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
             @Override
             public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
-                allPostsResponse  =  response;
+                assertTrue(true);
                 syncLatch.countDown();
             }
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
-                allPostsResponse = null;
+                assertTrue(false);
                 syncLatch.countDown();
             }
         };
@@ -644,19 +645,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
-        assertNotNull(allPostsResponse);
-        assertNotNull(allPostsResponse.data());
-        assertNotNull(allPostsResponse.data().listPosts());
-        assertNotNull(allPostsResponse.data().listPosts().items());
-        assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
-        Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
 
         handle.cancel();
         assertTrue(handle.isCanceled());
 
         //This should be a NoOp. Test to make sure.
         handle.cancel();
-
+        assertTrue(handle.isCanceled());
     }
 
     @Test
@@ -670,13 +665,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
             @Override
             public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
-                allPostsResponse  =  response;
+                assertTrue(true);
                 baseQueryLatch.countDown();
             }
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
-                assertNull(e);
+                assertTrue(false);
                 baseQueryLatch.countDown();
             }
         };
@@ -685,13 +680,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
             @Override
             public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
-                allPostsResponse  =  response;
+                assertTrue(true);
                 deltaQueryLatch.countDown();
             }
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
-                assertNull(e);
+                assertTrue(false);
                 deltaQueryLatch.countDown();
             }
         };
@@ -704,18 +699,12 @@ public class AWSAppSyncQueryInstrumentationTest {
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
-        assertNotNull(allPostsResponse);
-        assertNotNull(allPostsResponse.data());
-        assertNotNull(allPostsResponse.data().listPosts());
-        assertNotNull(allPostsResponse.data().listPosts().items());
-        assertTrue(allPostsResponse.data().listPosts().items().size() > 0);
-        Log.d(TAG, "All Posts " + allPostsResponse.data().listPosts().items().get(0));
         handle.cancel();
         assertTrue(handle.isCanceled());
 
         //This should be a No op. Test to make sure that there are no unintended side effects
         handle.cancel();
-
+        assertTrue(handle.isCanceled());
     }
 
 
