@@ -10,14 +10,9 @@ import android.util.Log;
 import android.view.View;
 import android.arch.lifecycle.ProcessLifecycleOwner;
 
-import com.amazonaws.demo.posts.OnCreatePostSubscription;
+
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncAppLifecycleObserver;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
-import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
-
-import javax.annotation.Nonnull;
 
 public class PostsActivity extends AppCompatActivity {
     private static final String TAG = PostsActivity.class.getSimpleName();

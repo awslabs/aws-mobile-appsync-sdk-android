@@ -8,23 +8,19 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.amazonaws.demo.posts.DeletePostMutation;
-import com.amazonaws.demo.posts.DeltaPostMutation;
-import com.amazonaws.demo.posts.ListPostsQuery;
-import com.amazonaws.demo.posts.OnCreatePostSubscription;
-import com.amazonaws.demo.posts.OnDeletePostSubscription;
-import com.amazonaws.demo.posts.OnUpdatePostSubscription;
-import com.amazonaws.demo.posts.SyncPostsQuery;
-import com.amazonaws.demo.posts.UpdatePostMutation;
-import com.amazonaws.demo.posts.type.DeletePostInput;
-import com.amazonaws.demo.posts.type.UpdatePostInput;
+
+import com.amazonaws.amplify.generated.graphql.DeletePostMutation;
+import com.amazonaws.amplify.generated.graphql.ListPostsDeltaQuery;
+import com.amazonaws.amplify.generated.graphql.ListPostsQuery;
+
+import com.amazonaws.amplify.generated.graphql.OnDeltaPostSubscription;
+import com.amazonaws.amplify.generated.graphql.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.internal.util.Cancelable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +28,9 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nonnull;
+
+import type.DeltaAction;
+import type.UpdatePostInput;
 
 public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> {
 
@@ -55,7 +54,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
     }
 
     private List<String> mPostIDs ;
-    private Map<String, ListPostsQuery.Item> allPosts;
+    private Map<String, ListPostsQuery.ListPost> allPosts;
 
     private PostsActivity display;
     private AppSyncSubscriptionCall onUpdatePostSubscriptionWatcher;
@@ -68,7 +67,7 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         this.display = display;
 
         mPostIDs = new ArrayList<String>();
-        allPosts = new HashMap<String, ListPostsQuery.Item>();
+        allPosts = new HashMap<String, ListPostsQuery.ListPost>();
 
         //Create the client
         final AWSAppSyncClient client = ClientFactory.getInstance(display.getApplicationContext());
@@ -79,23 +78,31 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         GraphQLCall.Callback listPostsQueryCallback = new GraphQLCall.Callback<ListPostsQuery.Data>() {
             @Override
             public void onResponse(@Nonnull final Response<ListPostsQuery.Data> response) {
-                if (response == null  || response.data() == null || response.data().listPosts() == null || response.data().listPosts().items() == null ) {
+                if (response == null  || response.data() == null ||
+                        response.data().listPosts() == null ||
+                        response.data().listPosts() == null ) {
                     Log.d(TAG, "List Posts returned with no data");
                     return;
                 }
 
-                Log.d(TAG, "SyncPosts returned. Iterating over the data");
+                Log.d(TAG, "listPostsQuery returned data. Iterating over the data");
                 display.runOnUiThread(new Runnable() {
                    @Override
                    public void run() {
-                       for (ListPostsQuery.Item p: response.data().listPosts().items() ) {
-                           //Populate the allPosts map.
+                       for (ListPostsQuery.ListPost p: response.data().listPosts()) {
+                           //Populate the allPosts map with the posts returned by the query.
+                           //The allPosts map is used by the recycler view.
+
                            if ( allPosts.get(p.id()) == null )  {
                                mPostIDs.add(0, p.id());
                            }
-                           allPosts.put(p.id(), p);
+                           allPosts.put(p.id(), new ListPostsQuery.ListPost("Post",
+                                   p.id(), p.author(), p.title(), p.content(),
+                                   p.url(),p.ups(),p.downs(),
+                                   p.createdDate(),
+                                   p.aws_ds()));
                        }
-
+                       //Trigger the view to refresh by calling notifyDataSetChanged method
                        notifyDataSetChanged();
                    }
                });
@@ -107,27 +114,48 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             }
         };
         
-        //Setup Add Post Subscription
-        OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
-        AppSyncSubscriptionCall.Callback onCreatePostCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
+
+        //Setup Delta Post Subscription to get notified when a change (add, update, delete) happens on a Post
+        OnDeltaPostSubscription onDeltaPostSubscription =
+                OnDeltaPostSubscription.builder().build();
+        AppSyncSubscriptionCall.Callback onDeltaPostSubscriptionCallback =
+                new AppSyncSubscriptionCall.Callback<OnDeltaPostSubscription.Data>() {
             @Override
-            public void onResponse(@Nonnull Response<OnCreatePostSubscription.Data> response) {
-                Log.d(TAG, "New post received via subscription.");
-                if (response == null  || response.data() == null || response.data().onCreatePost() == null ) {
-                    Log.d(TAG, "NewPost was null!");
+            public void onResponse(@Nonnull Response<OnDeltaPostSubscription.Data> response) {
+                Log.d(TAG, "Delta on a post received via subscription.");
+                if (response == null  || response.data() == null
+                        || response.data().onDeltaPost() == null ) {
+                    Log.d(TAG, "Delta was null!");
                     return;
                 }
 
-                Log.d(TAG, "Adding post to display");
-                final OnCreatePostSubscription.OnCreatePost p = response.data().onCreatePost();
+                Log.d(TAG, "Updating post to display");
+                final OnDeltaPostSubscription.OnDeltaPost p = response.data().onDeltaPost();
+
                 display.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (allPosts.get(p.id()) == null ) {
-                            mPostIDs.add(0, p.id());
+                        // Delete the Post if the aws_ds has the DELETE tag
+                        if ( DeltaAction.DELETE == p.aws_ds()) {
+                            mPostIDs.remove(p.id());
+                            allPosts.remove(p.id());
                         }
-                        allPosts.put(p.id(), new ListPostsQuery.Item("Post", p.id(), p.author(),p.title(),p.content(), p.url(), p.ups(), p.downs(),p.version()));
+                        // Add/Update the post otherwise
+                        else {
+                            if (allPosts.get(p.id()) == null) {
+                                mPostIDs.add(0, p.id());
+                            }
+                            allPosts.put(p.id(), new ListPostsQuery.ListPost("Post",
+                                    p.id(), p.author(), p.title(), p.content(),
+                                    p.url(),p.ups(), p.downs(),
+                                    p.createdDate(),
+                                    p.aws_ds()));
+                        }
+
+                        //Update the baseQuery Cache
                         updateListPostsQueryCache();
+
+                        //Trigger the view to refresh by calling notifyDataSetChanged method
                         notifyDataSetChanged();
                     }
                 });
@@ -146,35 +174,47 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         };
 
 
-        //Setup the Delta Query to get posts incrementally
-        Query syncPostsQuery = SyncPostsQuery.builder().lastSync(0).build();
+        //Setup the Delta Query to get changes to posts incrementally
+        Query listPostsDeltaQuery = ListPostsDeltaQuery.builder().build();
 
-        GraphQLCall.Callback syncPostsQueryCallback = new GraphQLCall.Callback<SyncPostsQuery.Data>() {
+        GraphQLCall.Callback listPostsDeltaQueryCallback = new GraphQLCall.Callback<ListPostsDeltaQuery.Data>() {
             @Override
-            public void onResponse(@Nonnull final Response<SyncPostsQuery.Data> response) {
-                if (response == null  || response.data() == null || response.data().syncPosts() == null ) {
-                    Log.d(TAG, "SyncPosts returned with no data");
+            public void onResponse(@Nonnull final Response<ListPostsDeltaQuery.Data> response) {
+                if (response == null  || response.data() == null || response.data().listPostsDelta() == null ) {
+                    Log.d(TAG, "listPostsDelta returned with no data");
                     return;
                 }
 
                 //Add to the ListPostsQuery Cache
-                Log.d(TAG, "SyncPosts returned. Iterating over the data");
+                Log.d(TAG, "listPostsDelta returned data. Iterating...");
                 display.runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        for (SyncPostsQuery.SyncPost p: response.data().syncPosts() ) {
-                            if ( "DELETE".equalsIgnoreCase(p.aws_ds())) {
+                        for (ListPostsDeltaQuery.ListPostsDeltum p: response.data().listPostsDelta() ) {
+                            // Delete the Post if the aws_ds has the DELETE tag
+                            if ( DeltaAction.DELETE == p.aws_ds()) {
                                 mPostIDs.remove(p.id());
                                 allPosts.remove(p.id());
+                                Log.v(TAG, "Got Post [" + p.id() + "] with aws_ds set to DELETE");
                                 continue;
                             }
 
+                            Log.v(TAG, "Got Post [" + p.id() + "] with aws_ds not set to DELETE");
+                            // Add or Update the post otherwise
                             if (allPosts.get(p.id()) == null ) {
                                 mPostIDs.add(0, p.id());
                             }
-                            allPosts.put(p.id(), new ListPostsQuery.Item("Post", p.id(), p.author(),p.title(),p.content(), p.url(), p.ups(), p.downs(),p.version()));
+                            allPosts.put(p.id(), new ListPostsQuery.ListPost("Post",
+                                    p.id(), p.author(), p.title(), p.content(),
+                                    p.url(),p.ups(), p.downs(),
+                                    p.createdDate(),
+                                    p.aws_ds()));
                         }
+
+                        //Update the baseQuery Cache
                         updateListPostsQueryCache();
+
+                        //Trigger the view to refresh by calling notifyDataSetChanged method
                         notifyDataSetChanged();
                     }
                 });
@@ -182,109 +222,13 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "SyncPosts Query failed with [" + e.getLocalizedMessage() + "]");
+                Log.e(TAG, "listPostsDelta Query failed with [" + e.getLocalizedMessage() + "]");
             }
         };
 
-        Cancelable handle = client.sync(listPostsQuery, listPostsQueryCallback, onCreatePostSubscription, onCreatePostCallback, syncPostsQuery, syncPostsQueryCallback, 20 * 60 );
-
-        //Setup the Update and Delete Post Subscriptions in a background thread
-        new Thread( new Runnable() {
-            @Override
-            public void run() {
-                //Setup Update Post Subscription
-                setupUpdatePostSubscription();
-
-                //Setup Delete Post Subscription
-                setupDeletePostSubscription();
-            }
-        }).start();
-    }
-
-    private void setupUpdatePostSubscription() {
-        final AWSAppSyncClient client = ClientFactory.getInstance(display.getApplicationContext());
-
-        OnUpdatePostSubscription onUpdatePostSubscription = OnUpdatePostSubscription.builder().build();
-        AppSyncSubscriptionCall.Callback onUpdatePostCallback = new AppSyncSubscriptionCall.Callback<OnUpdatePostSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnUpdatePostSubscription.Data> response) {
-                Log.d(TAG, "New update received via subscription.");
-                if (response == null  || response.data() == null || response.data().onUpdatePost() == null ) {
-                    Log.d(TAG, "Update was null!");
-                    return;
-                }
-
-                final OnUpdatePostSubscription.OnUpdatePost p = response.data().onUpdatePost();
-
-                display.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        allPosts.put(p.id(), new ListPostsQuery.Item("Post", p.id(), p.author(),p.title(),p.content(), p.url(), p.ups(), p.downs(),p.version()));
-                        updateListPostsQueryCache();
-                        notifyDataSetChanged();
-                    }
-                });
-            }
+        client.sync(listPostsQuery, listPostsQueryCallback,    onDeltaPostSubscription , onDeltaPostSubscriptionCallback, listPostsDeltaQuery, listPostsDeltaQueryCallback, 20 * 60 );
 
 
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Error " + e.getLocalizedMessage());
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Received onCompleted on subscription");
-
-            }
-        };
-        onUpdatePostSubscriptionWatcher = client.subscribe(onUpdatePostSubscription);
-        onUpdatePostSubscriptionWatcher.execute(onUpdatePostCallback);
-    }
-
-
-    private void setupDeletePostSubscription() {
-        final AWSAppSyncClient client = ClientFactory.getInstance(display.getApplicationContext());
-
-        OnDeletePostSubscription onDeletePostSubscription = OnDeletePostSubscription.builder().build();
-
-        AppSyncSubscriptionCall.Callback onDeletePostCallback = new AppSyncSubscriptionCall.Callback<OnDeletePostSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnDeletePostSubscription.Data> response) {
-                Log.d(TAG, "New delete received via subscription.");
-                if (response == null  || response.data() == null || response.data().onDeletePost() == null ) {
-                    Log.d(TAG, "Delete was null!");
-                    return;
-                }
-
-                final OnDeletePostSubscription.OnDeletePost p = response.data().onDeletePost();
-
-                display.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        allPosts.remove(p.id());
-                        mPostIDs.remove(p.id());
-                        updateListPostsQueryCache();
-                        notifyDataSetChanged();
-                    }
-                });
-            }
-
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Error " + e.getLocalizedMessage());
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Received onCompleted on subscription");
-
-            }
-        };
-
-        onDeletePostSubscriptionWatcher = client.subscribe(onDeletePostSubscription);
-        onDeletePostSubscriptionWatcher.execute(onDeletePostCallback);
     }
 
 
@@ -297,13 +241,12 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, int position) {
-        final int iPosition = position;
-        if ( mPostIDs.size() < iPosition ) {
+    public void onBindViewHolder(final ViewHolder holder, final int position) {
+        if ( mPostIDs.size() < position ) {
             return;
         }
 
-        final ListPostsQuery.Item  item  = allPosts.get(mPostIDs.get(position));
+        final ListPostsQuery.ListPost  item  = allPosts.get(mPostIDs.get(position));
         if (item == null ) {
             return;
         }
@@ -318,14 +261,14 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             @Override
             public void onClick(View view) {
                 Toast.makeText(display, "Sending up vote", Toast.LENGTH_SHORT).show();
-                upVotePost(view, iPosition, item);
+                upVotePost(view, position, item);
             }
         });
         holder.mDownsView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Toast.makeText(display, "Sending down vote", Toast.LENGTH_SHORT).show();
-                downVotePost(view, iPosition, item);
+                downVotePost(view, position, item);
             }
         });
 
@@ -333,16 +276,18 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             @Override
             public void onClick(View view) {
                 Toast.makeText(display, "Deleting post", Toast.LENGTH_SHORT).show();
-                deletePost(view, iPosition, item);
+                deletePost(view, position, item);
             }
         });
     }
 
-    private void deletePost(final View view, final int position, final ListPostsQuery.Item p) {
+
+
+    private void deletePost(final View view, final int position, final ListPostsQuery.ListPost p) {
         //Execute Mutation
-        DeletePostInput input = DeletePostInput.builder().id(p.id()).build();
+
         final DeletePostMutation deletePostMutation = DeletePostMutation.builder()
-                .input(input)
+                .id(p.id())
                 .build();
         ClientFactory.getInstance(view.getContext()).mutate(deletePostMutation).enqueue(new GraphQLCall.Callback<DeletePostMutation.Data>() {
             @Override
@@ -352,7 +297,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                     @Override
                     public void run() {
                         Toast.makeText(display, "Deleted!", Toast.LENGTH_SHORT).show();
-                        markPostAsDeletedInDeltaTable(ClientFactory.getInstance(display.getApplicationContext()), p);
                     }
                 });
             }
@@ -381,7 +325,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         });
     }
 
-    private void upVotePost(final View view, final int position, final ListPostsQuery.Item p) {
+
+    private void upVotePost(final View view, final int position, final ListPostsQuery.ListPost p) {
 
         //Execute Mutation
         final UpdatePostMutation updatePostMutation = UpdatePostMutation.builder()
@@ -389,11 +334,9 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                         .id(p.id())
                         .title(p.title())
                         .author(p.author())
-                        .url(p.url())
                         .content(p.content())
                         .ups(p.ups() + 1)
                         .downs(p.downs())
-                        .version(p.version() + 1)
                         .build())
                 .build();
         ClientFactory.getInstance(view.getContext()).mutate(updatePostMutation).enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
@@ -404,7 +347,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                     @Override
                     public void run() {
                         Toast.makeText(display, "Up Voted!", Toast.LENGTH_SHORT).show();
-                        updateDeltaPost(ClientFactory.getInstance(display.getApplicationContext()), response);
                     }
                 });
             }
@@ -425,7 +367,10 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         display.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                allPosts.put(p.id(), new ListPostsQuery.Item("Post", p.id(), p.author(),p.title(),p.content(), p.url(), p.ups() + 1, p.downs(),p.version()+1));
+                allPosts.put(p.id(), new ListPostsQuery.ListPost("Post",
+                        p.id(), p.author(), p.title(), p.content(),
+                        p.url(), p.ups() + 1, p.downs(), p.createdDate(),
+                        p.aws_ds()));
                 updateListPostsQueryCache();
                 notifyDataSetChanged();
             }
@@ -433,18 +378,16 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
 
     }
 
-    private void downVotePost(final View view, final int position, final ListPostsQuery.Item p) {
+    private void downVotePost(final View view, final int position, final ListPostsQuery.ListPost p) {
         //Execute Mutation
         UpdatePostMutation updatePostMutation = UpdatePostMutation.builder()
                 .input(UpdatePostInput.builder()
                         .id(p.id())
                         .title(p.title())
                         .author(p.author())
-                        .url(p.url())
                         .content(p.content())
                         .ups(p.ups())
                         .downs(p.downs()+1)
-                        .version(p.version()+1)
                         .build())
                 .build();
 
@@ -456,7 +399,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
                     @Override
                     public void run() {
                         Toast.makeText(display, "Down Voted!", Toast.LENGTH_SHORT).show();
-                        updateDeltaPost(ClientFactory.getInstance(display.getApplicationContext()), response);
                     }
                 });
             }
@@ -477,7 +419,10 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         display.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-                allPosts.put(p.id(), new ListPostsQuery.Item("Post", p.id(), p.author(),p.title(),p.content(), p.url(), p.ups(), p.downs() +1 ,p.version() + 1));
+                allPosts.put(p.id(), new ListPostsQuery.ListPost("Post",
+                        p.id(), p.author(), p.title(), p.content(),
+                        p.url(), p.ups(), p.downs() + 1, p.createdDate(),
+                        p.aws_ds()));
                 updateListPostsQueryCache();
                 notifyDataSetChanged();
             }
@@ -489,67 +434,13 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
         return mPostIDs.size();
     }
 
-    private void updateDeltaPost(AWSAppSyncClient client, Response <UpdatePostMutation.Data> response ) {
-        DeltaPostMutation.Data expected = new DeltaPostMutation.Data(null);
-
-        DeltaPostMutation deltaPostMutation = DeltaPostMutation.builder()
-                .id(response.data().updatePost().id())
-                .author(response.data().updatePost().author())
-                .title(response.data().updatePost().title())
-                .ups(response.data().updatePost().ups())
-                .downs(response.data().updatePost().downs())
-                .content(response.data().updatePost().content())
-                .version(response.data().updatePost().version())
-                .aws_ds("UPDATE")
-                .build();
-
-        client.mutate(deltaPostMutation, expected)
-                .enqueue(new GraphQLCall.Callback<DeltaPostMutation.Data>() {
-                    @Override
-                    public void onResponse(@Nonnull Response<DeltaPostMutation.Data> response) {
-                        Log.d(TAG, "Delta Post updated");
-                    }
-
-                    @Override
-                    public void onFailure(@Nonnull ApolloException e) {
-                        Log.d(TAG, "Delta Post update failed with [" + e.getLocalizedMessage() + "]");
-                    }
-                });
-
-    }
-
-    private void markPostAsDeletedInDeltaTable(AWSAppSyncClient client, ListPostsQuery.Item p) {
-        DeltaPostMutation.Data expected = new DeltaPostMutation.Data(null);
-
-        DeltaPostMutation deltaPostMutation = DeltaPostMutation.builder()
-                .id(p.id())
-                .author(p.author())
-                .title(p.title())
-                .ups(p.ups())
-                .downs(p.downs())
-                .content(p.content())
-                .version(p.version())
-                .aws_ds("DELETE")
-                .build();
-
-        client.mutate(deltaPostMutation, expected)
-                .enqueue(new GraphQLCall.Callback<DeltaPostMutation.Data>() {
-                    @Override
-                    public void onResponse(@Nonnull Response<DeltaPostMutation.Data> response) {
-                        Log.d(TAG, "Delta Post marked as deleted");
-                    }
-
-                    @Override
-                    public void onFailure(@Nonnull ApolloException e) {
-                        Log.d(TAG, "Delta Post mark as deleted failed with [" + e.getLocalizedMessage() + "]");
-                    }
-                });
-    }
-
     private void updateListPostsQueryCache() {
-        List<ListPostsQuery.Item> items = new ArrayList<>();
+        List<ListPostsQuery.ListPost> items = new ArrayList<>();
         items.addAll(allPosts.values());
-        ListPostsQuery.Data data  = new ListPostsQuery.Data( new ListPostsQuery.ListPosts("PostConnection",items, null));
-        ClientFactory.getInstance(display.getApplicationContext()).getStore().write(listPostsQuery, data).enqueue(null);
+
+        ListPostsQuery.Data data = new ListPostsQuery.Data(items);
+        ClientFactory.getInstance(display.getApplicationContext()).getStore()
+                .write(listPostsQuery, data).enqueue(null);
     }
+
 }
