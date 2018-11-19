@@ -10,9 +10,8 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.amazonaws.demo.posts.ListPostsQuery;
-import com.amazonaws.demo.posts.UpdatePostMutation;
-import com.amazonaws.demo.posts.type.UpdatePostInput;
+
+import com.amazonaws.amplify.generated.graphql.ListPostsQuery;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
@@ -20,10 +19,10 @@ import com.apollographql.apollo.exception.ApolloException;
 import javax.annotation.Nonnull;
 
 public class UpdatePostActivity extends AppCompatActivity {
-    private static ListPostsQuery.Item sPost;
+    private static ListPostsQuery.ListPost sPost;
     private static int sPosition;
 
-    public static void startActivity(Context context, ListPostsQuery.Item post, int position) {
+    public static void startActivity(Context context, ListPostsQuery.ListPost post, int position) {
         Intent updatePostIntent = new Intent(context, UpdatePostActivity.class);
         sPost = post;
         sPosition = position;
@@ -37,7 +36,6 @@ public class UpdatePostActivity extends AppCompatActivity {
 
         ((EditText) findViewById(R.id.updateTitle)).setText(sPost.title());
         ((EditText) findViewById(R.id.updateAuthor)).setText(sPost.author());
-        ((EditText) findViewById(R.id.updateUrl)).setText(sPost.url());
         ((EditText) findViewById(R.id.updateContent)).setText(sPost.content());
     }
 

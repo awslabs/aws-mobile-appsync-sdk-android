@@ -10,9 +10,7 @@ import android.view.MenuItem;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.amazonaws.demo.posts.CreatePostMutation;
-import com.amazonaws.demo.posts.DeltaPostMutation;
-import com.amazonaws.demo.posts.type.CreatePostInput;
+import com.amazonaws.amplify.generated.graphql.CreatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.apollographql.apollo.GraphQLCall;
@@ -25,6 +23,8 @@ import java.util.List;
 import java.util.UUID;
 
 import javax.annotation.Nonnull;
+
+import type.CreatePostInput;
 
 public class AddPostActivity extends AppCompatActivity {
     private static final String TAG = AddPostActivity.class.getSimpleName();
@@ -81,7 +81,6 @@ public class AddPostActivity extends AppCompatActivity {
                 .url(url)
                 .ups(0)
                 .downs(0)
-                .version(0)
                 .build();
         CreatePostMutation addPostMutation = CreatePostMutation.builder().input(createPostInput).build();
         client.mutate(addPostMutation, expected)
@@ -94,7 +93,6 @@ public class AddPostActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 Toast.makeText(display, "Added!", Toast.LENGTH_SHORT).show();
-                                createDeltaEntry(client, response);
                                 display.finish();
                             }
                         });
@@ -116,35 +114,5 @@ public class AddPostActivity extends AppCompatActivity {
 
     }
 
-    private void createDeltaEntry(AWSAppSyncClient client, Response<CreatePostMutation.Data> response) {
-
-        DeltaPostMutation.Data expected = new DeltaPostMutation.Data(null);
-
-        DeltaPostMutation deltaPostMutation = DeltaPostMutation.builder()
-                .id(response.data().createPost().id())
-                .author(response.data().createPost().author())
-                .title(response.data().createPost().title())
-                .ups(response.data().createPost().ups())
-                .downs(response.data().createPost().downs())
-                .content(response.data().createPost().content())
-                .version(response.data().createPost().version())
-                .url(response.data().createPost().url())
-                .aws_ds("PUT")
-                .build();
-
-        client.mutate(deltaPostMutation, expected)
-                .enqueue(new GraphQLCall.Callback<DeltaPostMutation.Data>() {
-                    @Override
-                    public void onResponse(@Nonnull Response<DeltaPostMutation.Data> response) {
-                        Log.d(TAG, "Delta Post added");
-                    }
-
-                    @Override
-                    public void onFailure(@Nonnull ApolloException e) {
-                        Log.d(TAG, "Delta Post add failed with [" + e.getLocalizedMessage() + "]");
-                    }
-                });
-
-    }
 
 }
