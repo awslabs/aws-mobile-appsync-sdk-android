@@ -241,7 +241,8 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(final ViewHolder holder, final int position) {
+    public void onBindViewHolder(final ViewHolder holder,  int pos) {
+        final int position = pos;
         if ( mPostIDs.size() < position ) {
             return;
         }
