@@ -1,5 +1,18 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.0)
+
+### New Features
+* Added support for Delta Sync Feature
+    Delta Sync allows you to perform automatic synchronization with an AWS AppSync GraphQL server. The client will perform reconnection, exponential backoff, and retries when network errors take place for simplified data replication to devices. For more details, please refer [documentation.](https://aws-amplify.github.io/docs/android/api)
+
+### Enhancements
+* Added reconnection logic to subscriptions. Subscriptions will be automatically reconnected if the device loses connectivity temporarily or transitions between networks. See [issue #45](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/45)
+
+### Bug Fixes
+* Fixed bug in connection logic to close MQTT connection if all subscriptions are cancelled. See [issue #7](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/7)
+
+
 ## [Release 2.6.28](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.6.28)
 
 ### Misc. Updates
