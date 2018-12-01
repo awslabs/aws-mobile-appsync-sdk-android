@@ -45,6 +45,7 @@ class InMemoryOfflineMutationObject {
     final ApolloInterceptor.CallBack callBack;
     private HandlerThread queueHandlerThread;
     private Handler queueHandler;
+    private static final String TAG = InMemoryOfflineMutationObject.class.getSimpleName();
 
     public InMemoryOfflineMutationObject(String recordIdentifier,
                                          @Nonnull ApolloInterceptor.InterceptorRequest request,
@@ -68,12 +69,12 @@ class InMemoryOfflineMutationObject {
         public void handleMessage(Message msg) {
             if (msg.what == MSG_EXEC) {
                 // start executing the originalMutation
-                Log.d("AppSync", "Handling offline originalMutation.");
+                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Executing mutation by proceeding with the chain.");
                 chain.proceedAsync(request, dispatcher, callBack);
-
-            } else {
+            }
+            else {
                 // ignore case
-                Log.d("AppSync", "Unknown message received in NetworkUpdateHandler.");
+                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Non MSG_EXEC message received in NetworkUpdateHandler. Ignoring...");
             }
         }
     }

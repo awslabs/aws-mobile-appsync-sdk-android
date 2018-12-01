@@ -51,10 +51,10 @@ class AppSyncOptimisticUpdateInterceptor implements ApolloInterceptor {
                     @Override
                     public void run() {
                         try {
-                            Log.d(TAG, "Starting to do optimistic update!");
+                           Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Updating store with the optimistic update for [" +  request.operation +"]");
                             store.write(request.operation, data).execute();
                         } catch (Exception e) {
-                            Log.e(TAG, "failed to write operation optimistic updates, for: " + request.operation);
+                            Log.e(TAG, "Thread:[" + Thread.currentThread().getId() +"]: failed to update store with optimistic update for: [" + request.operation +"]");
                         }
                     }
                 });

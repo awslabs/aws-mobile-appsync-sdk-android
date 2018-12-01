@@ -387,7 +387,6 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 public void run() {
                     int retryCount = 0;
                     long waitMillis = 0;
-                    Log.v(TAG, "Subscription Infrastructure: Initiating reconnect sequence");
                     while (reconnectionInProgress) {
                         //Calculate backoff value
                         if (waitMillis < MAX_RETRY_WAIT_MILLIS ) {
@@ -400,7 +399,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                         catch (InterruptedException ie) {
                             Log.v(TAG, "SubscriptionInfrastructure: Thread.sleep was interrupted in the exponential backoff for reconnects");
                         }
-                        //Grab any subscription object to retry.
+                        //Grab any non canceled subscription object to retry.
                         SubscriptionObject subscriptionToRetry = null;
                         for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
                             if (!subscriptionObject.isCancelled()) {

@@ -17,6 +17,8 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import android.util.Log;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -27,26 +29,41 @@ import static com.amazonaws.mobileconnectors.appsync.AppSyncOfflineMutationManag
  */
 
 public class InMemoryOfflineMutationManager {
+    private static final String TAG = InMemoryOfflineMutationManager.class.getSimpleName();
+
+    //Use a linked list to model the inMemory Queue
     List<InMemoryOfflineMutationObject> inMemoryOfflineMutationObjects = new LinkedList<>();
 
+    //lock object to make the methods thread safe.
+    Object lock  = new Object();
+
     public boolean isQueueEmpty() {
-        return inMemoryOfflineMutationObjects.isEmpty();
+        synchronized (lock) {
+            return inMemoryOfflineMutationObjects.isEmpty();
+        }
     }
 
     public void addMutationObjectInQueue(InMemoryOfflineMutationObject object) {
-        inMemoryOfflineMutationObjects.add(object);
+        synchronized (lock) {
+            inMemoryOfflineMutationObjects.add(object);
+        }
     }
 
     public InMemoryOfflineMutationObject removeAndGetLastInQueue() {
-        if (inMemoryOfflineMutationObjects.size() >= 1) {
-            return inMemoryOfflineMutationObjects.remove(0);
+        synchronized ( lock ) {
+            if (!inMemoryOfflineMutationObjects.isEmpty() ) {
+                return inMemoryOfflineMutationObjects.remove(0);
+            }
         }
-        throw new IllegalStateException("InMemory Mutation Queue is empty. Cannot remove object.");
+        return null;
     }
 
     public InMemoryOfflineMutationObject processNextMutation() {
         InMemoryOfflineMutationObject offlineMutationObject = removeAndGetLastInQueue();
-        offlineMutationObject.handler.sendEmptyMessage(MSG_EXEC);
+        if (offlineMutationObject != null ) {
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Sending MSG_EXEC to mutation [" +  offlineMutationObject.recordIdentifier +"]");
+            offlineMutationObject.handler.sendEmptyMessage(MSG_EXEC);
+        }
         return offlineMutationObject;
     }
 }

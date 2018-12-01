@@ -64,6 +64,28 @@ class AppSyncOfflineMutationManager {
     private ScalarTypeAdapters scalarTypeAdapters;
     private AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
     private Handler queueHandler;
+    private Context context;
+
+    //Constructor
+    public AppSyncOfflineMutationManager(Context context,
+                                         final Map<ScalarType, CustomTypeAdapter> customTypeAdapters,
+                                         final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
+                                         final AppSyncCustomNetworkInvoker persistentMutationsNetworkInvoker) {
+        this.context = context;
+        handlerThread = new HandlerThread(TAG + "-AWSAppSyncOfflineMutationsHandlerThread");
+        handlerThread.start();
+        this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
+        this.networkInfoReceiver = new NetworkInfoReceiver(context, this.networkUpdateHandler);
+        this.inMemoryOfflineMutationManager = new InMemoryOfflineMutationManager();
+        persistentOfflineMutationManager = new PersistentOfflineMutationManager(mutationSqlCacheOperations,
+                persistentMutationsNetworkInvoker);
+        this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
+        this.mutationSqlCacheOperations = mutationSqlCacheOperations;
+
+        context.getApplicationContext().registerReceiver(networkInfoReceiver, new IntentFilter(
+                ConnectivityManager.CONNECTIVITY_ACTION));
+    }
+
 
     void updateQueueHandler(Handler queueHandler) {
         this.queueHandler = queueHandler;
@@ -83,6 +105,7 @@ class AppSyncOfflineMutationManager {
     public void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
 
         inMemoryOfflineMutationManager.addMutationObjectInQueue(mutationObject);
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:  Added mutation[" + mutationObject.recordIdentifier + "] to inMemory Queue"  );
 
         S3InputObjectInterface s3InputObjectInterface = getS3ComplexObject(mutationObject.request.operation.variables().valueMap());
         if (s3InputObjectInterface == null) {
@@ -93,7 +116,10 @@ class AppSyncOfflineMutationManager {
                             mutationObject.request.operation.getClass().getSimpleName(),
                             new JSONObject(mutationObject.request.operation.variables().valueMap()).toString())
             );
-        } else {
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Added mutation[" + mutationObject.recordIdentifier + "] to Persistent Queue. No S3 Objects found"  );
+
+        }
+        else {
             persistentOfflineMutationManager.addPersistentMutationObject(
                     new PersistentOfflineMutationObject(
                             mutationObject.recordIdentifier,
@@ -105,10 +131,11 @@ class AppSyncOfflineMutationManager {
                             s3InputObjectInterface.region(),
                             s3InputObjectInterface.localUri(),
                             s3InputObjectInterface.mimeType()));
-        }
-        Log.d("AppSync", "Created both in-memory and persistent records. Now checking queue.");
-        processNextInQueueMutation();
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Added mutation[" + mutationObject.recordIdentifier + "] to Persistent Queue. S3 Object found"  );
 
+        }
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Created both in-memory and persistent records. Now going to process next in queue.");
+        processNextInQueueMutation();
     }
 
     private S3InputObjectInterface getS3ComplexObject(Map<String, Object> variablesMap) {
@@ -126,65 +153,41 @@ class AppSyncOfflineMutationManager {
     }
 
     public void processNextInQueueMutation() {
-        Log.d("AppSync", "Checking if I need to process next originalMutation");
-        if (shouldProcess) {
-            Log.d("AppSync", "First check: Internet Available");
-            if (!persistentOfflineMutationManager.isQueueEmpty()) {
-                Log.d("AppSync", "Processing next in queue: PERSISTENT.");
-                persistentOfflineMutationManager.processNextMutationObject();
-                return;
-            } else {
-                Log.d("AppSync", "Second check: Persistent mutations queue is EMPTY!");
-            }
-            if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
-                Log.d("AppSync", "Processing next in queue: INMEMORY.");
-                InMemoryOfflineMutationObject mutationObject = inMemoryOfflineMutationManager.processNextMutation();
-                persistentOfflineMutationManager.removePersistentMutationObject(mutationObject.recordIdentifier);
-                return;
-            } else {
-                Log.d("AppSync", "Third check: Inmemory mutations queue is EMPTY!");
-            }
+        if (!shouldProcess ) {
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Internet wasn't available. Exiting");
+            return;
         }
-    }
 
+        //Double check to make sure we do have network connectivity, as there can be latency in
+        // the propagation of the network state through the broadcast receiver.
 
-    public void processAllQueuedMutations() {
-        Log.d("AppSync", "Starting to process queued mutations.");
-        while (!(inMemoryOfflineMutationManager.isQueueEmpty() &&
-                persistentOfflineMutationManager.isQueueEmpty())) {
+        final NetworkInfo info = ((ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
 
-            if (shouldProcess) {
-                if (!persistentOfflineMutationManager.isQueueEmpty()) {
-                    Log.d("AppSync", "Starting to process PERSISTENT.");
-                    persistentOfflineMutationManager.processNextMutationObject();
-                }
-                else if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
-                    Log.d("AppSync", "Starting to process INMEMORY.");
-                    InMemoryOfflineMutationObject mutationObject = inMemoryOfflineMutationManager.processNextMutation();
-                    persistentOfflineMutationManager.removePersistentMutationObject(mutationObject.recordIdentifier);
-                }
-            } else {
-                break;
-            }
+        if (info != null && !info.isConnected()) {
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Internet wasn't available. Exiting");
+            return;
         }
-    }
 
-    public AppSyncOfflineMutationManager(Context context,
-                                         final Map<ScalarType, CustomTypeAdapter> customTypeAdapters,
-                                         final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
-                                         final AppSyncCustomNetworkInvoker persistentMutationsNetworkInvoker) {
-        handlerThread = new HandlerThread(TAG + "-AWSAppSyncOfflineMutationsHandlerThread");
-        handlerThread.start();
-        this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
-        this.networkInfoReceiver = new NetworkInfoReceiver(context, this.networkUpdateHandler);
-        this.inMemoryOfflineMutationManager = new InMemoryOfflineMutationManager();
-        persistentOfflineMutationManager = new PersistentOfflineMutationManager(mutationSqlCacheOperations,
-                persistentMutationsNetworkInvoker);
-        this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
-        this.mutationSqlCacheOperations = mutationSqlCacheOperations;
 
-        context.getApplicationContext().registerReceiver(networkInfoReceiver, new IntentFilter(
-                ConnectivityManager.CONNECTIVITY_ACTION));
+        //Internet is available. Check if there is anything in the queue to process
+
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Internet Available. Will proceed to process next mutation from persistent queue");
+        if (!persistentOfflineMutationManager.isQueueEmpty()) {
+            Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from persistent queue");
+            persistentOfflineMutationManager.processNextMutationObject();
+            return;
+        }
+
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Persistent mutations queue is EMPTY!. Will check inMemory Queue next");
+        if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from in Memory queue");
+            InMemoryOfflineMutationObject mutationObject;
+            mutationObject = inMemoryOfflineMutationManager.processNextMutation();
+
+        }
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: In Memory mutations queue was EMPTY!. Nothing to process, exiting");
+
     }
 
     class NetworkUpdateHandler extends Handler {
@@ -198,21 +201,13 @@ class AppSyncOfflineMutationManager {
                 // remove messages of the same type
                 networkUpdateHandler.removeMessages(MSG_CHECK);
                 // start executing the originalMutation queue
-                Log.d("AppSync", "Internet connected.");
+                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet CONNECTED.");
                 shouldProcess = true;
                 processNextInQueueMutation();
-
-                //Trigger DeltaSync to handle Network up events.
-                AWSAppSyncDeltaSync.handleNetworkUpEvent();
             } else if (msg.what == MSG_DISCONNECT) {
                 // disconnect, pause mutations
-                Log.d("AppSync", "Internet DISCONNECTED.");
+                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet DISCONNECTED.");
                 shouldProcess = false;
-                //Propagate network down event to DeltaSync
-                AWSAppSyncDeltaSync.handleNetworkDownEvent();
-
-            } else {
-                // ignore case
             }
         }
     }
