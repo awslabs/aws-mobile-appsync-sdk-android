@@ -41,6 +41,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Queue;
 
 import okio.Buffer;
 
@@ -63,7 +64,7 @@ class AppSyncOfflineMutationManager {
     PersistentOfflineMutationManager persistentOfflineMutationManager;
     private ScalarTypeAdapters scalarTypeAdapters;
     private AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
-    private Handler queueHandler;
+    private AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
     private Context context;
 
     //Constructor
@@ -72,22 +73,30 @@ class AppSyncOfflineMutationManager {
                                          final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
                                          final AppSyncCustomNetworkInvoker persistentMutationsNetworkInvoker) {
         this.context = context;
+
+        //Setup HandlerThread
         handlerThread = new HandlerThread(TAG + "-AWSAppSyncOfflineMutationsHandlerThread");
         handlerThread.start();
-        this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
-        this.networkInfoReceiver = new NetworkInfoReceiver(context, this.networkUpdateHandler);
+
+
+        //Setup InMemory and Persistent Queue
         this.inMemoryOfflineMutationManager = new InMemoryOfflineMutationManager();
         persistentOfflineMutationManager = new PersistentOfflineMutationManager(mutationSqlCacheOperations,
                 persistentMutationsNetworkInvoker);
-        this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
-        this.mutationSqlCacheOperations = mutationSqlCacheOperations;
 
+        //Setup Network Monitoring objects
+        this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
+        this.networkInfoReceiver = new NetworkInfoReceiver(context, this.networkUpdateHandler);
         context.getApplicationContext().registerReceiver(networkInfoReceiver, new IntentFilter(
                 ConnectivityManager.CONNECTIVITY_ACTION));
+
+        //Setup ancillary stuff
+        this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
+        this.mutationSqlCacheOperations = mutationSqlCacheOperations;
     }
 
 
-    void updateQueueHandler(Handler queueHandler) {
+    void updateQueueHandler(AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler) {
         this.queueHandler = queueHandler;
         this.persistentOfflineMutationManager.updateQueueHandler(queueHandler);
     }
@@ -135,7 +144,14 @@ class AppSyncOfflineMutationManager {
 
         }
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Created both in-memory and persistent records. Now going to process next in queue.");
-        processNextInQueueMutation();
+
+        //processNextInQueueMutation();
+
+        //Execute next mutation in Queue
+        Message message = new Message();
+        message.obj = new MutationInterceptorMessage();
+        message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
+        queueHandler.sendMessage(message);
     }
 
     private S3InputObjectInterface getS3ComplexObject(Map<String, Object> variablesMap) {
@@ -160,7 +176,6 @@ class AppSyncOfflineMutationManager {
 
         //Double check to make sure we do have network connectivity, as there can be latency in
         // the propagation of the network state through the broadcast receiver.
-
         final NetworkInfo info = ((ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
 
@@ -169,25 +184,32 @@ class AppSyncOfflineMutationManager {
             return;
         }
 
-
         //Internet is available. Check if there is anything in the queue to process
-
-        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Internet Available. Will proceed to process next mutation from persistent queue");
         if (!persistentOfflineMutationManager.isQueueEmpty()) {
-            Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from persistent queue");
-            persistentOfflineMutationManager.processNextMutationObject();
+            if (queueHandler.setMutationInProgress()) {
+                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from persistent queue");
+                persistentOfflineMutationManager.processNextMutationObject();
+            }
             return;
         }
 
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Persistent mutations queue is EMPTY!. Will check inMemory Queue next");
         if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
-            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from in Memory queue");
-            InMemoryOfflineMutationObject mutationObject;
-            mutationObject = inMemoryOfflineMutationManager.processNextMutation();
-
+            if (queueHandler.setMutationInProgress()) {
+                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Processing next from in Memory queue");
+                InMemoryOfflineMutationObject mutationObject;
+                mutationObject = inMemoryOfflineMutationManager.processNextMutation();
+            }
         }
-        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: In Memory mutations queue was EMPTY!. Nothing to process, exiting");
+        else {
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: In Memory mutations queue was EMPTY!. Nothing to process, exiting");
+        }
+    }
 
+    public void setInProgressMutationAsCompleted(String recordIdentifier) {
+        persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
+        inMemoryOfflineMutationManager.removeFirstInQueue();
+        queueHandler.setMutationComplete();
     }
 
     class NetworkUpdateHandler extends Handler {
@@ -203,7 +225,15 @@ class AppSyncOfflineMutationManager {
                 // start executing the originalMutation queue
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet CONNECTED.");
                 shouldProcess = true;
-                processNextInQueueMutation();
+
+                //TODO: Send message to queue Handler here.
+                //processNextInQueueMutation();
+
+                Message message = new Message();
+                message.obj = new MutationInterceptorMessage();
+                message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
+                queueHandler.sendMessage(message);
+
             } else if (msg.what == MSG_DISCONNECT) {
                 // disconnect, pause mutations
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet DISCONNECTED.");
@@ -235,8 +265,7 @@ class AppSyncOfflineMutationManager {
         public void onReceive(Context context, Intent intent) {
             if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
                 final boolean networkConnected = isNetworkConnected();
-
-                handler.sendEmptyMessage(networkConnected ? MSG_CHECK : MSG_DISCONNECT);
+               handler.sendEmptyMessage(networkConnected ? MSG_CHECK : MSG_DISCONNECT);
             }
         }
 

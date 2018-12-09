@@ -32,6 +32,7 @@ import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.api.ScalarType;
 import com.apollographql.apollo.exception.ApolloException;
+import com.apollographql.apollo.exception.ApolloNetworkException;
 import com.apollographql.apollo.exception.ApolloParseException;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
@@ -41,6 +42,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -142,8 +144,8 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
         //Call the customer's callback
         customerCallBack.onResponse(response);
 
-        //Delete the mutation from the persistent store
-        appSyncOfflineMutationManager.persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
+        //Set the mutation as completed.
+        appSyncOfflineMutationManager.setInProgressMutationAsCompleted(recordIdentifier);
 
         //Send a message to the QueueHandler to process the next mutation in queue
         Message message = new Message();
@@ -160,14 +162,24 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
     @Override
     public void onFailure(@Nonnull ApolloException e) {
-        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onFailure()" + e.getLocalizedMessage());
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onFailure() " + e.getLocalizedMessage());
+
+        if (e instanceof ApolloNetworkException ) {
+            //Happened due to a network error.
+            //Do not remove from queue
+            //Need a mechanism to kick start the mutations again.
+
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Network Exception " + e.getLocalizedMessage());
+        }
+
         shouldRetry = false;
 
         //Call the customer's callback
         customerCallBack.onFailure(e);
 
-        //Delete the mutation from the persistent Queue
-        appSyncOfflineMutationManager.persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
+        //Set the mutation as completed.
+        appSyncOfflineMutationManager.setInProgressMutationAsCompleted(recordIdentifier);
+
         //Send a message to the QueueHandler to process the next mutation in queue
         Message message = new Message();
         message.obj = new MutationInterceptorMessage(originalMutation, currentMutation);
@@ -203,7 +215,29 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
     private static final String TAG = AppSyncOfflineMutationInterceptor.class.getSimpleName();
 
     class QueueUpdateHandler extends Handler {
-        private String TAG = QueueUpdateHandler.class.getSimpleName();
+        private final String TAG = QueueUpdateHandler.class.getSimpleName();
+        private boolean mutationInProgress = false;
+
+        public synchronized void setMutationComplete() {
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Setting mutationInProgress as false.");
+            mutationInProgress = false;
+        }
+
+        public synchronized boolean isMutationInProgress() {
+            return mutationInProgress;
+        }
+
+
+        public synchronized boolean setMutationInProgress() {
+            if (mutationInProgress ) {
+                return false;
+            }
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Setting mutationInProgress as true.");
+            mutationInProgress = true;
+            return true;
+        }
+
+
         public QueueUpdateHandler(Looper looper) {
             super(looper);
         }
@@ -211,14 +245,13 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         @Override
         public void handleMessage(Message msg) {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Got message to take action on the mutation queue.");
-            if (msg.what == MessageNumberUtil.SUCCESSFUL_EXEC) {
-                // start executing the next originalMutation
-                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Got message to process next mutation if one exists.");
-                appSyncOfflineMutationManager.processNextInQueueMutation();
-            }
-            else if (msg.what == MessageNumberUtil.FAIL_EXEC) {
-                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Got message that a originalMutation process had an error. Process the next in queue");
-                appSyncOfflineMutationManager.processNextInQueueMutation();
+
+            if (msg.what == MessageNumberUtil.SUCCESSFUL_EXEC || msg.what == MessageNumberUtil.FAIL_EXEC) {
+                if (!isMutationInProgress()) {
+                    // start executing the next originalMutation
+                    Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Got message to process next mutation if one exists.");
+                    appSyncOfflineMutationManager.processNextInQueueMutation();
+                }
             }
             else if (msg.what == MessageNumberUtil.RETRY_EXEC) {
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Got message that a originalMutation process needs to be retried.");
@@ -234,14 +267,17 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                     Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: " + e.toString());
                     e.printStackTrace();
                 }
-            }  else {
+            }
+            else {
                 // ignore case
                 Log.d(TAG, "Unknown message received in QueueUpdateHandler. Ignoring");
             }
         }
     }
 
-    public AppSyncOfflineMutationInterceptor(@Nonnull AppSyncOfflineMutationManager manager,
+
+
+    public AppSyncOfflineMutationInterceptor(@Nonnull AppSyncOfflineMutationManager appSyncOfflineMutationManager,
                                              boolean sendOperationIdentifiers,
                                              Context context,
                                              Map<Mutation, MutationInformation> requestMap,
@@ -251,7 +287,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         final Map<ScalarType, CustomTypeAdapter> customTypeAdapters = new LinkedHashMap<>();
         this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
         this.sendOperationIdentifiers = sendOperationIdentifiers;
-        this.appSyncOfflineMutationManager = manager;
+        this.appSyncOfflineMutationManager = appSyncOfflineMutationManager;
         this.appSyncClient = client;
         this.originalMutationRequestMap = requestMap;
 
@@ -259,9 +295,22 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         queueHandlerThread.start();
         queueHandler = new QueueUpdateHandler(queueHandlerThread.getLooper());
 
-        manager.updateQueueHandler(queueHandler);
+        //Create a scheduled task that will run once every second to process mutations
+        queueHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: processing Mutations");
+                Message message = new Message();
+                message.obj = new MutationInterceptorMessage();
+                message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
+                queueHandler.sendMessage(message);
+                queueHandler.postDelayed(this, 1000);
+            }
+        }, 1000);
+
+        appSyncOfflineMutationManager.updateQueueHandler(queueHandler);
         inmemoryInterceptorCallbackMap = new HashMap<>();
-        persistentOfflineMutationObjectMap = manager.persistentOfflineMutationManager.persistentOfflineMutationObjectMap;
+        persistentOfflineMutationObjectMap = appSyncOfflineMutationManager.persistentOfflineMutationManager.persistentOfflineMutationObjectMap;
 
         conflictResolutionHandler =  new ConflictResolutionHandler(this);
         this.conflictResolver = conflictResolver;
@@ -306,6 +355,8 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         originalMutationRequestMap.remove(identifier);
         inmemoryInterceptorCallbackMap.remove(identifier);
         persistentOfflineMutationObjectMap.remove(identifier);
+
+        //TODO: Check this
         appSyncOfflineMutationManager.processNextInQueueMutation();
     }
 
@@ -316,7 +367,9 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                                @Nonnull final CallBack callBack) {
         final boolean isMutation = request.operation instanceof Mutation;
 
+        //Check if this is a mutation request.
         if (!isMutation) {
+            //Not a mutation. Nothing to do here - move on to the next link in the chain.
             chain.proceedAsync(request, dispatcher, callBack);
             return;
         }
@@ -329,7 +382,8 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Not a conflict mutation");
 
             //Create a custom callback.
-            ApolloInterceptor.CallBack customCallBack = new InterceptorCallback(callBack,
+            ApolloInterceptor.CallBack customCallBack = new InterceptorCallback(
+                    callBack,
                     queueHandler,
                     (Mutation) request.operation,
                     (Mutation) request.operation,

@@ -32,7 +32,7 @@ public class PersistentOfflineMutationManager {
 
     final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
     final AppSyncCustomNetworkInvoker networkInvoker;
-    Handler queueHandler;
+    AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
     List<PersistentOfflineMutationObject> persistentOfflineMutationObjectList;
     Map<String, PersistentOfflineMutationObject> persistentOfflineMutationObjectMap;
 
@@ -53,7 +53,7 @@ public class PersistentOfflineMutationManager {
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]:Exiting the constructor. There are [" + persistentOfflineMutationObjectList.size() + "] mutations in the persistent queue");
     }
 
-    void updateQueueHandler(Handler queueHandler) {
+    void updateQueueHandler(AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler) {
         this.queueHandler = queueHandler;
         networkInvoker.updateQueueHandler(queueHandler);
     }
@@ -96,7 +96,7 @@ public class PersistentOfflineMutationManager {
         if ( mutationRequestObject != null ) {
 
             //TODO:Do this in the callback
-            removePersistentMutationObject(mutationRequestObject.recordIdentifier);
+            //removePersistentMutationObject(mutationRequestObject.recordIdentifier);
             // kick off originalMutation here through custom flow
             networkInvoker.executeRequest(mutationRequestObject);
 

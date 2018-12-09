@@ -49,7 +49,7 @@ public class InMemoryOfflineMutationManager {
         }
     }
 
-    public InMemoryOfflineMutationObject removeAndGetLastInQueue() {
+    public InMemoryOfflineMutationObject removeFirstInQueue() {
         synchronized ( lock ) {
             if (!inMemoryOfflineMutationObjects.isEmpty() ) {
                 return inMemoryOfflineMutationObjects.remove(0);
@@ -59,11 +59,20 @@ public class InMemoryOfflineMutationManager {
     }
 
     public InMemoryOfflineMutationObject processNextMutation() {
-        InMemoryOfflineMutationObject offlineMutationObject = removeAndGetLastInQueue();
+        InMemoryOfflineMutationObject offlineMutationObject = getFirstInQueue();
         if (offlineMutationObject != null ) {
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Sending MSG_EXEC to mutation [" +  offlineMutationObject.recordIdentifier +"]");
             offlineMutationObject.handler.sendEmptyMessage(MSG_EXEC);
         }
         return offlineMutationObject;
+    }
+
+    private InMemoryOfflineMutationObject getFirstInQueue() {
+        synchronized (lock ) {
+            if (!inMemoryOfflineMutationObjects.isEmpty() ) {
+                return inMemoryOfflineMutationObjects.get(0);
+            }
+        }
+        return null;
     }
 }
