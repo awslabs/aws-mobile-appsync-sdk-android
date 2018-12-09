@@ -226,13 +226,12 @@ class AppSyncOfflineMutationManager {
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet CONNECTED.");
                 shouldProcess = true;
 
-                //TODO: Send message to queue Handler here.
-                //processNextInQueueMutation();
-
-                Message message = new Message();
-                message.obj = new MutationInterceptorMessage();
-                message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
-                queueHandler.sendMessage(message);
+                if (queueHandler != null ) {
+                    Message message = new Message();
+                    message.obj = new MutationInterceptorMessage();
+                    message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
+                    queueHandler.sendMessage(message);
+                }
 
             } else if (msg.what == MSG_DISCONNECT) {
                 // disconnect, pause mutations

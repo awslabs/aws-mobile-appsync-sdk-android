@@ -304,9 +304,9 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                 message.obj = new MutationInterceptorMessage();
                 message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
                 queueHandler.sendMessage(message);
-                queueHandler.postDelayed(this, 1000);
+                queueHandler.postDelayed(this, 10* 1000);
             }
-        }, 1000);
+        }, 10* 1000);
 
         appSyncOfflineMutationManager.updateQueueHandler(queueHandler);
         inmemoryInterceptorCallbackMap = new HashMap<>();
