@@ -13,7 +13,7 @@ dependencies {
     compileOnly gradleApi()
     compileOnly localGroovy()
     compile "com.moowork.gradle:gradle-node-plugin:1.0.0" // compileOnly
-    compile 'com.android.tools.build:gradle:2.3.1' // compileOnly TODO Check if this can be upgraded.
+    compile 'com.android.tools.build:gradle:3.2.1' // compileOnly TODO Check if this can be upgraded.
     compile 'com.squareup.moshi:moshi:1.5.0' // impl
 
     compile project(':aws-android-sdk-appsync-compiler') // impl
