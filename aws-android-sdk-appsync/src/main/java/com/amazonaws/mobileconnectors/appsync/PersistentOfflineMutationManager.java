@@ -49,7 +49,7 @@ public class PersistentOfflineMutationManager {
         for (PersistentOfflineMutationObject object: persistentOfflineMutationObjectList) {
             persistentOfflineMutationObjectMap.put(object.recordIdentifier, object);
         }
-
+        networkInvoker.setPersistentOfflineMutationManager(this);
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]:Exiting the constructor. There are [" + persistentOfflineMutationObjectList.size() + "] mutations in the persistent queue");
     }
 
@@ -59,14 +59,20 @@ public class PersistentOfflineMutationManager {
     }
 
     //Remove mutation request from persistent store
-    public boolean removePersistentMutationObject(final String recordId) {
-       Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Removing mutation [" + recordId +"] from persistent store");
+    public synchronized boolean removePersistentMutationObject(final String recordId) {
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Removing mutation [" + recordId +"] from persistent store");
+        if (persistentOfflineMutationObjectList.size() > 0) {
+            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.get(0);
+            if (recordId.equalsIgnoreCase(mutationObject.recordIdentifier)) {
+                persistentOfflineMutationObjectList.remove(0);
+            }
+        }
         mutationSqlCacheOperations.deleteRecord(recordId);
         return true;
     }
 
     //Add mutation request to persistent store
-    public void addPersistentMutationObject(PersistentOfflineMutationObject mutationObject) {
+    public synchronized void addPersistentMutationObject(PersistentOfflineMutationObject mutationObject) {
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:addPersistentMutationObject: Adding mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n" + mutationObject.requestString);
         mutationSqlCacheOperations.createRecord(mutationObject.recordIdentifier,
                 mutationObject.requestString,
@@ -86,20 +92,16 @@ public class PersistentOfflineMutationManager {
     }
 
     //Return true if Queue is empty, false otherwise.
-    public boolean isQueueEmpty() {
+    public synchronized boolean isQueueEmpty() {
         return persistentOfflineMutationObjectList.isEmpty();
     }
 
     public PersistentOfflineMutationObject processNextMutationObject() {
        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In processNextMutationObject");
-        PersistentOfflineMutationObject mutationRequestObject = removeAndGetLastInQueue();
+        PersistentOfflineMutationObject mutationRequestObject = getFirstInQueue();
         if ( mutationRequestObject != null ) {
-
-            //TODO:Do this in the callback
-            //removePersistentMutationObject(mutationRequestObject.recordIdentifier);
             // kick off originalMutation here through custom flow
             networkInvoker.executeRequest(mutationRequestObject);
-
         }
         return mutationRequestObject;
     }
@@ -109,6 +111,16 @@ public class PersistentOfflineMutationManager {
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In removeAndGetLastInQueue");
         if (persistentOfflineMutationObjectList.size() > 0) {
             PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.remove(0);
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:returning mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
+            return mutationObject;
+        }
+        return null;
+    }
+
+    private synchronized PersistentOfflineMutationObject getFirstInQueue() {
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In getFirstInQueue");
+        if (persistentOfflineMutationObjectList.size() > 0) {
+            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.get(0);
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:returning mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
             return mutationObject;
         }

@@ -68,12 +68,12 @@ class InMemoryOfflineMutationObject {
         @Override
         public void handleMessage(Message msg) {
             if (msg.what == MSG_EXEC) {
-                // start executing the originalMutation
+                // execute the originalMutation by proceeding with the chain.
                 Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Executing mutation by proceeding with the chain.");
                 chain.proceedAsync(request, dispatcher, callBack);
             }
             else {
-                // ignore case
+                // ignore
                 Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Non MSG_EXEC message received in NetworkUpdateHandler. Ignoring...");
             }
         }

@@ -30,6 +30,7 @@ import javax.annotation.Nonnull;
 public class ConflictResolutionHandler {
 
     final AppSyncOfflineMutationInterceptor mutationInterceptor;
+    private static final String TAG = ConflictResolutionHandler.class.getSimpleName();
 
     public ConflictResolutionHandler(@Nonnull AppSyncOfflineMutationInterceptor mutationInterceptor) {
         this.mutationInterceptor = mutationInterceptor;
@@ -37,7 +38,7 @@ public class ConflictResolutionHandler {
 
     public <D extends Mutation.Data, T, V extends Mutation.Variables> void retryMutation(@Nonnull Mutation<D, T, V> mutation,
                                                                                          @Nonnull String identifier) {
-        Log.d("AppSync", "Calling retry conflict mutation.");
+        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Calling retry conflict mutation.");
         mutationInterceptor.retryConflictMutation(mutation, identifier);
     }
 

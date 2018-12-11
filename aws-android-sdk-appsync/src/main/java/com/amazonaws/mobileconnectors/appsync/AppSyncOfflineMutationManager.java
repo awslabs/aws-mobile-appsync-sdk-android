@@ -41,7 +41,6 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Map;
-import java.util.Queue;
 
 import okio.Buffer;
 
@@ -197,8 +196,7 @@ class AppSyncOfflineMutationManager {
         if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
             if (queueHandler.setMutationInProgress()) {
                 Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Processing next from in Memory queue");
-                InMemoryOfflineMutationObject mutationObject;
-                mutationObject = inMemoryOfflineMutationManager.processNextMutation();
+                inMemoryOfflineMutationManager.processNextMutation();
             }
         }
         else {
@@ -209,9 +207,11 @@ class AppSyncOfflineMutationManager {
     public void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         inMemoryOfflineMutationManager.removeFirstInQueue();
-        queueHandler.setMutationComplete();
+        queueHandler.setMutationExecutionComplete();
     }
 
+    // Handler that processes the message sent by the NetworkInfoReceiver to kick off mutations
+    // TODO: Investigate if this can be simplified by just invoking the QueueHandler in the network receiver.
     class NetworkUpdateHandler extends Handler {
         public NetworkUpdateHandler(Looper looper) {
             super(looper);
@@ -232,7 +232,6 @@ class AppSyncOfflineMutationManager {
                     message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
                     queueHandler.sendMessage(message);
                 }
-
             } else if (msg.what == MSG_DISCONNECT) {
                 // disconnect, pause mutations
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet DISCONNECTED.");

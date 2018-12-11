@@ -846,7 +846,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         final String url = "Dream Theater Station";
         final String content = "No energy for anger @" + System.currentTimeMillis();
 
-        final int numberOfLatches = 10;
+        final int numberOfLatches = 25;
         final CountDownLatch countDownLatches[] = new CountDownLatch[numberOfLatches];
         for (int i = 0; i < numberOfLatches; i++) {
             countDownLatches[i] = new CountDownLatch(1);
@@ -919,9 +919,6 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         }).start();
 
-        //Sleep for a little bit for the mutations to all get queued.
-        sleep(3*1000);
-
         //Enable Wifi Network so that the mutations can get processed.
         assertTrue(wifiManager.setWifiEnabled(true));
 
@@ -945,6 +942,12 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     }
 
+
+    /*
+    This test should be run on a physical device with no cellular signal or
+    with cellular data turned off. The test disables the wifi on the device to
+    create the offline scenario.
+     */
 
     @Test
     public void testSingleOfflineMutation() {
