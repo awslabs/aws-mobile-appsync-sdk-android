@@ -119,7 +119,6 @@ public final class ApolloParseInterceptor implements ApolloInterceptor {
       source.request(Long.MAX_VALUE); // request the entire body.
       Buffer buffer = source.buffer();
       cloneString = buffer.clone().readString(Charset.forName("UTF-8"));
-      System.out.println("CLone string is [" + cloneString + "]");
     } catch (IOException e) {
       e.printStackTrace();
     }
