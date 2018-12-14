@@ -414,9 +414,9 @@ public class AWSAppSyncQueryInstrumentationTest {
 
 
         try {
-            assertTrue(addPostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
-            assertTrue(updatePostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
-            assertTrue(deletePostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(addPostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(updatePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(deletePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
 
         } catch (InterruptedException iex) {
             iex.printStackTrace();
@@ -836,7 +836,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     create the offline scenario.
      */
     @Test
-    public void testOffLineMutation() {
+    public void testMultipleOfflineMutations() {
         final AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
 
         assertNotNull(awsAppSyncClient);
@@ -846,11 +846,20 @@ public class AWSAppSyncQueryInstrumentationTest {
         final String url = "Dream Theater Station";
         final String content = "No energy for anger @" + System.currentTimeMillis();
 
-        final int numberOfLatches = 10;
+        final int numberOfLatches = 25;
         final CountDownLatch countDownLatches[] = new CountDownLatch[numberOfLatches];
         for (int i = 0; i < numberOfLatches; i++) {
             countDownLatches[i] = new CountDownLatch(1);
         }
+
+        //Add a post
+        addPost(awsAppSyncClient,title,author,url,content);
+        assertNotNull(addPostMutationResponse);
+        assertNotNull(addPostMutationResponse.data());
+        assertNotNull(addPostMutationResponse.data().createPost());
+        assertNotNull(addPostMutationResponse.data().createPost().id());
+        final String postID = addPostMutationResponse.data().createPost().id();
+
 
         //Set Wifi Network offline
         WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
@@ -858,90 +867,173 @@ public class AWSAppSyncQueryInstrumentationTest {
         //Sleep for a little bit to make sure that the device is indeed offline
         sleep(3*1000);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Looper.prepare();
+        for ( int i = 0; i < numberOfLatches; i++) {
+            final int position = i;
 
-                for ( int i = 0; i < numberOfLatches; i++) {
-                    final int position = i;
-                    AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
-                            "Post",
-                            "",
-                            "",
-                            "",
-                            "",
-                            "",
-                            null,
-                            null,
-                            0
-                    ));
+            UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
+                    "Post",
+                    postID,
+                    "",
+                    "",
+                    content,
+                    "",
+                    0
+            ));
 
-                    CreatePostInput createPostInput = CreatePostInput.builder()
-                            .title(title)
-                            .author(author + position)
-                            .url(url)
-                            .content(content)
-                            .ups(new Integer(1))
-                            .downs(new Integer(0))
-                            .build();
+            UpdatePostInput updatePostInput = UpdatePostInput.builder()
+                    .id(postID)
+                    .author(author + position)
+                    .build();
 
-                    AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
+            UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
 
-                    Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off Mutation [" + position + "]");
-                    awsAppSyncClient
-                            .mutate(addPostMutation, expected)
-                            .enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
-                                @Override
-                                public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
-                                    Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: OnResponse called for addPostMutation [" + position + "]");
-                                    addPostMutationResponse = response;
-                                    countDownLatches[position].countDown();
-                                    if (Looper.myLooper() != null) {
-                                        Looper.myLooper().quit();
-                                    }
-                                }
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off Mutation [" + position + "]");
+            awsAppSyncClient
+                    .mutate(updatePostMutation, expected)
+                    .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
+                        @Override
+                        public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
+                            updatePostMutationResponse = response;
+                            countDownLatches[position].countDown();
+                        }
 
-                                @Override
-                                public void onFailure(@Nonnull final ApolloException e) {
-                                    Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: OnFailure called for addPostMutation [" + position + "]");
-                                    e.printStackTrace();
-                                    //Set to null to indicate failure
-                                    addPostMutationResponse = null;
-                                    countDownLatches[position].countDown();
-                                    if (Looper.myLooper() != null) {
-                                        Looper.myLooper().quit();
-                                    }
-                                }
-                            });
-                }
+                        @Override
+                        public void onFailure(@Nonnull final ApolloException e) {
+                            Log.d(TAG, "On error called");
+                            e.printStackTrace();
+                            //Set to null to indicate failure
+                            updatePostMutationResponse = null;
+                            assertNotNull(updatePostMutationResponse);
+                            countDownLatches[position].countDown();
 
-                Looper.loop();
-            }
-        }).start();
+                        }
+                    });
+        }
 
-
-        //Enable Wifi Network
+        //Enable Wifi Network so that the mutations can get processed.
         assertTrue(wifiManager.setWifiEnabled(true));
 
         Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Waiting for latches to be counted down");
         for ( int i = 0; i < numberOfLatches; i++) {
             try {
+                Log.v(TAG, "Wating on Latch no [" + i + "]");
                 assertTrue(countDownLatches[i].await(60, TimeUnit.SECONDS));
             } catch (InterruptedException iex) {
                 iex.printStackTrace();
             }
         }
+        queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
 
-        assertNotNull(addPostMutationResponse);
-        assertNotNull(addPostMutationResponse.data());
-        assertNotNull(addPostMutationResponse.data().createPost());
-        assertNotNull(addPostMutationResponse.data().createPost().author());
-        assertEquals(addPostMutationResponse.data().createPost().author(), author+(numberOfLatches-1));
+        assertNotNull(getPostQueryResponse);
+        assertNotNull(getPostQueryResponse.data());
+        assertNotNull(getPostQueryResponse.data().getPost());
+        assertNotNull(getPostQueryResponse.data().getPost().author());
+        assertEquals( author + (numberOfLatches -1), getPostQueryResponse.data().getPost().author());
 
     }
 
-                @Test
+
+    /*
+    This test should be run on a physical device with no cellular signal or
+    with cellular data turned off. The test disables the wifi on the device to
+    create the offline scenario.
+     */
+
+    @Test
+    public void testSingleOfflineMutation() {
+        final AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+
+        assertNotNull(awsAppSyncClient);
+
+        final String title = "Learning to Live ";
+        final String author = "Dream Theater @ ";
+        final String url = "Dream Theater Station";
+        final String content = "No energy for anger @" + System.currentTimeMillis();
+
+        final String updatedAuthor = author + System.currentTimeMillis();
+
+        final CountDownLatch countDownLatch =  new CountDownLatch(1);
+
+        //Add a post
+        addPost(awsAppSyncClient,title,author,url,content);
+        assertNotNull(addPostMutationResponse);
+        assertNotNull(addPostMutationResponse.data());
+        assertNotNull(addPostMutationResponse.data().createPost());
+        assertNotNull(addPostMutationResponse.data().createPost().id());
+        final String postID = addPostMutationResponse.data().createPost().id();
+
+
+        //Set Wifi Network offline
+        WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
+        assertTrue(wifiManager.setWifiEnabled(false));
+        //Sleep for a little bit to make sure that the device is indeed offline
+        sleep(3*1000);
+
+
+        UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
+                "Post",
+                postID,
+                "",
+                "",
+                content,
+                "",
+                0
+        ));
+
+        UpdatePostInput updatePostInput = UpdatePostInput.builder()
+                .id(postID)
+                .author(updatedAuthor)
+                .build();
+
+        UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
+
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
+        awsAppSyncClient
+                .mutate(updatePostMutation, expected)
+                .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
+                    @Override
+                    public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
+                        updatePostMutationResponse = response;
+                       countDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(@Nonnull final ApolloException e) {
+                        Log.d(TAG, "On error called");
+                        e.printStackTrace();
+                        //Set to null to indicate failure
+                        updatePostMutationResponse = null;
+                        assertNotNull(updatePostMutationResponse);
+                        countDownLatch.countDown();
+
+                    }
+                });
+
+
+        //Sleep for a little bit for the mutation to  get queued.
+        sleep(1*1000);
+
+        //Enable Wifi Network so that the mutations can get processed.
+        assertTrue(wifiManager.setWifiEnabled(true));
+
+        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Waiting for latches to be counted down");
+        try {
+            assertTrue(countDownLatch.await(60, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+        queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
+
+        assertNotNull(getPostQueryResponse);
+        assertNotNull(getPostQueryResponse.data());
+        assertNotNull(getPostQueryResponse.data().getPost());
+        assertNotNull(getPostQueryResponse.data().getPost().author());
+        assertEquals( updatedAuthor, getPostQueryResponse.data().getPost().author());
+
+    }
+
+    @Test
     public void testUpdateWithInvalidID() {
 
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();

@@ -39,6 +39,7 @@ import javax.annotation.Nonnull;
 public class AppSyncComplexObjectsInterceptor implements ApolloInterceptor {
 
     final S3ObjectManager s3ObjectManager;
+    private final static String TAG = AppSyncComplexObjectsInterceptor.class.getSimpleName();
 
     public AppSyncComplexObjectsInterceptor(S3ObjectManager s3ObjectManager) {
         this.s3ObjectManager = s3ObjectManager;
@@ -48,7 +49,7 @@ public class AppSyncComplexObjectsInterceptor implements ApolloInterceptor {
     public void interceptAsync(@Nonnull final InterceptorRequest request, @Nonnull final ApolloInterceptorChain chain, @Nonnull final Executor dispatcher, @Nonnull final CallBack callBack) {
         if (request.operation instanceof Mutation
                 && request.operation.queryDocument().contains("S3ObjectInput")) {
-            Log.d("AppSync", "Found S3ObjectInput data type, finding object to upload if any.");
+            Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Found S3ObjectInput data type, finding object to upload if any.");
             dispatcher.execute(new Runnable() {
                 @Override
                 public void run() {

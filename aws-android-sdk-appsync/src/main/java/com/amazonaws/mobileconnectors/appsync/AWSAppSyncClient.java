@@ -38,6 +38,7 @@ import com.amazonaws.util.BinaryUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.GraphQLCall;
+import com.apollographql.apollo.Logger;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
@@ -159,8 +160,10 @@ public class AWSAppSyncClient {
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
         mutationMap = new HashMap<>();
 
+        //Instantiate the optimistic update interceptor
         AppSyncOptimisticUpdateInterceptor optimisticUpdateInterceptor = new AppSyncOptimisticUpdateInterceptor();
 
+        //Instantiate the custom network Invoker
         AppSyncCustomNetworkInvoker networkInvoker =
                 new AppSyncCustomNetworkInvoker(HttpUrl.parse(builder.mServerUrl),
                         okHttpClient,
@@ -168,6 +171,7 @@ public class AWSAppSyncClient {
                         builder.mPersistentMutationsCallback,
                         builder.mS3ObjectManager);
 
+        //Create the Apollo Client and setup the interceptor chain.
         ApolloClient.Builder clientBuilder = ApolloClient.builder()
                 .serverUrl(builder.mServerUrl)
                 .normalizedCache(builder.mNormalizedCacheFactory, builder.mResolver)
@@ -185,6 +189,7 @@ public class AWSAppSyncClient {
                 .addApplicationInterceptor(new AppSyncComplexObjectsInterceptor(builder.mS3ObjectManager))
                 .okHttpClient(okHttpClient);
 
+        //Add custom type builders
         for (ScalarType scalarType : builder.customTypeAdapters.keySet()) {
             clientBuilder.addCustomTypeAdapter(scalarType, builder.customTypeAdapters.get(scalarType));
         }
@@ -201,10 +206,14 @@ public class AWSAppSyncClient {
             clientBuilder.defaultResponseFetcher(builder.mDefaultResponseFetcher);
         }
 
+        //Add Subscription manager
         RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
         clientBuilder.subscriptionManager(subscriptionManager);
 
+        //Build the Apollo Client
         mApolloClient = clientBuilder.build();
+
+        //Add reference to Apollo Client in the Subscription manager.
         subscriptionManager.setApolloClient(mApolloClient);
 
         mSyncStore = new AppSyncStore(mApolloClient.apolloStore());

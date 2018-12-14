@@ -28,37 +28,52 @@ import java.util.Map;
  * PersistentOfflineMutationManager.
  */
 public class PersistentOfflineMutationManager {
+    private static final String TAG = PersistentOfflineMutationManager.class.getSimpleName();
 
     final AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
     final AppSyncCustomNetworkInvoker networkInvoker;
-    Handler queueHandler;
-    List<PersistentOfflineMutationObject> persistentOfflineMutationObjects;
+    AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
+    List<PersistentOfflineMutationObject> persistentOfflineMutationObjectList;
     Map<String, PersistentOfflineMutationObject> persistentOfflineMutationObjectMap;
 
     public PersistentOfflineMutationManager(AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
                                             AppSyncCustomNetworkInvoker networkInvoker) {
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In Constructor");
         this.mutationSqlCacheOperations = mutationSqlCacheOperations;
         this.networkInvoker = networkInvoker;
-        persistentOfflineMutationObjects = fetchPersistentMutationsList();
+
+        //Get all the previously persisted mutations and house them in the persistentOfflineMutationObjectList and persistentOfflineMutationObjectMap
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Priming the pump - Fetching all the queued mutations from the persistent store");
+        persistentOfflineMutationObjectList = fetchPersistentMutationsList();
         persistentOfflineMutationObjectMap = new HashMap<>();
-        for (PersistentOfflineMutationObject object: persistentOfflineMutationObjects) {
+        for (PersistentOfflineMutationObject object: persistentOfflineMutationObjectList) {
             persistentOfflineMutationObjectMap.put(object.recordIdentifier, object);
         }
-        Log.d("AppSync", "There these many records in persistent cache: " + persistentOfflineMutationObjects.size());
+        networkInvoker.setPersistentOfflineMutationManager(this);
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]:Exiting the constructor. There are [" + persistentOfflineMutationObjectList.size() + "] mutations in the persistent queue");
     }
 
-    void updateQueueHandler(Handler queueHandler) {
+    void updateQueueHandler(AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler) {
         this.queueHandler = queueHandler;
         networkInvoker.updateQueueHandler(queueHandler);
     }
 
-    public boolean removePersistentMutationObject(final String recordId) {
+    //Remove mutation request from persistent store
+    public synchronized boolean removePersistentMutationObject(final String recordId) {
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Removing mutation [" + recordId +"] from persistent store");
+        if (persistentOfflineMutationObjectList.size() > 0) {
+            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.get(0);
+            if (recordId.equalsIgnoreCase(mutationObject.recordIdentifier)) {
+                persistentOfflineMutationObjectList.remove(0);
+            }
+        }
         mutationSqlCacheOperations.deleteRecord(recordId);
         return true;
     }
 
-    public void addPersistentMutationObject(PersistentOfflineMutationObject mutationObject) {
-        Log.d("AppSync","Adding object: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
+    //Add mutation request to persistent store
+    public synchronized void addPersistentMutationObject(PersistentOfflineMutationObject mutationObject) {
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:addPersistentMutationObject: Adding mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n" + mutationObject.requestString);
         mutationSqlCacheOperations.createRecord(mutationObject.recordIdentifier,
                 mutationObject.requestString,
                 mutationObject.responseClassName,
@@ -70,27 +85,45 @@ public class PersistentOfflineMutationManager {
                 mutationObject.mimeType);
     }
 
+    //Load mutation requests from persistent store
     public List<PersistentOfflineMutationObject> fetchPersistentMutationsList() {
+       Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Fetching all mutation requests from persistent store");
         return mutationSqlCacheOperations.fetchAllRecords();
     }
 
-    public boolean isQueueEmpty() {
-        return persistentOfflineMutationObjects.isEmpty();
+    //Return true if Queue is empty, false otherwise.
+    public synchronized boolean isQueueEmpty() {
+        return persistentOfflineMutationObjectList.isEmpty();
     }
 
     public PersistentOfflineMutationObject processNextMutationObject() {
-        PersistentOfflineMutationObject offlineMutationObject = removeAndGetLastInQueue();
-        // kick off originalMutation here through custom flow
-        networkInvoker.executeRequest(offlineMutationObject);
-        return offlineMutationObject;
+       Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In processNextMutationObject");
+        PersistentOfflineMutationObject mutationRequestObject = getFirstInQueue();
+        if ( mutationRequestObject != null ) {
+            // kick off originalMutation here through custom flow
+            networkInvoker.executeRequest(mutationRequestObject);
+        }
+        return mutationRequestObject;
     }
 
     public PersistentOfflineMutationObject removeAndGetLastInQueue() {
-        if (persistentOfflineMutationObjects.size() >= 1) {
-            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjects.remove(0);
-            mutationSqlCacheOperations.deleteRecord(mutationObject.recordIdentifier);
+
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In removeAndGetLastInQueue");
+        if (persistentOfflineMutationObjectList.size() > 0) {
+            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.remove(0);
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:returning mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
             return mutationObject;
         }
-        throw new IllegalStateException("Persistent Mutation Queue is empty. Cannot remove object.");
+        return null;
+    }
+
+    private synchronized PersistentOfflineMutationObject getFirstInQueue() {
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In getFirstInQueue");
+        if (persistentOfflineMutationObjectList.size() > 0) {
+            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.get(0);
+            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:returning mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
+            return mutationObject;
+        }
+        return null;
     }
 }
