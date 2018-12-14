@@ -28,13 +28,13 @@ public class AWSAppSyncAppLifecycleObserver implements LifecycleObserver {
 
     @OnLifecycleEvent(Lifecycle.Event.ON_START)
     public void startSomething() {
-        Log.v(TAG, "Delta Sync: App is in FOREGROUND");
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Delta Sync: App is in FOREGROUND");
         AWSAppSyncDeltaSync.handleAppForeground();
     }
 
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     public void stopSomething() {
-        Log.v(TAG, "Delta Sync: App is in BACKGROUND");
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Delta Sync: App is in BACKGROUND");
         AWSAppSyncDeltaSync.handleAppBackground();
     }
 }

@@ -58,7 +58,11 @@ class AppSyncOfflineMutationManager {
     private static final String TAG = AppSyncOfflineMutationManager.class.getSimpleName();
     private NetworkUpdateHandler networkUpdateHandler;
     private HandlerThread handlerThread;
-    private boolean shouldProcess;
+
+    private Object shouldProcessMutationsLock = new Object();
+    private boolean shouldProcessMutations;
+
+
     InMemoryOfflineMutationManager inMemoryOfflineMutationManager;
     PersistentOfflineMutationManager persistentOfflineMutationManager;
     private ScalarTypeAdapters scalarTypeAdapters;
@@ -107,7 +111,7 @@ class AppSyncOfflineMutationManager {
     private NetworkInfoReceiver networkInfoReceiver;
 
     public boolean shouldProcess() {
-        return shouldProcess;
+        return shouldProcessMutations;
     }
 
     public void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
@@ -168,9 +172,11 @@ class AppSyncOfflineMutationManager {
     }
 
     public void processNextInQueueMutation() {
-        if (!shouldProcess ) {
-            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Internet wasn't available. Exiting");
-            return;
+        synchronized (shouldProcessMutationsLock) {
+            if (!shouldProcessMutations ) {
+                Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Internet wasn't available. Exiting");
+                return;
+            }
         }
 
         //Double check to make sure we do have network connectivity, as there can be latency in
@@ -222,20 +228,32 @@ class AppSyncOfflineMutationManager {
             if (msg.what == MSG_CHECK) {
                 // remove messages of the same type
                 networkUpdateHandler.removeMessages(MSG_CHECK);
-                // start executing the originalMutation queue
-                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet CONNECTED.");
-                shouldProcess = true;
 
+                // set shouldProcess to true
+                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet CONNECTED.");
+                synchronized (shouldProcessMutationsLock) {
+                    shouldProcessMutations = true;
+                }
+
+                // Send EXEC message to queueHandler
                 if (queueHandler != null ) {
                     Message message = new Message();
                     message.obj = new MutationInterceptorMessage();
                     message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
                     queueHandler.sendMessage(message);
                 }
+
+                //Trigger DeltaSync to handle Network up events.
+                AWSAppSyncDeltaSync.handleNetworkUpEvent();
+
             } else if (msg.what == MSG_DISCONNECT) {
-                // disconnect, pause mutations
+                // Network Disconnected, pause mutations
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet DISCONNECTED.");
-                shouldProcess = false;
+                synchronized (shouldProcessMutationsLock) {
+                    shouldProcessMutations = false;
+                }
+                //Propagate network down event to DeltaSync
+                AWSAppSyncDeltaSync.handleNetworkDownEvent();
             }
         }
     }
