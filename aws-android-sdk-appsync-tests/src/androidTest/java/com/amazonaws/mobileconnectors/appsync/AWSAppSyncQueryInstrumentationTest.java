@@ -414,9 +414,9 @@ public class AWSAppSyncQueryInstrumentationTest {
 
 
         try {
-            assertTrue(addPostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
-            assertTrue(updatePostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
-            assertTrue(deletePostMessageReceivedLatch.await(10, TimeUnit.SECONDS));
+            assertTrue(addPostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(updatePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(deletePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
 
         } catch (InterruptedException iex) {
             iex.printStackTrace();
@@ -867,57 +867,48 @@ public class AWSAppSyncQueryInstrumentationTest {
         //Sleep for a little bit to make sure that the device is indeed offline
         sleep(3*1000);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Looper.prepare();
+        for ( int i = 0; i < numberOfLatches; i++) {
+            final int position = i;
 
-                for ( int i = 0; i < numberOfLatches; i++) {
-                    final int position = i;
+            UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
+                    "Post",
+                    postID,
+                    "",
+                    "",
+                    content,
+                    "",
+                    0
+            ));
 
-                    UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
-                            "Post",
-                            postID,
-                            "",
-                            "",
-                            content,
-                            "",
-                            0
-                    ));
+            UpdatePostInput updatePostInput = UpdatePostInput.builder()
+                    .id(postID)
+                    .author(author + position)
+                    .build();
 
-                    UpdatePostInput updatePostInput = UpdatePostInput.builder()
-                            .id(postID)
-                            .author(author + position)
-                            .build();
+            UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
 
-                    UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off Mutation [" + position + "]");
+            awsAppSyncClient
+                    .mutate(updatePostMutation, expected)
+                    .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
+                        @Override
+                        public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
+                            updatePostMutationResponse = response;
+                            countDownLatches[position].countDown();
+                        }
 
-                    Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off Mutation [" + position + "]");
-                    awsAppSyncClient
-                            .mutate(updatePostMutation, expected)
-                            .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
-                                @Override
-                                public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
-                                    updatePostMutationResponse = response;
-                                    countDownLatches[position].countDown();
-                                }
+                        @Override
+                        public void onFailure(@Nonnull final ApolloException e) {
+                            Log.d(TAG, "On error called");
+                            e.printStackTrace();
+                            //Set to null to indicate failure
+                            updatePostMutationResponse = null;
+                            assertNotNull(updatePostMutationResponse);
+                            countDownLatches[position].countDown();
 
-                                @Override
-                                public void onFailure(@Nonnull final ApolloException e) {
-                                    Log.d(TAG, "On error called");
-                                    e.printStackTrace();
-                                    //Set to null to indicate failure
-                                    updatePostMutationResponse = null;
-                                    assertNotNull(updatePostMutationResponse);
-                                    countDownLatches[position].countDown();
-
-                                }
-                            });
-                }
-
-                Looper.loop();
-            }
-        }).start();
+                        }
+                    });
+        }
 
         //Enable Wifi Network so that the mutations can get processed.
         assertTrue(wifiManager.setWifiEnabled(true));
@@ -938,7 +929,6 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNotNull(getPostQueryResponse.data().getPost());
         assertNotNull(getPostQueryResponse.data().getPost().author());
         assertEquals( author + (numberOfLatches -1), getPostQueryResponse.data().getPost().author());
-
 
     }
 
@@ -979,54 +969,46 @@ public class AWSAppSyncQueryInstrumentationTest {
         //Sleep for a little bit to make sure that the device is indeed offline
         sleep(3*1000);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                Looper.prepare();
 
+        UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
+                "Post",
+                postID,
+                "",
+                "",
+                content,
+                "",
+                0
+        ));
 
-                UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
-                        "Post",
-                        postID,
-                        "",
-                        "",
-                        content,
-                        "",
-                        0
-                ));
+        UpdatePostInput updatePostInput = UpdatePostInput.builder()
+                .id(postID)
+                .author(updatedAuthor)
+                .build();
 
-                UpdatePostInput updatePostInput = UpdatePostInput.builder()
-                        .id(postID)
-                        .author(updatedAuthor)
-                        .build();
+        UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
 
-                UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
+        awsAppSyncClient
+                .mutate(updatePostMutation, expected)
+                .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
+                    @Override
+                    public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
+                        updatePostMutationResponse = response;
+                       countDownLatch.countDown();
+                    }
 
-                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
-                awsAppSyncClient
-                        .mutate(updatePostMutation, expected)
-                        .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
-                            @Override
-                            public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
-                                updatePostMutationResponse = response;
-                               countDownLatch.countDown();
-                            }
+                    @Override
+                    public void onFailure(@Nonnull final ApolloException e) {
+                        Log.d(TAG, "On error called");
+                        e.printStackTrace();
+                        //Set to null to indicate failure
+                        updatePostMutationResponse = null;
+                        assertNotNull(updatePostMutationResponse);
+                        countDownLatch.countDown();
 
-                            @Override
-                            public void onFailure(@Nonnull final ApolloException e) {
-                                Log.d(TAG, "On error called");
-                                e.printStackTrace();
-                                //Set to null to indicate failure
-                                updatePostMutationResponse = null;
-                                assertNotNull(updatePostMutationResponse);
-                                countDownLatch.countDown();
+                    }
+                });
 
-                            }
-                        });
-                Looper.loop();
-            }
-
-        }).start();
 
         //Sleep for a little bit for the mutation to  get queued.
         sleep(1*1000);

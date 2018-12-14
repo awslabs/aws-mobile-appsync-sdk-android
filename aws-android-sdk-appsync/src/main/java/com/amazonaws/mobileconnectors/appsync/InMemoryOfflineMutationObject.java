@@ -38,13 +38,10 @@ import static com.amazonaws.mobileconnectors.appsync.AppSyncOfflineMutationManag
 class InMemoryOfflineMutationObject {
 
     final String recordIdentifier;
-    final Handler handler;
     final ApolloInterceptor.InterceptorRequest request;
     final ApolloInterceptorChain chain;
     final Executor dispatcher;
     final ApolloInterceptor.CallBack callBack;
-    private HandlerThread queueHandlerThread;
-    private Handler queueHandler;
     private static final String TAG = InMemoryOfflineMutationObject.class.getSimpleName();
 
     public InMemoryOfflineMutationObject(String recordIdentifier,
@@ -53,30 +50,15 @@ class InMemoryOfflineMutationObject {
                                          @Nonnull Executor dispatcher,
                                          @Nonnull ApolloInterceptor.CallBack callBack) {
         this.recordIdentifier = recordIdentifier;
-        this.handler = new NetworkUpdateHandler();
         this.request = request;
         this.chain = chain;
         this.dispatcher = dispatcher;
         this.callBack = callBack;
     }
 
-    class NetworkUpdateHandler extends Handler {
-        public NetworkUpdateHandler() {
-            super();
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            if (msg.what == MSG_EXEC) {
-                // execute the originalMutation by proceeding with the chain.
-                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Executing mutation by proceeding with the chain.");
-                chain.proceedAsync(request, dispatcher, callBack);
-            }
-            else {
-                // ignore
-                Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Non MSG_EXEC message received in NetworkUpdateHandler. Ignoring...");
-            }
-        }
+    public void execute( ) {
+        // execute the originalMutation by proceeding with the chain.
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Executing mutation by proceeding with the chain.");
+        chain.proceedAsync(request, dispatcher, callBack);
     }
-
 }
