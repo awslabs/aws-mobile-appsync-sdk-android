@@ -73,7 +73,7 @@ class MutationInterceptorMessage {
 class InterceptorCallback implements ApolloInterceptor.CallBack {
 
     ApolloInterceptor.CallBack customerCallBack;
-    final Handler queueHandler;
+    final AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
     boolean shouldRetry = true;
     Operation originalMutation;
     Operation currentMutation;
@@ -83,7 +83,8 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
     private static final String TAG = InterceptorCallback.class.getSimpleName();
 
-    public InterceptorCallback(ApolloInterceptor.CallBack customerCallBack, Handler handler,
+    public InterceptorCallback(ApolloInterceptor.CallBack customerCallBack,
+                               AppSyncOfflineMutationInterceptor.QueueUpdateHandler handler,
                                final Operation originalMutation,
                                final  Operation currentMutation,
                                final String clientState,
@@ -102,7 +103,6 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
     @Override
     public void onResponse(@Nonnull ApolloInterceptor.InterceptorResponse response) {
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse()");
-
 
         //Check if the request failed due to a conflict
         if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().hasErrors())) {
@@ -165,10 +165,10 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
         if (e instanceof ApolloNetworkException ) {
             //Happened due to a network error.
-            //Do not remove from queue
-            //Need a mechanism to kick start the mutations again.
-
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Network Exception " + e.getLocalizedMessage());
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Will retry mutation when back on network");
+            queueHandler.setMutationExecutionComplete();
+            return;
         }
 
         shouldRetry = false;

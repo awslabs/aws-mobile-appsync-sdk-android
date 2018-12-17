@@ -302,7 +302,7 @@ Add the following dependency to your app in order to use Amazon Cognito UserPool
 
 ```
 dependencies {
-    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.8.+'
+    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.9.+'
 }
 ```
 

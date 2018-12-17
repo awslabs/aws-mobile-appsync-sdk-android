@@ -146,9 +146,7 @@ class AppSyncOfflineMutationManager {
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Added mutation[" + mutationObject.recordIdentifier + "] to Persistent Queue. S3 Object found"  );
 
         }
-        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Created both in-memory and persistent records. Now going to process next in queue.");
-
-        //processNextInQueueMutation();
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Created both in-memory and persistent records. Now going to signal queuehanlder.");
 
         //Execute next mutation in Queue
         Message message = new Message();
