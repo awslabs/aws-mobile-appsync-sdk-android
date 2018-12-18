@@ -211,7 +211,7 @@ class AppSyncOfflineMutationManager {
     public void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         inMemoryOfflineMutationManager.removeFirstInQueue();
-        queueHandler.setMutationExecutionComplete();
+        queueHandler.setMutationInProgressStatusToFalse();
     }
 
     // Handler that processes the message sent by the NetworkInfoReceiver to kick off mutations

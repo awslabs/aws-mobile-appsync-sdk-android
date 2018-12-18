@@ -167,7 +167,7 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
             //Happened due to a network error.
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Network Exception " + e.getLocalizedMessage());
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Will retry mutation when back on network");
-            queueHandler.setMutationExecutionComplete();
+            queueHandler.setMutationInProgressStatusToFalse();
             return;
         }
 
@@ -221,7 +221,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
 
         //Mark the current mutation as complete.
         //This will be invoked on the onResults and onError flows of the mutation callback.
-        public synchronized void setMutationExecutionComplete() {
+        public synchronized void setMutationInProgressStatusToFalse() {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Setting mutationInProgress as false.");
             mutationInProgress = false;
         }
@@ -367,7 +367,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         inmemoryInterceptorCallbackMap.remove(identifier);
         persistentOfflineMutationObjectMap.remove(identifier);
 
-        queueHandler.setMutationExecutionComplete();
+        queueHandler.setMutationInProgressStatusToFalse();
         queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
     }
 
@@ -436,7 +436,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                     @Override
                     public void onResponse(@Nonnull InterceptorResponse response) {
                         callBack.onResponse(response);
-                        queueHandler.setMutationExecutionComplete();
+                        queueHandler.setMutationInProgressStatusToFalse();
                         queueHandler.sendEmptyMessage(MessageNumberUtil.SUCCESSFUL_EXEC);
                         if ( persistentMutationsCallback != null) {
                             JSONObject jsonObject;
@@ -497,7 +497,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                     @Override
                     public void onFailure(@Nonnull ApolloException e) {
                         callBack.onFailure(e);
-                        queueHandler.setMutationExecutionComplete();
+                        queueHandler.setMutationInProgressStatusToFalse();
                         queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                         if ( persistentMutationsCallback != null) {
                             persistentMutationsCallback.onFailure(
