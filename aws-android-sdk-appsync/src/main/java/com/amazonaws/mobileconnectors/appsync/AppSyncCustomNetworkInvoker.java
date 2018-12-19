@@ -21,6 +21,7 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.os.Message;
 import android.util.Log;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.util.VersionInfoUtils;
 import com.apollographql.apollo.api.S3InputObjectInterface;
 import com.apollographql.apollo.api.S3ObjectManager;
@@ -120,11 +121,15 @@ public class AppSyncCustomNetworkInvoker {
                                    if (!persistentOfflineMutationObject.bucket.equals("")) {
                                        //Fail if S3 Object Manager has not been provided
                                        if (s3ObjectManager == null) {
-                                           persistentMutationsCallback.onFailure(new PersistentMutationsError(persistentOfflineMutationObject.responseClassName,
-                                                   persistentOfflineMutationObject.recordIdentifier, new ApolloNetworkException("S3 upload failed.", new IllegalArgumentException("S3ObjectManager not provided."))));
+                                           //Invoke callback
+                                           if (persistentMutationsCallback != null ) {
+                                               persistentMutationsCallback.onFailure(new PersistentMutationsError(persistentOfflineMutationObject.responseClassName,
+                                                       persistentOfflineMutationObject.recordIdentifier, new ApolloNetworkException("S3 upload failed.", new IllegalArgumentException("S3ObjectManager not provided."))));
+                                           }
+                                           //Remove mutation from queue and mark state as completed.
+                                           setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
 
-                                           persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObject.recordIdentifier);
-                                           queueHandler.setMutationExecutionComplete();
+                                           //Trigger next mutation
                                            queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                            return;
                                        }
@@ -156,12 +161,37 @@ public class AppSyncCustomNetworkInvoker {
                                                    return persistentOfflineMutationObject.region;
                                                }
                                            });
-                                       } catch (Exception e) {
-                                           persistentMutationsCallback.onFailure(new PersistentMutationsError(persistentOfflineMutationObject.responseClassName,
-                                                   persistentOfflineMutationObject.recordIdentifier, new ApolloNetworkException("S3 upload failed.", e)));
+                                       }
+                                       catch (AmazonClientException e) {
 
-                                           persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObject.recordIdentifier);
-                                           queueHandler.setMutationExecutionComplete();
+                                           if ( e.getCause() instanceof IOException ) {
+                                               //IO Exception occured indicating that there was a network issue.
+                                               //Set mutationInProgress status to false and return without removing the mutation from the queue.
+                                               queueHandler.setMutationInProgressStatusToFalse();
+                                               return;
+                                           }
+
+                                           //Not a network error.
+                                           if (persistentMutationsCallback != null ) {
+                                               persistentMutationsCallback.onFailure(new PersistentMutationsError(persistentOfflineMutationObject.responseClassName,
+                                                       persistentOfflineMutationObject.recordIdentifier, new ApolloNetworkException("S3 upload failed.", e)));
+                                           }
+
+                                           //Remove mutation from queue and mark state as completed.
+                                           setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
+                                           //Trigger next mutation
+                                           queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+                                           return;
+                                       }
+                                       catch (Exception e) {
+                                           //Invoke callback
+                                           if (persistentMutationsCallback != null ) {
+                                               persistentMutationsCallback.onFailure(new PersistentMutationsError(persistentOfflineMutationObject.responseClassName,
+                                                       persistentOfflineMutationObject.recordIdentifier, new ApolloNetworkException("S3 upload failed.", e)));
+                                           }
+                                           //Remove mutation from queue and mark state as completed.
+                                           setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
+                                           //Trigger next mutation
                                            queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                            return;
                                        }
@@ -171,26 +201,28 @@ public class AppSyncCustomNetworkInvoker {
                                    httpCall.enqueue(new Callback() {
                                        @Override
                                        public void onFailure(@Nonnull Call call, @Nonnull IOException e) {
+
+                                           Log.e(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Failed to execute http call for [" +
+                                                   persistentOfflineMutationObject.recordIdentifier +"]. Exception is [" + e + "]");
+
+                                           //If this request has been canceled.
                                            if (disposed) {
+                                               setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
+                                               queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                                return;
                                            }
-                                           Log.e(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Failed to execute http call for operation : " + persistentOfflineMutationObject.responseClassName);
 
-                                           //Invoke onFailure on the callback
-                                           if (persistentMutationsCallback != null) {
-                                               persistentMutationsCallback.onFailure(
-                                                       new PersistentMutationsError(persistentOfflineMutationObject.responseClassName,
-                                                               persistentOfflineMutationObject.recordIdentifier,
-                                                               new ApolloNetworkException("Failed to execute http call", e)));
-                                           }
-                                           persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObject.recordIdentifier);
-                                           queueHandler.setMutationExecutionComplete();
-                                           queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+                                           //An I/O Exception indicates that the request didn't hit the server, likely due to a network issue.
+                                           //Mark this current execution as complete and wait for the next network event to resume queue processing
+                                           queueHandler.setMutationInProgressStatusToFalse();
+                                           return;
                                        }
 
                                        @Override
                                        public void onResponse(@Nonnull Call call, @Nonnull Response response) throws IOException {
                                            if (disposed) {
+                                               setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
+                                               queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                                return;
                                            }
 
@@ -228,8 +260,7 @@ public class AppSyncCustomNetworkInvoker {
                                                                persistentOfflineMutationObject.responseClassName,
                                                                persistentOfflineMutationObject.recordIdentifier));
                                                    }
-                                                   persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObject.recordIdentifier);
-                                                   queueHandler.setMutationExecutionComplete();
+                                                   setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
                                                    queueHandler.sendEmptyMessage(MessageNumberUtil.SUCCESSFUL_EXEC);
                                                } catch (JSONException e) {
                                                    e.printStackTrace();
@@ -240,8 +271,7 @@ public class AppSyncCustomNetworkInvoker {
                                                                        persistentOfflineMutationObject.recordIdentifier,
                                                                        new ApolloParseException("Failed to parse http response", e)));
                                                    }
-                                                   persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObject.recordIdentifier);
-                                                   queueHandler.setMutationExecutionComplete();
+                                                   setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
                                                    queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                                }
                                            } else {
@@ -252,8 +282,7 @@ public class AppSyncCustomNetworkInvoker {
                                                                    persistentOfflineMutationObject.recordIdentifier,
                                                                    new ApolloNetworkException("Failed to execute http call with error code and message: " + response.code() + response.message())));
                                                }
-                                               persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObject.recordIdentifier);
-                                               queueHandler.setMutationExecutionComplete();
+                                               setMutationExecutionAsCompletedAndRemoveFromQueue(persistentOfflineMutationObject.recordIdentifier);
                                                queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                                            }
                                        }
@@ -261,6 +290,12 @@ public class AppSyncCustomNetworkInvoker {
                                }
                            }
         );
+    }
+
+    private void setMutationExecutionAsCompletedAndRemoveFromQueue
+            (String recordIdentifier) {
+        persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
+        queueHandler.setMutationInProgressStatusToFalse();
     }
 
     private Call httpCall(PersistentOfflineMutationObject mutationObject) {

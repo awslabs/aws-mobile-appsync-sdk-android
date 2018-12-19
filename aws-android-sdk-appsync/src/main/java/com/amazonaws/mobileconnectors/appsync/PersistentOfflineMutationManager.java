@@ -87,7 +87,7 @@ public class PersistentOfflineMutationManager {
 
     //Load mutation requests from persistent store
     public List<PersistentOfflineMutationObject> fetchPersistentMutationsList() {
-       Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Fetching all mutation requests from persistent store");
+       Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Fetching all mutation requests from persistent store");
         return mutationSqlCacheOperations.fetchAllRecords();
     }
 
@@ -100,21 +100,10 @@ public class PersistentOfflineMutationManager {
        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In processNextMutationObject");
         PersistentOfflineMutationObject mutationRequestObject = getFirstInQueue();
         if ( mutationRequestObject != null ) {
-            // kick off originalMutation here through custom flow
+            // kick off originalMutation here through the custom network invoker
             networkInvoker.executeRequest(mutationRequestObject);
         }
         return mutationRequestObject;
-    }
-
-    public PersistentOfflineMutationObject removeAndGetLastInQueue() {
-
-        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In removeAndGetLastInQueue");
-        if (persistentOfflineMutationObjectList.size() > 0) {
-            PersistentOfflineMutationObject mutationObject = persistentOfflineMutationObjectList.remove(0);
-            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:returning mutation[" + mutationObject.recordIdentifier + "]: " + mutationObject.responseClassName + " \n\n " + mutationObject.requestString);
-            return mutationObject;
-        }
-        return null;
     }
 
     private synchronized PersistentOfflineMutationObject getFirstInQueue() {

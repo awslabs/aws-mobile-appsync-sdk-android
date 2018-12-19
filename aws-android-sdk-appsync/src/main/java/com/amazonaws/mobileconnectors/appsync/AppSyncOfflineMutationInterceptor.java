@@ -73,7 +73,7 @@ class MutationInterceptorMessage {
 class InterceptorCallback implements ApolloInterceptor.CallBack {
 
     ApolloInterceptor.CallBack customerCallBack;
-    final Handler queueHandler;
+    final AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
     boolean shouldRetry = true;
     Operation originalMutation;
     Operation currentMutation;
@@ -83,7 +83,8 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
     private static final String TAG = InterceptorCallback.class.getSimpleName();
 
-    public InterceptorCallback(ApolloInterceptor.CallBack customerCallBack, Handler handler,
+    public InterceptorCallback(ApolloInterceptor.CallBack customerCallBack,
+                               AppSyncOfflineMutationInterceptor.QueueUpdateHandler handler,
                                final Operation originalMutation,
                                final  Operation currentMutation,
                                final String clientState,
@@ -102,7 +103,6 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
     @Override
     public void onResponse(@Nonnull ApolloInterceptor.InterceptorResponse response) {
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse()");
-
 
         //Check if the request failed due to a conflict
         if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().hasErrors())) {
@@ -165,10 +165,10 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
         if (e instanceof ApolloNetworkException ) {
             //Happened due to a network error.
-            //Do not remove from queue
-            //Need a mechanism to kick start the mutations again.
-
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Network Exception " + e.getLocalizedMessage());
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Will retry mutation when back on network");
+            queueHandler.setMutationInProgressStatusToFalse();
+            return;
         }
 
         shouldRetry = false;
@@ -221,7 +221,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
 
         //Mark the current mutation as complete.
         //This will be invoked on the onResults and onError flows of the mutation callback.
-        public synchronized void setMutationExecutionComplete() {
+        public synchronized void setMutationInProgressStatusToFalse() {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Setting mutationInProgress as false.");
             mutationInProgress = false;
         }
@@ -367,7 +367,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         inmemoryInterceptorCallbackMap.remove(identifier);
         persistentOfflineMutationObjectMap.remove(identifier);
 
-        queueHandler.setMutationExecutionComplete();
+        queueHandler.setMutationInProgressStatusToFalse();
         queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
     }
 
@@ -436,7 +436,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                     @Override
                     public void onResponse(@Nonnull InterceptorResponse response) {
                         callBack.onResponse(response);
-                        queueHandler.setMutationExecutionComplete();
+                        queueHandler.setMutationInProgressStatusToFalse();
                         queueHandler.sendEmptyMessage(MessageNumberUtil.SUCCESSFUL_EXEC);
                         if ( persistentMutationsCallback != null) {
                             JSONObject jsonObject;
@@ -497,7 +497,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                     @Override
                     public void onFailure(@Nonnull ApolloException e) {
                         callBack.onFailure(e);
-                        queueHandler.setMutationExecutionComplete();
+                        queueHandler.setMutationInProgressStatusToFalse();
                         queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                         if ( persistentMutationsCallback != null) {
                             persistentMutationsCallback.onFailure(

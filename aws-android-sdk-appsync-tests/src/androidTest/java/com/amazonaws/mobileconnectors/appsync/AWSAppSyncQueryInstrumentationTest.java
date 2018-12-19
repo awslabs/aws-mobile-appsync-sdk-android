@@ -831,9 +831,8 @@ public class AWSAppSyncQueryInstrumentationTest {
 
 
     /*
-    This test should be run on a physical device with no cellular signal or
-    with cellular data turned off. The test disables the wifi on the device to
-    create the offline scenario.
+    This test should be run on a physical device or simulator with cellular data turned off.
+    The test disables the wifi on the device to create the offline scenario.
      */
     @Test
     public void testMultipleOfflineMutations() {
@@ -861,11 +860,19 @@ public class AWSAppSyncQueryInstrumentationTest {
         final String postID = addPostMutationResponse.data().createPost().id();
 
 
-        //Set Wifi Network offline
-        WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
-        assertTrue(wifiManager.setWifiEnabled(false));
-        //Sleep for a little bit to make sure that the device is indeed offline
-        sleep(3*1000);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //Set Wifi Network offline
+                WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
+                for (int i = 0; i < 15; i++) {
+                    assertTrue(wifiManager.setWifiEnabled(false));
+                    sleep((int) (3 * 1000 ));
+                    assertTrue(wifiManager.setWifiEnabled(true));
+                }
+              }
+        }
+        ).start();
 
         for ( int i = 0; i < numberOfLatches; i++) {
             final int position = i;
@@ -910,9 +917,6 @@ public class AWSAppSyncQueryInstrumentationTest {
                     });
         }
 
-        //Enable Wifi Network so that the mutations can get processed.
-        assertTrue(wifiManager.setWifiEnabled(true));
-
         Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Waiting for latches to be counted down");
         for ( int i = 0; i < numberOfLatches; i++) {
             try {
@@ -933,10 +937,9 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
 
-    /*
-    This test should be run on a physical device with no cellular signal or
-    with cellular data turned off. The test disables the wifi on the device to
-    create the offline scenario.
+   /*
+    This test should be run on a physical device or simulator with cellular data turned off.
+    The test disables the wifi on the device to create the offline scenario.
      */
 
     @Test
@@ -963,11 +966,17 @@ public class AWSAppSyncQueryInstrumentationTest {
         final String postID = addPostMutationResponse.data().createPost().id();
 
 
-        //Set Wifi Network offline
-        WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
-        assertTrue(wifiManager.setWifiEnabled(false));
-        //Sleep for a little bit to make sure that the device is indeed offline
-        sleep(3*1000);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //Set Wifi Network offline
+                WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
+                assertTrue(wifiManager.setWifiEnabled(false));
+                sleep(1000);
+                wifiManager.setWifiEnabled(true);
+            }
+        }
+        ).start();
 
 
         UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
@@ -1009,12 +1018,6 @@ public class AWSAppSyncQueryInstrumentationTest {
                     }
                 });
 
-
-        //Sleep for a little bit for the mutation to  get queued.
-        sleep(1*1000);
-
-        //Enable Wifi Network so that the mutations can get processed.
-        assertTrue(wifiManager.setWifiEnabled(true));
 
         Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Waiting for latches to be counted down");
         try {
