@@ -1,5 +1,14 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.1)
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.9.1` instead of `2.8.2`.
+
+### Bug Fixes
+* Adjusted mutation processing logic to remove mutations from the queue only after they have been processed by the server and maintain sequential execution semantics. See [issue #40](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/40), [issue #33](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/33), [issue #72](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/72), and [issue #82](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/82)
+
+
 ## [Release 2.7.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.0)
 
 ### New Features
