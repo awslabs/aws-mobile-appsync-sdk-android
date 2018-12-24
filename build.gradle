@@ -2,7 +2,7 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-    ext.kotlin_version = '1.2.40'
+    ext.kotlin_version = '1.2.51'
     ext.aws_version = AWS_CORE_SDK_VERSION
     repositories {
         google()
