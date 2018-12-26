@@ -21,6 +21,7 @@ import android.content.Context;
 import android.util.Log;
 
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
+import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.amazonaws.mobileconnectors.appsync.subscription.mqtt.MqttSubscriptionClient;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.api.Subscription;
@@ -371,9 +372,6 @@ public class RealSubscriptionManager implements SubscriptionManager {
     boolean reconnectionInProgress = false;
     private CountDownLatch reconnectCountdownLatch = null;
 
-    private static final int BASE_RETRY_WAIT_MILLIS = 100;
-    private static final int MAX_RETRY_WAIT_MILLIS = 300 * 1000; //Five Minutes
-    private static final int JITTER = 100;
 
     void initiateReconnectSequence() {
         
@@ -385,13 +383,10 @@ public class RealSubscriptionManager implements SubscriptionManager {
             reconnectThread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    int retryCount = 0;
-                    long waitMillis = 0;
+                    int retryCount = 1;
+                    long waitMillis;
                     while (reconnectionInProgress) {
-                        //Calculate backoff value
-                        if (waitMillis < MAX_RETRY_WAIT_MILLIS ) {
-                            waitMillis = Math.min((long) (Math.pow(2, retryCount) * BASE_RETRY_WAIT_MILLIS + (Math.random() * JITTER)), MAX_RETRY_WAIT_MILLIS);
-                        }
+                        waitMillis = RetryInterceptor.calculateBackoff(retryCount);
                         try {
                             Log.v(TAG, "Subscription Infrastructure: Sleeping for [" + (waitMillis/1000)+ "] seconds");
                             Thread.sleep(waitMillis);

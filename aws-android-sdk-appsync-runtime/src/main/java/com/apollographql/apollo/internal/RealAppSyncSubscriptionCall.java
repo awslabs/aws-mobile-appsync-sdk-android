@@ -72,55 +72,60 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
             logger.w("Subscription Infrastructure: Callback passed into subscription [" + subscription +"] was null. Will not subscribe.");
             return;
         }
-        userCallback = callback;
-        subscriptionManager.addListener(subscription, callback);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                userCallback = callback;
+                subscriptionManager.addListener(subscription, callback);
 
-        //Ensure that the call is only made once.
-        synchronized (this) {
-            switch (state.get()) {
-                case IDLE: {
-                    state.set(ACTIVE);
-                    break;
+                //Ensure that the call is only made once.
+                synchronized (this) {
+                    switch (state.get()) {
+                        case IDLE: {
+                            state.set(ACTIVE);
+                            break;
+                        }
+
+                        case CANCELED:
+                            throw new RuntimeException("Cancelled", new ApolloCanceledException("Call is cancelled."));
+
+                        case ACTIVE:
+                            throw new IllegalStateException("Already Executed");
+
+                        default:
+                            throw new IllegalStateException("Unknown state");
+                    }
                 }
 
-                case CANCELED:
-                    throw new RuntimeException("Cancelled", new ApolloCanceledException("Call is cancelled."));
+                try {
+                    if (subscriptionSemaphore.tryAcquire(MAX_WAIT_TIME, TimeUnit.SECONDS)) {
+                        logger.d("Subscription Infrastructure: Acquired subscription Semaphore. Continuing");
+                    } else {
+                        logger.d("Subscription Infrastructure: Did not acquire subscription Semaphore after waiting for [" + MAX_WAIT_TIME + "] seconds. Will continue");
 
-                case ACTIVE:
-                    throw new IllegalStateException("Already Executed");
+                    }
+                } catch (InterruptedException e) {
+                    logger.e(e, "Subscription Infrastructure:Got exception while waiting to acquire subscription Semaphore. Will continue without waiting");
+                }
 
-                default:
-                    throw new IllegalStateException("Unknown state");
+
+                logger.d("Subscription Infrastructure: Making request to server to get Subscription Meta Data");
+                subscriptionMetadataRequest.enqueue(new GraphQLCall.Callback<T>() {
+                    @Override
+                    public void onResponse(@Nonnull Response<T> response) {
+                        subscriptionSemaphore.release();
+                        // Do nothing. Internal code has been kicked off.
+                    }
+
+                    @Override
+                    public void onFailure(@Nonnull ApolloException e) {
+                        subscriptionSemaphore.release();
+                        reportFailureToSubscriptionManager();
+                        callback.onFailure(e);
+                    }
+                });
             }
-        }
-
-        try {
-            if (subscriptionSemaphore.tryAcquire(MAX_WAIT_TIME, TimeUnit.SECONDS)) {
-                logger.d("Subscription Infrastructure: Acquired subscription Semaphore. Continuing");
-            } else {
-                logger.d("Subscription Infrastructure: Did not acquire subscription Semaphore after waiting for [" + MAX_WAIT_TIME + "] seconds. Will continue");
-
-            }
-        } catch (InterruptedException e) {
-            logger.e(e, "Subscription Infrastructure:Got exception while waiting to acquire subscription Semaphore. Will continue without waiting");
-        }
-
-
-        logger.d("Subscription Infrastructure: Making request to server to get Subscription Meta Data");
-        this.subscriptionMetadataRequest.enqueue(new GraphQLCall.Callback<T>() {
-            @Override
-            public void onResponse(@Nonnull Response<T> response) {
-                subscriptionSemaphore.release();
-                // Do nothing. Internal code has been kicked off.
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                subscriptionSemaphore.release();
-                reportFailureToSubscriptionManager();
-                callback.onFailure(e);
-            }
-        });
+        }).start();
     }
 
     void  reportFailureToSubscriptionManager () {
@@ -144,34 +149,39 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
 
     @Override
     public void cancel() {
-        //Cancel subscription only if in Active state.
-        synchronized (this) {
-            switch (state.get()) {
-                case IDLE: {
-                    state.set(CANCELED);
-                    break;
-                }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //Cancel subscription only if in Active state.
+                synchronized (this) {
+                    switch (state.get()) {
+                        case IDLE: {
+                            state.set(CANCELED);
+                            break;
+                        }
 
-                case ACTIVE: {
-                    try {
-                        subscriptionManager.unsubscribe(subscription);
-                        subscriptionManager.removeListener(subscription, userCallback);
-                        userCallback.onCompleted();
-                        userCallback = null;
-                    } finally {
-                        state.set(CANCELED);
+                        case ACTIVE: {
+                            try {
+                                subscriptionManager.unsubscribe(subscription);
+                                subscriptionManager.removeListener(subscription, userCallback);
+                                userCallback.onCompleted();
+                                userCallback = null;
+                            } finally {
+                                state.set(CANCELED);
+                            }
+                            break;
+                        }
+
+                        case CANCELED:
+                            // These are not illegal states, but cancelling does nothing
+                            break;
+
+                        default:
+                            throw new IllegalStateException("Unknown state");
                     }
-                    break;
                 }
-
-                case CANCELED:
-                    // These are not illegal states, but cancelling does nothing
-                    break;
-
-                default:
-                    throw new IllegalStateException("Unknown state");
             }
-        }
+        }).start();
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
