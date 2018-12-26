@@ -245,6 +245,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         final CountDownLatch updatePostMessageReceivedLatch = new CountDownLatch(5);
         final CountDownLatch deletePostMessageReceivedLatch = new CountDownLatch(1);
 
+        final CountDownLatch onCreatePostSubscriptionCompletionLatch = new CountDownLatch(1);
+        final CountDownLatch onUpdatePostSubscriptionCompletionLatch = new CountDownLatch(1);
+        final CountDownLatch onDeletePostSubscriptionCompletionLatch = new CountDownLatch(1);
+        final CountDownLatch onCreateArticleSubscriptionCompletionLatch = new CountDownLatch(1);
+        final CountDownLatch onUpdateArticleSubscriptionCompletionLatch = new CountDownLatch(1);
+        final CountDownLatch onDeleteArticleSubscriptionCompletionLatch = new CountDownLatch(1);
+
         assertNotNull(awsAppSyncClient);
         final String title = "Pull Me Under";
         final String author = "Dream Theater @ " + System.currentTimeMillis();
@@ -268,7 +275,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Add Post Subscription terminated.");
-
+                onCreatePostSubscriptionCompletionLatch.countDown();
             }
         };
 
@@ -289,6 +296,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Update Post Subscription terminated.");
+                onUpdatePostSubscriptionCompletionLatch.countDown();
             }
         };
 
@@ -309,6 +317,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Delete Post Subscription terminated.");
+                onDeletePostSubscriptionCompletionLatch.countDown();
             }
         };
 
@@ -328,6 +337,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Add Article Subscription terminated.");
+                onCreateArticleSubscriptionCompletionLatch.countDown();
             }
         };
 
@@ -348,6 +358,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Update Article Subscription terminated.");
+                onUpdateArticleSubscriptionCompletionLatch.countDown();
             }
         };
 
@@ -367,6 +378,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Delete Article Subscription terminated.");
+                onDeleteArticleSubscriptionCompletionLatch.countDown();
             }
         };
 
@@ -429,14 +441,26 @@ public class AWSAppSyncQueryInstrumentationTest {
         updateArticleSubWatcher.cancel();
         deleteArticleSubWatcher.cancel();
 
-        //Sleep for 45 seconds - Connections are pinged every 30 seconds; this sleep will help verify through manual inspection that the connections are indeed freed.
-        sleep (45*1000);
+        try {
+            assertTrue(onCreatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(onUpdatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(onDeletePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(onCreateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(onUpdateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(onDeleteArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+
+        }
+        catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
     }
 
-
+    @Test
     public void testAddSubscriptionWithApiKeyAuthModel() {
         AWSAppSyncClient awsAppSyncClient1 = createAppSyncClientWithAPIKEY();
         final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
         assertNotNull(awsAppSyncClient1);
         final String title = "Alabama Song [Whisky Bar]";
         final String author = "Doors @ " + System.currentTimeMillis();
@@ -459,7 +483,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Subscription Completed");
-
+                subscriptionCompletedLatch.countDown();
             }
         };
 
@@ -483,6 +507,15 @@ public class AWSAppSyncQueryInstrumentationTest {
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
+
+        subscriptionWatcher.cancel();
+        try {
+            assertTrue(subscriptionCompletedLatch.await(30, TimeUnit.SECONDS));
+        }
+        catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
     }
 
 
@@ -491,6 +524,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
         final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch message2ExceptionReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
 
         assertNotNull(awsAppSyncClient);
         assertNotNull(awsAppSyncClient);
@@ -516,6 +550,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Subscription Completed");
+                subscriptionCompletedLatch.countDown();
 
             }
         };
@@ -547,8 +582,12 @@ public class AWSAppSyncQueryInstrumentationTest {
             iex.printStackTrace();
         }
         onCreatePostSubscriptionWatcher.cancel();
-        //Sleep for a while to make sure the cancel goes through
-        sleep(3 * 1000);
+
+        try {
+            assertTrue(subscriptionCompletedLatch.await(60, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
     }
 
 
@@ -557,6 +596,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
         final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch message2ReceivedLatch = new CountDownLatch(1);
+        final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
 
         assertNotNull(awsAppSyncClient);
         final String title = "Alabama Song [Whisky Bar]";
@@ -580,6 +620,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Received onCompleted on subscription");
+                subscriptionCompletedLatch.countDown();
 
             }
         };
@@ -609,6 +650,11 @@ public class AWSAppSyncQueryInstrumentationTest {
         Log.d(TAG, "Going to cancel subscription");
         onCreatePostSubscriptionWatcher.cancel();
 
+        try {
+            assertTrue(subscriptionCompletedLatch.await(60, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
 
         //Add another post. The expectation is that we will not get a message (wait for 60 seconds to be sure)
         addPost(awsAppSyncClient,title,author,url,"Well, show me the way, to the next whisky bar @" + System.currentTimeMillis());

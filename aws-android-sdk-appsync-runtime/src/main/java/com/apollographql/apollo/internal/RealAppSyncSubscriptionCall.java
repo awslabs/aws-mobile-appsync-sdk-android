@@ -149,34 +149,39 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
 
     @Override
     public void cancel() {
-        //Cancel subscription only if in Active state.
-        synchronized (this) {
-            switch (state.get()) {
-                case IDLE: {
-                    state.set(CANCELED);
-                    break;
-                }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                //Cancel subscription only if in Active state.
+                synchronized (this) {
+                    switch (state.get()) {
+                        case IDLE: {
+                            state.set(CANCELED);
+                            break;
+                        }
 
-                case ACTIVE: {
-                    try {
-                        subscriptionManager.unsubscribe(subscription);
-                        subscriptionManager.removeListener(subscription, userCallback);
-                        userCallback.onCompleted();
-                        userCallback = null;
-                    } finally {
-                        state.set(CANCELED);
+                        case ACTIVE: {
+                            try {
+                                subscriptionManager.unsubscribe(subscription);
+                                subscriptionManager.removeListener(subscription, userCallback);
+                                userCallback.onCompleted();
+                                userCallback = null;
+                            } finally {
+                                state.set(CANCELED);
+                            }
+                            break;
+                        }
+
+                        case CANCELED:
+                            // These are not illegal states, but cancelling does nothing
+                            break;
+
+                        default:
+                            throw new IllegalStateException("Unknown state");
                     }
-                    break;
                 }
-
-                case CANCELED:
-                    // These are not illegal states, but cancelling does nothing
-                    break;
-
-                default:
-                    throw new IllegalStateException("Unknown state");
             }
-        }
+        }).start();
     }
 
     @SuppressWarnings("MethodDoesntCallSuperMethod")
