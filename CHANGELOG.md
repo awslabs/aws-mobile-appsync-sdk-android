@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.2)
+
+### Bug Fixes
+* Fixed bug to ensure that MQTT Connections are only made if there are topics matching subscriptions made by the client
+
 ## [Release 2.7.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.1)
 
 ### Misc. Updates
