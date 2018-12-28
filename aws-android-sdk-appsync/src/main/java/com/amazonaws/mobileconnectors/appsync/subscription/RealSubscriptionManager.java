@@ -205,7 +205,22 @@ public class RealSubscriptionManager implements SubscriptionManager {
         // Create new clients, connections, and subscriptions
         final List<SubscriptionClient> newClients = new ArrayList<>();
         Log.v(TAG, "Subscription Infrastructure: Attempting to make [" + response.mqttInfos.size() + "] MQTT clients]");
+        final Set<String> topicSet = subscriptionsByTopic.keySet();
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
+
+            //Check if this MQTT connection meta data has at least one topic that we have a subscription for
+            boolean noSubscriptionsFoundForTopicMetadata = true;
+            for (String topic: info.topics) {
+                if (topicSet.contains(topic)) {
+                    noSubscriptionsFoundForTopicMetadata = false;
+                }
+            }
+
+            //If this connection doesn't contain any topics we are interested in, don't connect.
+            if (noSubscriptionsFoundForTopicMetadata) {
+                allClientsConnectedLatch.countDown();
+                continue;
+            }
 
             final MqttSubscriptionClient mqttClient = new MqttSubscriptionClient(this.applicationContext, info.wssURL, info.clientId);
             // Silence new clients until swapped with old clients
@@ -215,7 +230,6 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 @Override
                 public void onConnect() {
                     reportSuccessfulConnection();
-                    Set<String> topicSet = subscriptionsByTopic.keySet();
                     Log.v(TAG, String.format("Subscription Infrastructure: Connection successful for clientID [" + info.clientId + "]. Will subscribe up to %d topics", info.topics.length));
                     for (String topic : info.topics) {
                         if (topicSet.contains(topic)) {

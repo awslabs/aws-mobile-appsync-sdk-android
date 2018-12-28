@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.2)
+
+### Enhancements
+* Improved Subscription Connection handling by optimizing MQTT connections 
+
 ## [Release 2.7.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.1)
 
 ### Misc. Updates
