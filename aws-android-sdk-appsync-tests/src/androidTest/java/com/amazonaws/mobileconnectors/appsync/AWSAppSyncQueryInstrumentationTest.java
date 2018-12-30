@@ -18,12 +18,12 @@
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
-import android.net.ConnectivityManager;
-import android.net.wifi.WifiManager;
+import android.support.test.runner.AndroidJUnit4;
+import android.util.Log;
 
-import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMissingRequiredFieldsMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostRequiredFieldsOnlyMutation;
@@ -41,37 +41,30 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.DeletePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
-import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
-import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
-import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
-
-import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Error;
+import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.util.Cancelable;
 
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import android.support.test.runner.AndroidJUnit4;
-import android.util.Log;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Scanner;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -104,142 +97,10 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
 
-    private AWSAppSyncClient createAppSyncClientWithIAM() {
-        InputStream configInputStream = null;
-        try {
-
-            configInputStream = InstrumentationRegistry.getContext().getResources().getAssets().open("appsync_test_credentials.json");
-
-            final Scanner in = new Scanner(configInputStream);
-            final StringBuilder sb = new StringBuilder();
-            while (in.hasNextLine()) {
-                sb.append(in.nextLine());
-            }
-            JSONObject config = new JSONObject(sb.toString());
-            String endPoint = config.getString("AppSyncEndpoint");
-            String appSyncRegion = config.getString("AppSyncRegion");
-            Log.d(TAG, "Connecting to " + endPoint + ", region: " + appSyncRegion + ", using IAM");
-            String cognitoIdentityPoolID = config.getString("CognitoIdentityPoolId");
-            String cognitoRegion = config.getString("CognitoIdentityPoolRegion");
-
-            if (endPoint == null ||appSyncRegion == null || cognitoIdentityPoolID == null || cognitoRegion == null ) {
-                Log.e(TAG, "Unable to read AppSyncEndpoint, AppSyncRegion, CognitoIdentityPoolId, CognitoIdentityPoolRegion from config file ");
-                return null;
-            }
-
-            CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(InstrumentationRegistry.getContext(), cognitoIdentityPoolID, Regions.fromName(cognitoRegion));
-
-            return AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getContext())
-                    .credentialsProvider(credentialsProvider)
-                    .serverUrl(endPoint)
-                    .region(Regions.fromName(appSyncRegion))
-                    .persistentMutationsCallback(new PersistentMutationsCallback() {
-                        @Override
-                        public void onResponse(PersistentMutationsResponse response) {
-                            Log.d(TAG, response.getMutationClassName());
-                        }
-
-                        @Override
-                        public void onFailure(PersistentMutationsError error) {
-                            Log.e(TAG, error.getMutationClassName());
-                            Log.e(TAG, "Error", error.getException());
-                        }
-                    })
-                    .build();
-
-        }
-        catch (IOException e) {
-            Log.e(TAG, e.getLocalizedMessage());
-            e.printStackTrace();
-        }
-        catch (JSONException je) {
-            Log.e(TAG, je.getLocalizedMessage());
-            je.printStackTrace();
-        }
-        finally {
-            if (configInputStream != null ) {
-                try {
-                    configInputStream.close();
-                } catch (IOException ce) {
-                    Log.e(TAG,ce.getLocalizedMessage());
-                    ce.printStackTrace();
-                }
-            }
-        }
-        return null;
-    }
-
-    private AWSAppSyncClient createAppSyncClientWithAPIKEY() {
-        InputStream configInputStream = null;
-        try {
-
-            configInputStream = InstrumentationRegistry.getContext().getResources().getAssets().open("appsync_test_credentials.json");
-
-            final Scanner in = new Scanner(configInputStream);
-            final StringBuilder sb = new StringBuilder();
-            while (in.hasNextLine()) {
-                sb.append(in.nextLine());
-            }
-            JSONObject config = new JSONObject(sb.toString());
-            String endPoint = config.getString("AppSyncEndpointAPIKey");
-            String appSyncRegion = config.getString("AppSyncRegionAPIKey");
-            String apiKey = config.getString("AppSyncAPIKey");
-
-            if (endPoint == null ||apiKey == null  ) {
-                Log.e(TAG, "Unable to read AppSyncEndpointAPIKey, AppSyncRegionAPIKey or AppSyncAPIKey from config file ");
-                return null;
-            }
-
-
-            APIKeyAuthProvider provider = new BasicAPIKeyAuthProvider(apiKey);
-
-            return AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getContext())
-                    .apiKey(provider)
-                    .serverUrl(endPoint)
-                    .region(Regions.fromName(appSyncRegion))
-                    .persistentMutationsCallback(new PersistentMutationsCallback() {
-                        @Override
-                        public void onResponse(PersistentMutationsResponse response) {
-                            Log.d(TAG, response.getMutationClassName());
-                        }
-
-                        @Override
-                        public void onFailure(PersistentMutationsError error) {
-                            Log.e(TAG, error.getMutationClassName());
-                            Log.e(TAG, "Error", error.getException());
-                        }
-                    })
-                    .build();
-
-        }
-        catch (IOException e) {
-            Log.e(TAG, e.getLocalizedMessage());
-            e.printStackTrace();
-        }
-        catch (JSONException je) {
-            Log.e(TAG, je.getLocalizedMessage());
-            je.printStackTrace();
-        }
-        finally {
-            if (configInputStream != null ) {
-                try {
-                    configInputStream.close();
-                } catch (IOException ce) {
-                    Log.e(TAG,ce.getLocalizedMessage());
-                    ce.printStackTrace();
-                }
-            }
-        }
-        return null;
-    }
-
-
     @Test
     public void testMultipleSubscriptionsWithIAM() {
 
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
 
         final CountDownLatch addPostMessageReceivedLatch = new CountDownLatch(1);
         final CountDownLatch updatePostMessageReceivedLatch = new CountDownLatch(5);
@@ -458,7 +319,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testAddSubscriptionWithApiKeyAuthModel() {
-        AWSAppSyncClient awsAppSyncClient1 = createAppSyncClientWithAPIKEY();
+        AWSAppSyncClient awsAppSyncClient1 = AppSyncTestSetupHelper.createAppSyncClientWithAPIKEY();
         final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
         assertNotNull(awsAppSyncClient1);
@@ -521,7 +382,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testAddSubscriptionWithIAMAuthModelForNullPatching() {
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch message2ExceptionReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
@@ -593,7 +454,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testAddSubscriptionWithIAMAuthModel() {
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch message2ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
@@ -668,7 +529,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     @Test
     public void testSyncOnlyBaseQuery() {
         final CountDownLatch syncLatch = new CountDownLatch(1);
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
 
         boolean success = false;
@@ -707,7 +568,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     public void testSyncOnlyBaseAndDeltaQuery() {
         final CountDownLatch baseQueryLatch = new CountDownLatch(1);
         final CountDownLatch deltaQueryLatch = new CountDownLatch(1);
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
 
         Query baseQuery =  AllPostsQuery.builder().build();
@@ -759,7 +620,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
 
     public void testCache() {
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
         String postID = "ce228ceb-c2fc-483e-8c3e-3d33fb8dd61f";
 
@@ -781,7 +642,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testCRUD() {
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
         final String title = "Home [Scene Six]";
         final String author = "Dream Theater @ " + System.currentTimeMillis();
@@ -882,7 +743,7 @@ public class AWSAppSyncQueryInstrumentationTest {
      */
     @Test
     public void testMultipleOfflineMutations() {
-        final AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
 
         assertNotNull(awsAppSyncClient);
 
@@ -990,7 +851,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testSingleOfflineMutation() {
-        final AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
 
         assertNotNull(awsAppSyncClient);
 
@@ -1085,7 +946,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     @Test
     public void testUpdateWithInvalidID() {
 
-        AWSAppSyncClient awsAppSyncClient = createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
 
         //Try to update a Post with a Fake ID

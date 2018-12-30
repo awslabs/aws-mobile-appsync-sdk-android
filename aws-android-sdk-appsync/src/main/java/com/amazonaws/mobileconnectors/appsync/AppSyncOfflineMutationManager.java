@@ -110,16 +110,12 @@ class AppSyncOfflineMutationManager {
      */
     private NetworkInfoReceiver networkInfoReceiver;
 
-    public boolean shouldProcess() {
-        return shouldProcessMutations;
-    }
-
     public void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
 
         inMemoryOfflineMutationManager.addMutationObjectInQueue(mutationObject);
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:  Added mutation[" + mutationObject.recordIdentifier + "] to inMemory Queue"  );
 
-        S3InputObjectInterface s3InputObjectInterface = getS3ComplexObject(mutationObject.request.operation.variables().valueMap());
+        S3InputObjectInterface s3InputObjectInterface = S3ObjectManagerImplementation.getS3ComplexObject(mutationObject.request.operation.variables().valueMap());
         if (s3InputObjectInterface == null) {
             persistentOfflineMutationManager.addPersistentMutationObject(
                     new PersistentOfflineMutationObject(
@@ -146,27 +142,13 @@ class AppSyncOfflineMutationManager {
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Added mutation[" + mutationObject.recordIdentifier + "] to Persistent Queue. S3 Object found"  );
 
         }
-        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Created both in-memory and persistent records. Now going to signal queuehanlder.");
+        Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Created both in-memory and persistent records. Now going to signal queue handler.");
 
         //Execute next mutation in Queue
         Message message = new Message();
         message.obj = new MutationInterceptorMessage();
         message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
         queueHandler.sendMessage(message);
-    }
-
-    private S3InputObjectInterface getS3ComplexObject(Map<String, Object> variablesMap) {
-        for (String key: variablesMap.keySet()) {
-            if (variablesMap.get(key) instanceof S3InputObjectInterface) {
-                S3InputObjectInterface s3InputObject = (S3InputObjectInterface)variablesMap.get(key);
-                return s3InputObject;
-            } else {
-                if (variablesMap.get(key) instanceof Map) {
-                    return getS3ComplexObject((Map<String, Object>) variablesMap.get(key));
-                }
-            }
-        }
-        return null;
     }
 
     public void processNextInQueueMutation() {

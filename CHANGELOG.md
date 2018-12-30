@@ -4,6 +4,7 @@
 
 ### Enhancements
 * Improved Subscription Connection handling by optimizing MQTT connections 
+* Moved subscription setup and cancel requests to a separate thread to avoid blocking the calling thread
 
 ## [Release 2.7.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.1)
 

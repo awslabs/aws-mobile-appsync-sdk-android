@@ -244,7 +244,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
                 @Override
                 public void onError(Exception e) {
-                    Log.v(TAG, "Subscription Infrastructure: onError called");
+                    Log.v(TAG, "Subscription Infrastructure: onError called "  + e);
                     if ( e instanceof SubscriptionDisconnectedException) {
                         Log.v(TAG, "Subscription Infrastructure: Disconnect received. Unexpected - Initiating reconnect sequence.");
                         reportConnectionError();

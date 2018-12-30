@@ -68,7 +68,7 @@ public class AppSyncSqlHelper extends SQLiteOpenHelper {
 
   @Override
   public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-    Log.d(TAG, "In onUpgrae for [" + DATABASE_NAME + "]. Will drop tables now");
+    Log.d(TAG, "In onUpgrade for [" + DATABASE_NAME + "]. Will drop tables now");
     db.execSQL("DROP TABLE IF EXISTS " + TABLE_RECORDS);
     onCreate(db);
   }

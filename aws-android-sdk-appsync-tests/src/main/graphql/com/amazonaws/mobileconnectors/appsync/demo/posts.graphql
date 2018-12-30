@@ -117,3 +117,91 @@ subscription OnDeleteArticle {
   }
 }
 
+mutation CreateArticle($input: CreateArticleInput!) {
+  createArticle(input: $input) {
+    id
+    author
+    title
+    version
+    pdf {
+      bucket
+      key
+      region
+    }
+    image {
+      bucket
+      key
+      region
+    }
+  }
+}
+
+mutation CreateArticle2(
+  $author: String!
+  $title: String
+  $version: Int!
+  $pdf: S3ObjectInput
+  $image: S3ObjectInput
+) {
+  createArticle2(
+    author: $author
+    title: $title
+    version: $version
+    pdf: $pdf
+    image: $image
+  ) {
+    id
+    author
+    title
+    version
+    pdf {
+      bucket
+      key
+      region
+    }
+    image {
+      bucket
+      key
+      region
+    }
+  }
+}
+
+
+mutation UpdateArticle($input: UpdateArticleInput!) {
+  updateArticle(input: $input) {
+    id
+    author
+    title
+    version
+    pdf {
+      bucket
+      key
+      region
+    }
+    image {
+       bucket
+       key
+       region
+     }
+  }
+}
+mutation DeleteArticle($input: DeleteArticleInput!) {
+  deleteArticle(input: $input) {
+    id
+    author
+    title
+    version
+    pdf {
+      bucket
+      key
+      region
+    }
+    image {
+      bucket
+      key
+      region
+    }
+  }
+}
+
