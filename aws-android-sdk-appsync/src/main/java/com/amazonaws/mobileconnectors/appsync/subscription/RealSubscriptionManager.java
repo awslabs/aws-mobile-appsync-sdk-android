@@ -50,6 +50,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
     private ApolloStore apolloStore;
     private ScalarTypeAdapters scalarTypeAdapters;
     private ApolloClient mApolloClient = null;
+    private boolean subscriptionsAutoReconnect = true;
 
     final List<SubscriptionClient> clients;
 
@@ -61,11 +62,16 @@ public class RealSubscriptionManager implements SubscriptionManager {
     private final Object subscriptionsByTopicLock = new Object();
 
     public RealSubscriptionManager(@Nonnull final Context applicationContext) {
+        this(applicationContext,true);
+    }
+
+    public RealSubscriptionManager(@Nonnull final Context applicationContext, final boolean subscriptionsAutoReconnect) {
         this.applicationContext = applicationContext.getApplicationContext();
         subscriptionsById = new ConcurrentHashMap<>();
         subscriptionsByTopic = new ConcurrentHashMap<>();
         topicConnectionMap = new ConcurrentHashMap<>();
         clients = new ArrayList<>();
+        this.subscriptionsAutoReconnect = subscriptionsAutoReconnect;
     }
 
     public void setApolloClient(ApolloClient apolloClient) {
@@ -206,6 +212,9 @@ public class RealSubscriptionManager implements SubscriptionManager {
         final List<SubscriptionClient> newClients = new ArrayList<>();
         Log.v(TAG, "Subscription Infrastructure: Attempting to make [" + response.mqttInfos.size() + "] MQTT clients]");
         final Set<String> topicSet = subscriptionsByTopic.keySet();
+        //Clear the topic Connection map
+        topicConnectionMap.clear();
+
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
 
             //Check if this MQTT connection meta data has at least one topic that we have a subscription for
@@ -229,7 +238,9 @@ public class RealSubscriptionManager implements SubscriptionManager {
             mqttClient.connect(new SubscriptionClientCallback() {
                 @Override
                 public void onConnect() {
-                    reportSuccessfulConnection();
+                    if (subscriptionsAutoReconnect) {
+                        reportSuccessfulConnection();
+                    }
                     Log.v(TAG, String.format("Subscription Infrastructure: Connection successful for clientID [" + info.clientId + "]. Will subscribe up to %d topics", info.topics.length));
                     for (String topic : info.topics) {
                         if (topicSet.contains(topic)) {
@@ -245,10 +256,21 @@ public class RealSubscriptionManager implements SubscriptionManager {
                 @Override
                 public void onError(Exception e) {
                     Log.v(TAG, "Subscription Infrastructure: onError called "  + e);
-                    if ( e instanceof SubscriptionDisconnectedException) {
-                        Log.v(TAG, "Subscription Infrastructure: Disconnect received. Unexpected - Initiating reconnect sequence.");
-                        reportConnectionError();
-                        initiateReconnectSequence();
+                    if (subscriptionsAutoReconnect) {
+                        if ( e instanceof SubscriptionDisconnectedException ) {
+                            Log.v(TAG, "Subscription Infrastructure: Disconnect received. Unexpected - Initiating reconnect sequence.");
+                            reportConnectionError();
+                            initiateReconnectSequence();
+                            return;
+                        }
+                    }
+                    //Propagate connection error
+                    for (String topic: info.topics) {
+                        if ( getSubscriptionObjectSetFromTopicMap(topic) != null ) {
+                            for (SubscriptionObject subscriptionObject : getSubscriptionObjectSetFromTopicMap(topic)) {
+                                subscriptionObject.onFailure(new ApolloException("Connection Error Reported", e));
+                            }
+                        }
                     }
                     allClientsConnectedLatch.countDown();
                 }
@@ -322,6 +344,10 @@ public class RealSubscriptionManager implements SubscriptionManager {
         //Get matching subscription object from the subscriptionsById map
         SubscriptionObject subscriptionObject = getSubscriptionObjectFromIdMap(subscription);
         if (subscriptionObject == null ) {
+            return;
+        }
+
+        if (subscriptionObject.isCancelled()) {
             return;
         }
 

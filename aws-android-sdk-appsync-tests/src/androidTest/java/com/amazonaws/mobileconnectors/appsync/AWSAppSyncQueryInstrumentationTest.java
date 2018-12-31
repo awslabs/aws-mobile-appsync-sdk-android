@@ -99,227 +99,246 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testMultipleSubscriptionsWithIAM() {
+        testMultipleSubscriptionsWithIAM(true);
+    }
 
-        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+    @Test
+    public void testMultipleSubscriptionsWithIAMNoReconnect() {
+        testMultipleSubscriptionsWithIAM(true);
+    }
 
-        final CountDownLatch addPostMessageReceivedLatch = new CountDownLatch(1);
-        final CountDownLatch updatePostMessageReceivedLatch = new CountDownLatch(5);
-        final CountDownLatch deletePostMessageReceivedLatch = new CountDownLatch(1);
-
-        final CountDownLatch onCreatePostSubscriptionCompletionLatch = new CountDownLatch(1);
-        final CountDownLatch onUpdatePostSubscriptionCompletionLatch = new CountDownLatch(1);
-        final CountDownLatch onDeletePostSubscriptionCompletionLatch = new CountDownLatch(1);
-        final CountDownLatch onCreateArticleSubscriptionCompletionLatch = new CountDownLatch(1);
-        final CountDownLatch onUpdateArticleSubscriptionCompletionLatch = new CountDownLatch(1);
-        final CountDownLatch onDeleteArticleSubscriptionCompletionLatch = new CountDownLatch(1);
-
+    private void testMultipleSubscriptionsWithIAM(boolean subscriptionsAutoReconnect) {
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(subscriptionsAutoReconnect);
         assertNotNull(awsAppSyncClient);
-        final String title = "Pull Me Under";
-        final String author = "Dream Theater @ " + System.currentTimeMillis();
-        final String url = "Dream Theater";
-        final String content = "Lost in the sky @" + System.currentTimeMillis();
 
-        //Create post callback
-        AppSyncSubscriptionCall.Callback onCreatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
-                Log.d(TAG,"Add Post Response " + response.data().toString());
-                addPostMessageReceivedLatch.countDown();
+        for ( int iteration = 0 ; iteration < 3; iteration ++ ) {
+
+            final CountDownLatch addPostMessageReceivedLatch = new CountDownLatch(1);
+            final CountDownLatch updatePostMessageReceivedLatch = new CountDownLatch(5);
+            final CountDownLatch deletePostMessageReceivedLatch = new CountDownLatch(1);
+
+            final CountDownLatch onCreatePostSubscriptionCompletionLatch = new CountDownLatch(1);
+            final CountDownLatch onUpdatePostSubscriptionCompletionLatch = new CountDownLatch(1);
+            final CountDownLatch onDeletePostSubscriptionCompletionLatch = new CountDownLatch(1);
+            final CountDownLatch onCreateArticleSubscriptionCompletionLatch = new CountDownLatch(1);
+            final CountDownLatch onUpdateArticleSubscriptionCompletionLatch = new CountDownLatch(1);
+            final CountDownLatch onDeleteArticleSubscriptionCompletionLatch = new CountDownLatch(1);
+
+            final String title = "Pull Me Under";
+            final String author = "Dream Theater @ " + System.currentTimeMillis();
+            final String url = "Dream Theater";
+            final String content = "Lost in the sky @" + System.currentTimeMillis();
+
+            //Create post callback
+            AppSyncSubscriptionCall.Callback onCreatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreatePostSubscription.Data>() {
+                @Override
+                public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
+                    Log.d(TAG, "Add Post Response " + response.data().toString());
+                    addPostMessageReceivedLatch.countDown();
+                }
+
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Add Post Error " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "Add Post Subscription terminated.");
+                    onCreatePostSubscriptionCompletionLatch.countDown();
+                }
+            };
+
+            //Update Post callback
+            AppSyncSubscriptionCall.Callback onUpdatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnUpdatePostSubscription.Data>() {
+                @Override
+                public void onResponse(@Nonnull Response<OnUpdatePostSubscription.Data> response) {
+                    Log.d(TAG, "Update Post Response " + response.data().toString());
+                    updatePostMessageReceivedLatch.countDown();
+                }
+
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Update Post Error " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "Update Post Subscription terminated.");
+                    onUpdatePostSubscriptionCompletionLatch.countDown();
+                }
+            };
+
+            //Delete Post callback
+            AppSyncSubscriptionCall.Callback onDeletePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnDeletePostSubscription.Data>() {
+                @Override
+                public void onResponse(@Nonnull Response<OnDeletePostSubscription.Data> response) {
+                    Log.d(TAG, "Delete Post Response " + response.data().toString());
+                    deletePostMessageReceivedLatch.countDown();
+                }
+
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Delete Post Error " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "Delete Post Subscription terminated.");
+                    onDeletePostSubscriptionCompletionLatch.countDown();
+                }
+            };
+
+            //Create Article callback
+            AppSyncSubscriptionCall.Callback onCreateArticleSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreateArticleSubscription.Data>() {
+                @Override
+                public void onResponse(@Nonnull Response<OnCreateArticleSubscription.Data> response) {
+                    Log.d(TAG, "Add Article Response " + response.data().toString());
+                }
+
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Add article Error " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "Add Article Subscription terminated.");
+                    onCreateArticleSubscriptionCompletionLatch.countDown();
+                }
+            };
+
+
+            //Update Article callback
+            AppSyncSubscriptionCall.Callback onUpdateArticleSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnUpdateArticleSubscription.Data>() {
+                @Override
+                public void onResponse(@Nonnull Response<OnUpdateArticleSubscription.Data> response) {
+                    Log.d(TAG, "Update Article Response " + response.data().toString());
+                }
+
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Update Article Error " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "Update Article Subscription terminated.");
+                    onUpdateArticleSubscriptionCompletionLatch.countDown();
+                }
+            };
+
+            //Delete Article callback
+            AppSyncSubscriptionCall.Callback onDeleteArticleCallback = new AppSyncSubscriptionCall.Callback<OnDeleteArticleSubscription.Data>() {
+                @Override
+                public void onResponse(@Nonnull Response<OnDeleteArticleSubscription.Data> response) {
+                    Log.d(TAG, "Delete Article Response " + response.data().toString());
+                }
+
+                @Override
+                public void onFailure(@Nonnull ApolloException e) {
+                    Log.e(TAG, "Delete Article Error " + e.getLocalizedMessage());
+                    e.printStackTrace();
+                }
+
+                @Override
+                public void onCompleted() {
+                    Log.d(TAG, "Delete Article Subscription terminated.");
+                    onDeleteArticleSubscriptionCompletionLatch.countDown();
+                }
+            };
+
+            OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
+            AppSyncSubscriptionCall addSubWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
+            addSubWatcher.execute(onCreatePostSubscriptionCallback);
+
+            OnUpdatePostSubscription onUpdatePostSubscription = OnUpdatePostSubscription.builder().build();
+            AppSyncSubscriptionCall updateSubWatcher = awsAppSyncClient.subscribe(onUpdatePostSubscription);
+            updateSubWatcher.execute(onUpdatePostSubscriptionCallback);
+
+
+            OnDeletePostSubscription onDeletePostSubscription = OnDeletePostSubscription.builder().build();
+            AppSyncSubscriptionCall deleteSubWatcher = awsAppSyncClient.subscribe(onDeletePostSubscription);
+            deleteSubWatcher.execute(onDeletePostSubscriptionCallback);
+
+            OnCreateArticleSubscription onCreateArticleSubscription = OnCreateArticleSubscription.builder().build();
+            AppSyncSubscriptionCall addArticleSubWatcher = awsAppSyncClient.subscribe(onCreateArticleSubscription);
+            addArticleSubWatcher.execute(onCreateArticleSubscriptionCallback);
+
+            OnUpdateArticleSubscription onUpdateArticleSubscription = OnUpdateArticleSubscription.builder().build();
+            AppSyncSubscriptionCall updateArticleSubWatcher = awsAppSyncClient.subscribe(onUpdateArticleSubscription);
+            updateArticleSubWatcher.execute(onUpdateArticleSubscriptionCallback);
+
+
+            OnDeleteArticleSubscription onDeleteArticleSubscription = OnDeleteArticleSubscription.builder().build();
+            AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
+            deleteArticleSubWatcher.execute(onDeleteArticleCallback);
+
+            sleep(30 * 1000);
+            Log.d(TAG, "Subscribed and setup callback handlers.");
+
+            addPost(awsAppSyncClient, title, author, url, content);
+            String postID = addPostMutationResponse.data().createPost().id();
+            Log.d(TAG, "Added Post");
+
+            for (int i = 0; i < 5; i++) {
+                updatePost(awsAppSyncClient, postID, "Lost in the sky @" + System.currentTimeMillis());
             }
 
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Add Post Error " + e.getLocalizedMessage());
-                e.printStackTrace();
+            Log.d(TAG, "Updated post five times");
+
+            deletePost(awsAppSyncClient, postID);
+            Log.d(TAG, "Deleted post");
+
+
+            try {
+                assertTrue(addPostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(updatePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(deletePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+
+            } catch (InterruptedException iex) {
+                iex.printStackTrace();
             }
 
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Add Post Subscription terminated.");
-                onCreatePostSubscriptionCompletionLatch.countDown();
+            addSubWatcher.cancel();
+            updateSubWatcher.cancel();
+            deleteSubWatcher.cancel();
+            addArticleSubWatcher.cancel();
+            updateArticleSubWatcher.cancel();
+            deleteArticleSubWatcher.cancel();
+
+            try {
+                assertTrue(onCreatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(onUpdatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(onDeletePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(onCreateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(onUpdateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(onDeleteArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+
+            } catch (InterruptedException iex) {
+                iex.printStackTrace();
             }
-        };
-
-        //Update Post callback
-        AppSyncSubscriptionCall.Callback onUpdatePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnUpdatePostSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnUpdatePostSubscription.Data> response) {
-                Log.d(TAG,"Update Post Response " + response.data().toString());
-                updatePostMessageReceivedLatch.countDown();
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Update Post Error " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Update Post Subscription terminated.");
-                onUpdatePostSubscriptionCompletionLatch.countDown();
-            }
-        };
-
-        //Delete Post callback
-        AppSyncSubscriptionCall.Callback onDeletePostSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnDeletePostSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnDeletePostSubscription.Data> response) {
-                Log.d(TAG,"Delete Post Response " + response.data().toString());
-                deletePostMessageReceivedLatch.countDown();
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Delete Post Error " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Delete Post Subscription terminated.");
-                onDeletePostSubscriptionCompletionLatch.countDown();
-            }
-        };
-
-        //Create Article callback
-        AppSyncSubscriptionCall.Callback onCreateArticleSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnCreateArticleSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnCreateArticleSubscription.Data> response) {
-                Log.d(TAG,"Add Article Response " + response.data().toString());
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Add article Error " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Add Article Subscription terminated.");
-                onCreateArticleSubscriptionCompletionLatch.countDown();
-            }
-        };
-
-
-        //Update Article callback
-        AppSyncSubscriptionCall.Callback onUpdateArticleSubscriptionCallback = new AppSyncSubscriptionCall.Callback<OnUpdateArticleSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnUpdateArticleSubscription.Data> response) {
-                Log.d(TAG,"Update Article Response " + response.data().toString());
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Update Article Error " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Update Article Subscription terminated.");
-                onUpdateArticleSubscriptionCompletionLatch.countDown();
-            }
-        };
-
-        //Delete Article callback
-        AppSyncSubscriptionCall.Callback onDeleteArticleCallback = new AppSyncSubscriptionCall.Callback<OnDeleteArticleSubscription.Data>() {
-            @Override
-            public void onResponse(@Nonnull Response<OnDeleteArticleSubscription.Data> response) {
-                Log.d(TAG,"Delete Article Response " + response.data().toString());
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-                Log.e(TAG, "Delete Article Error " + e.getLocalizedMessage());
-                e.printStackTrace();
-            }
-
-            @Override
-            public void onCompleted() {
-                Log.d(TAG, "Delete Article Subscription terminated.");
-                onDeleteArticleSubscriptionCompletionLatch.countDown();
-            }
-        };
-
-        OnCreatePostSubscription onCreatePostSubscription = OnCreatePostSubscription.builder().build();
-        AppSyncSubscriptionCall addSubWatcher = awsAppSyncClient.subscribe(onCreatePostSubscription);
-        addSubWatcher.execute(onCreatePostSubscriptionCallback);
-
-        OnUpdatePostSubscription onUpdatePostSubscription = OnUpdatePostSubscription.builder().build();
-        AppSyncSubscriptionCall updateSubWatcher = awsAppSyncClient.subscribe(onUpdatePostSubscription);
-        updateSubWatcher.execute(onUpdatePostSubscriptionCallback);
-
-
-        OnDeletePostSubscription onDeletePostSubscription = OnDeletePostSubscription.builder().build();
-        AppSyncSubscriptionCall deleteSubWatcher = awsAppSyncClient.subscribe(onDeletePostSubscription);
-        deleteSubWatcher.execute(onDeletePostSubscriptionCallback);
-
-        OnCreateArticleSubscription onCreateArticleSubscription = OnCreateArticleSubscription.builder().build();
-        AppSyncSubscriptionCall addArticleSubWatcher = awsAppSyncClient.subscribe(onCreateArticleSubscription);
-        addArticleSubWatcher.execute(onCreateArticleSubscriptionCallback);
-
-        OnUpdateArticleSubscription onUpdateArticleSubscription = OnUpdateArticleSubscription.builder().build();
-        AppSyncSubscriptionCall updateArticleSubWatcher = awsAppSyncClient.subscribe(onUpdateArticleSubscription);
-        updateArticleSubWatcher.execute(onUpdateArticleSubscriptionCallback);
-
-
-        OnDeleteArticleSubscription onDeleteArticleSubscription = OnDeleteArticleSubscription.builder().build();
-        AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
-        deleteArticleSubWatcher.execute(onDeleteArticleCallback);
-
-        sleep(30 * 1000);
-        Log.d(TAG, "Subscribed and setup callback handlers.");
-
-        addPost(awsAppSyncClient,title,author,url,content);
-        String postID = addPostMutationResponse.data().createPost().id();
-        Log.d(TAG, "Added Post");
-
-        for ( int i = 0; i < 5; i++ ) {
-            updatePost(awsAppSyncClient, postID, "Lost in the sky @" + System.currentTimeMillis());
         }
-
-        Log.d(TAG, "Updated post five times");
-
-        deletePost(awsAppSyncClient,postID);
-        Log.d(TAG, "Deleted post");
-
-
-        try {
-            assertTrue(addPostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(updatePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(deletePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
-
-        } catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
-
-        addSubWatcher.cancel();
-        updateSubWatcher.cancel();
-        deleteSubWatcher.cancel();
-        addArticleSubWatcher.cancel();
-        updateArticleSubWatcher.cancel();
-        deleteArticleSubWatcher.cancel();
-
-        try {
-            assertTrue(onCreatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(onUpdatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(onDeletePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(onCreateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(onUpdateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-            assertTrue(onDeleteArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-
-        }
-        catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
-
     }
 
     @Test
     public void testAddSubscriptionWithApiKeyAuthModel() {
-        AWSAppSyncClient awsAppSyncClient1 = AppSyncTestSetupHelper.createAppSyncClientWithAPIKEY();
+        testAddSubscriptionWithApiKeyAuthModel(true);
+    }
+
+    @Test
+    public void testAddSubscriptionWithApiKeyAuthModelNoReconnect() {
+        testAddSubscriptionWithApiKeyAuthModel(false);
+    }
+
+
+    private void testAddSubscriptionWithApiKeyAuthModel(boolean subscriptionsAutoRecconect) {
+        AWSAppSyncClient awsAppSyncClient1 = AppSyncTestSetupHelper.createAppSyncClientWithAPIKEY(subscriptionsAutoRecconect);
         final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
         assertNotNull(awsAppSyncClient1);
@@ -454,7 +473,17 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testAddSubscriptionWithIAMAuthModel() {
-        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        testAddSubscriptionWithIAMAuthModel(true);
+    }
+
+    @Test
+    public void testAddSubscriptionWithIAMAuthModelNoReconnect() {
+        testAddSubscriptionWithIAMAuthModel(false);
+    }
+
+
+    private void testAddSubscriptionWithIAMAuthModel(boolean subscriptionAutoReconnect) {
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(subscriptionAutoReconnect);
         final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch message2ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);

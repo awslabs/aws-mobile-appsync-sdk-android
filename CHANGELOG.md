@@ -1,5 +1,14 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.3](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.3)
+
+### Enhancements
+* Added `subscriptionsAutoReconnect` method to AppSyncClient Builder to enable/disable subscription auto reconnect. 
+
+### Bug Fixes
+* Fixed bug in Complex Objects logic. See [issue #11](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/11)
+* Fixed connection tracking bug in unsubscribe logic
+
 ## [Release 2.7.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.2)
 
 ### Enhancements

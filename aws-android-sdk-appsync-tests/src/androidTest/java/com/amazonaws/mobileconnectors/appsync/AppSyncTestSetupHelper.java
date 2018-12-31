@@ -51,6 +51,10 @@ class AppSyncTestSetupHelper {
     }
 
     static AWSAppSyncClient createAppSyncClientWithIAM() {
+        return createAppSyncClientWithIAM(true);
+    }
+
+    static AWSAppSyncClient createAppSyncClientWithIAM(boolean subscriptionsAutoReconnect) {
         InputStream configInputStream = null;
         try {
 
@@ -87,6 +91,7 @@ class AppSyncTestSetupHelper {
                     .serverUrl(endPoint)
                     .region(Regions.fromName(appSyncRegion))
                     .s3ObjectManager(s3ObjectManager)
+                    .subscriptionsAutoReconnect(subscriptionsAutoReconnect)
                     .persistentMutationsCallback(new PersistentMutationsCallback() {
                         @Override
                         public void onResponse(PersistentMutationsResponse response) {
@@ -120,6 +125,10 @@ class AppSyncTestSetupHelper {
     }
 
     static AWSAppSyncClient createAppSyncClientWithAPIKEY() {
+        return createAppSyncClientWithAPIKEY(true);
+    }
+
+    static AWSAppSyncClient createAppSyncClientWithAPIKEY( boolean subscriptionsAutoReconnect) {
         InputStream configInputStream = null;
         try {
 
@@ -160,6 +169,7 @@ class AppSyncTestSetupHelper {
                     .serverUrl(endPoint)
                     .region(Regions.fromName(appSyncRegion))
                     .s3ObjectManager(s3ObjectManager)
+                    .subscriptionsAutoReconnect(subscriptionsAutoReconnect)
                     .persistentMutationsCallback(new PersistentMutationsCallback() {
                         @Override
                         public void onResponse(PersistentMutationsResponse response) {
