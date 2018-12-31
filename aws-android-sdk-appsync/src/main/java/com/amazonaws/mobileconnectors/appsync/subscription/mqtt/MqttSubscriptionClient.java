@@ -148,7 +148,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                 }
             });
         } catch (Exception e) {
-            Log.v(TAG, "Unsubscribe failed at the MQTT level [" + e]);
+            Log.v(TAG, "Unsubscribe failed at the MQTT level [" + e +"]");
         }
     }
 
