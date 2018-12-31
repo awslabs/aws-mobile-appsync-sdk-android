@@ -38,7 +38,6 @@ import com.amazonaws.util.BinaryUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.Logger;
 import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Query;
@@ -207,7 +206,7 @@ public class AWSAppSyncClient {
         }
 
         //Add Subscription manager
-        RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext());
+        RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext(), builder.mSubscriptionsAutoReconnect);
         clientBuilder.subscriptionManager(subscriptionManager);
 
         //Build the Apollo Client
@@ -268,6 +267,7 @@ public class AWSAppSyncClient {
         CacheKeyResolver mResolver;
         ConflictResolverInterface mConflictResolver;
         AWSConfiguration mAwsConfiguration;
+        boolean mSubscriptionsAutoReconnect = true;
 
         // Apollo
         String mServerUrl;
@@ -400,6 +400,11 @@ public class AWSAppSyncClient {
          */
         public Builder awsConfiguration(AWSConfiguration awsConfiguration) {
             mAwsConfiguration = awsConfiguration;
+            return this;
+        }
+
+        public Builder subscriptionsAutoReconnect( boolean subscriptionsAutoReconnect) {
+            mSubscriptionsAutoReconnect = subscriptionsAutoReconnect;
             return this;
         }
 
