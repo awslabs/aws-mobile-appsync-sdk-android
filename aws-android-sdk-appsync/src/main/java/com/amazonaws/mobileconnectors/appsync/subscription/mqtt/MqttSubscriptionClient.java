@@ -112,7 +112,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                     }
                 }
             });
-        } catch (MqttException e) {
+        } catch (Exception e) {
             Log.e("TAG", "Subscription Infrastructure: Failed to connect mqtt client for clientID [" + mMqttAndroidClient.getClientId() + "]" , e);
             callback.onError(e);
         }
@@ -127,7 +127,7 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             }
             mMqttAndroidClient.subscribe(topic, qos, subscriptionMessageListener);
             topics.add(topic);
-        } catch (MqttException e) {
+        } catch (Exception e) {
             callback.onError(topic, e);
         }
     }
@@ -147,8 +147,8 @@ public class MqttSubscriptionClient implements SubscriptionClient {
                     Log.v(TAG, "Subscription Infrastructure: Errror [" + exception + "] when disconnecting from topic [" + topic +"]");
                 }
             });
-        } catch (MqttException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            Log.v(TAG, "Unsubscribe failed at the MQTT level [" + e]);
         }
     }
 
