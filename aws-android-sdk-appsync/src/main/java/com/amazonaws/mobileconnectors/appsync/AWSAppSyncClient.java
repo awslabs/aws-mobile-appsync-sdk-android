@@ -403,6 +403,13 @@ public class AWSAppSyncClient {
             return this;
         }
 
+        /**
+         * Specify automatic reconnection for Subscriptions in case of errors. Reconnection is enabled by default.
+         * @param subscriptionsAutoReconnect true to to enable and false to disable automatic reconnection of subscriptions.
+         *
+         *
+         * @return the builder object
+         */
         public Builder subscriptionsAutoReconnect( boolean subscriptionsAutoReconnect) {
             mSubscriptionsAutoReconnect = subscriptionsAutoReconnect;
             return this;
