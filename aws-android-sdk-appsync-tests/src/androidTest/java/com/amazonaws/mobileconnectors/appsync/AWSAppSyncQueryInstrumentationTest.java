@@ -21,6 +21,8 @@ import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
+import android.support.test.filters.FlakyTest;
+import android.support.test.filters.Suppress;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
@@ -103,12 +105,13 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
     @Test
+    @Suppress
     public void testMultipleSubscriptionsWithIAMNoReconnect() {
-        testMultipleSubscriptionsWithIAM(true);
+        testMultipleSubscriptionsWithIAM(false);
     }
 
     private void testMultipleSubscriptionsWithIAM(boolean subscriptionsAutoReconnect) {
-        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(subscriptionsAutoReconnect);
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(subscriptionsAutoReconnect, 0);
         assertNotNull(awsAppSyncClient);
 
         for ( int iteration = 0 ; iteration < 3; iteration ++ ) {
@@ -332,13 +335,14 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
     @Test
+    @Suppress
     public void testAddSubscriptionWithApiKeyAuthModelNoReconnect() {
         testAddSubscriptionWithApiKeyAuthModel(false);
     }
 
 
     private void testAddSubscriptionWithApiKeyAuthModel(boolean subscriptionsAutoRecconect) {
-        AWSAppSyncClient awsAppSyncClient1 = AppSyncTestSetupHelper.createAppSyncClientWithAPIKEY(subscriptionsAutoRecconect);
+        AWSAppSyncClient awsAppSyncClient1 = AppSyncTestSetupHelper.createAppSyncClientWithAPIKEY(subscriptionsAutoRecconect, 0);
         final CountDownLatch messageReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
         assertNotNull(awsAppSyncClient1);
@@ -477,13 +481,14 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
     @Test
+    @Suppress
     public void testAddSubscriptionWithIAMAuthModelNoReconnect() {
         testAddSubscriptionWithIAMAuthModel(false);
     }
 
 
     private void testAddSubscriptionWithIAMAuthModel(boolean subscriptionAutoReconnect) {
-        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(subscriptionAutoReconnect);
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(subscriptionAutoReconnect, 0);
         final CountDownLatch message1ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch message2ReceivedLatch = new CountDownLatch(1);
         final CountDownLatch subscriptionCompletedLatch = new CountDownLatch(1);
@@ -671,12 +676,25 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testCRUD() {
-        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(false, 2*1000);
         assertNotNull(awsAppSyncClient);
         final String title = "Home [Scene Six]";
         final String author = "Dream Theater @ " + System.currentTimeMillis();
         final String url = "Metropolis Part 2";
         final String content = "Shine-Lake of fire @" + System.currentTimeMillis();
+
+        addPost(awsAppSyncClient,title,author,url,content);
+        addPostAndCancel(awsAppSyncClient, title, "" + System.currentTimeMillis(), url, content);
+        addPost(awsAppSyncClient,title,author,url,content);
+        addPostAndCancel(awsAppSyncClient, title, "" + System.currentTimeMillis(), url, content);
+        addPost(awsAppSyncClient,title,author,url,content);
+        addPostAndCancel(awsAppSyncClient, title, "" + System.currentTimeMillis(), url, content);
+        addPost(awsAppSyncClient,title,author,url,content);
+        addPostAndCancel(awsAppSyncClient, title, "" + System.currentTimeMillis(), url, content);
+        addPost(awsAppSyncClient,title,author,url,content);
+        addPostAndCancel(awsAppSyncClient, title, "" + System.currentTimeMillis(), url, content);
+        addPost(awsAppSyncClient,title,author,url,content);
+        addPostAndCancel(awsAppSyncClient, title, "" + System.currentTimeMillis(), url, content);
 
         //Add a post
         addPost(awsAppSyncClient,title,author,url,content);
@@ -1082,10 +1100,8 @@ public class AWSAppSyncQueryInstrumentationTest {
 
                 AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
 
-
-                awsAppSyncClient
-                        .mutate(addPostMutation, expected)
-                        .enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+                AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
+                call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
                             @Override
                             public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
                                 addPostMutationResponse = response;
@@ -1105,7 +1121,10 @@ public class AWSAppSyncQueryInstrumentationTest {
                                     Looper.myLooper().quit();
                                 }
                             }
+
+
                         });
+
                 Looper.loop();
 
             }
@@ -1119,6 +1138,83 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
+    private void addPostAndCancel(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final String url, final String content) {
+        final CountDownLatch mCountDownLatch = new CountDownLatch(1);
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+
+                AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
+                        "Post",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        null,
+                        null,
+                        0
+                ));
+
+                CreatePostInput createPostInput = CreatePostInput.builder()
+                        .title(title)
+                        .author(author)
+                        .url(url)
+                        .content(content)
+                        .ups(new Integer(1))
+                        .downs(new Integer(0))
+                        .build();
+
+                AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
+
+                AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
+                call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+                    @Override
+                    public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
+                        addPostMutationResponse = response;
+                        mCountDownLatch.countDown();
+                        if (Looper.myLooper() != null) {
+                            Looper.myLooper().quit();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(@Nonnull final ApolloException e) {
+                        Log.v(TAG, "On Failure called for add Post");
+                        e.printStackTrace();
+                        //Set to null to indicate failure
+                        addPostMutationResponse = null;
+                        mCountDownLatch.countDown();
+                        if (Looper.myLooper() != null) {
+                            Looper.myLooper().quit();
+                        }
+                    }
+
+
+                });
+                try {
+                    Thread.sleep(1);
+                }
+                catch (Exception e) {
+
+                }
+                call.cancel();
+
+                Looper.loop();
+
+            }
+        }).start();
+
+        Log.d(TAG, "Waiting for latch to be counted down");
+        try {
+            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+    }
     private void addPostRequiredFieldsOnlyMutation(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final String url, final String content) {
         final CountDownLatch mCountDownLatch = new CountDownLatch(1);
 

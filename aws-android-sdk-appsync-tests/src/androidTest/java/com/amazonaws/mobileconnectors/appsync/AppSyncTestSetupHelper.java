@@ -20,6 +20,8 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
@@ -51,10 +53,10 @@ class AppSyncTestSetupHelper {
     }
 
     static AWSAppSyncClient createAppSyncClientWithIAM() {
-        return createAppSyncClientWithIAM(true);
+        return createAppSyncClientWithIAM(true, 0);
     }
 
-    static AWSAppSyncClient createAppSyncClientWithIAM(boolean subscriptionsAutoReconnect) {
+    static AWSAppSyncClient createAppSyncClientWithIAM(boolean subscriptionsAutoReconnect, long credentialsDelay) {
         InputStream configInputStream = null;
         try {
 
@@ -79,7 +81,7 @@ class AppSyncTestSetupHelper {
                 return null;
             }
 
-            CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(InstrumentationRegistry.getContext(), cognitoIdentityPoolID, Regions.fromName(cognitoRegion));
+            AppSyncTestCredentialsProvider credentialsProvider = new AppSyncTestCredentialsProvider(cognitoIdentityPoolID, Regions.fromName(cognitoRegion), credentialsDelay);
 
             AmazonS3Client s3Client = new AmazonS3Client(credentialsProvider);
             s3Client.setRegion(Region.getRegion(s3Region));
@@ -125,10 +127,10 @@ class AppSyncTestSetupHelper {
     }
 
     static AWSAppSyncClient createAppSyncClientWithAPIKEY() {
-        return createAppSyncClientWithAPIKEY(true);
+        return createAppSyncClientWithAPIKEY(true, 0);
     }
 
-    static AWSAppSyncClient createAppSyncClientWithAPIKEY( boolean subscriptionsAutoReconnect) {
+    static AWSAppSyncClient createAppSyncClientWithAPIKEY( boolean subscriptionsAutoReconnect, long credentialsDelay) {
         InputStream configInputStream = null;
         try {
 
@@ -158,7 +160,7 @@ class AppSyncTestSetupHelper {
 
             APIKeyAuthProvider provider = new BasicAPIKeyAuthProvider(apiKey);
 
-            CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(InstrumentationRegistry.getContext(), cognitoIdentityPoolID, Regions.fromName(cognitoRegion));
+            AppSyncTestCredentialsProvider credentialsProvider = new AppSyncTestCredentialsProvider(cognitoIdentityPoolID, Regions.fromName(cognitoRegion), credentialsDelay);
             AmazonS3Client s3Client = new AmazonS3Client(credentialsProvider);
             s3Client.setRegion(Region.getRegion(s3Region));
             S3ObjectManager s3ObjectManager = new S3ObjectManagerImplementation((s3Client));
@@ -223,4 +225,31 @@ class AppSyncTestSetupHelper {
         }
         return f.getAbsolutePath();
     }
+
+    static class AppSyncTestCredentialsProvider implements  AWSCredentialsProvider {
+        AWSCredentialsProvider credentialsProvider = null;
+        long credentialsDelay = 0;
+        AppSyncTestCredentialsProvider( String cognitoIdentityPoolID, Regions region, long credentialsDelay) {
+            this.credentialsProvider = new CognitoCachingCredentialsProvider(InstrumentationRegistry.getContext(), cognitoIdentityPoolID, region);
+            this.credentialsDelay = credentialsDelay;
+        }
+        @Override
+        public AWSCredentials getCredentials() {
+            if (credentialsDelay > 0) {
+                try {
+                    //Inject a delay so that we can mimic the behavior of mutations/subscription requests being
+                    //cancelled during execution. See "testCrud" for an example.
+                    Thread.sleep(credentialsDelay);
+                } catch (Exception e) {
+                    Log.v(TAG, "Thread sleep was interrupted [" + e +"]");
+                }
+            }
+            return credentialsProvider.getCredentials();
+        }
+
+        @Override public void refresh() {
+            credentialsProvider.refresh();
+        }
+    }
+
 }

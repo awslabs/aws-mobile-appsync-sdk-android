@@ -107,6 +107,8 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
         //Check if the request failed due to a conflict
         if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().hasErrors())) {
             Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse -- found error");
+
+
             if ( response.parsedResponse.get().errors().get(0).toString().contains("The conditional request failed") ) {
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse -- Got a string match in the errors for \"The conditional request failed\".");
                 // if !shouldRetry AND conflict detected
@@ -219,6 +221,8 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         //track when a mutation is in progress.
         private boolean mutationInProgress = false;
 
+        private Mutation mutationBeingExecuted = null;
+
         //Mark the current mutation as complete.
         //This will be invoked on the onResults and onError flows of the mutation callback.
         public synchronized void setMutationInProgressStatusToFalse() {
@@ -241,6 +245,10 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Setting mutationInProgress as true.");
             mutationInProgress = true;
             return true;
+        }
+
+        public void setMutationBeingExecuted(Mutation m) {
+            mutationBeingExecuted = m;
         }
 
 
@@ -524,6 +532,15 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
     @Override
     public void dispose() {
         // do nothing
+        Log.v(TAG, "Dispose called");
+    }
+
+    //The AppSyncOfflineMutationInterceptor is a shared object used by all API calls moving through the chain
+    //and does not have state per mutation.
+    //This method is needed to ensure that we dispose the correct mutation
+    public void dispose(Mutation mutation) {
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Dispose called for mutation [" + mutation + "]." );
+        appSyncOfflineMutationManager.handleMutationCancellation(mutation);
     }
 
 }
