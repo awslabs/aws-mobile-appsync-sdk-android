@@ -177,7 +177,11 @@ class AppSyncOfflineMutationManager {
         if (!persistentOfflineMutationManager.isQueueEmpty()) {
             if (queueHandler.setMutationInProgress()) {
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from persistent queue");
-                persistentOfflineMutationManager.processNextMutationObject();
+                PersistentOfflineMutationObject p = persistentOfflineMutationManager.processNextMutationObject();
+                //Tag this as being the currently executed mutation in the QueueHandler
+                if ( p != null ) {
+                    queueHandler.setPersistentOfflineMutationObjectBeingExecuted(p);
+                }
             }
             return;
         }
@@ -188,6 +192,12 @@ class AppSyncOfflineMutationManager {
             if (queueHandler.setMutationInProgress()) {
                 Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Processing next from in Memory queue");
                 currentMutation = inMemoryOfflineMutationManager.processNextMutation();
+                if (currentMutation == null ) {
+                    return;
+                }
+
+                //Tag this as being the currently executed mutation in the QueueHandler
+                queueHandler.setInMemoryOfflineMutationObjectBeingExecuted( currentMutation);
 
                 //If this mutation was already canceled, remove it from the queues and signal queueHandler to move on to the next one in the queue.
                 if ( inMemoryOfflineMutationManager.getCancelledMutations().contains((Mutation) currentMutation.request.operation)) {
@@ -207,6 +217,8 @@ class AppSyncOfflineMutationManager {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         inMemoryOfflineMutationManager.removeFirstInQueue();
         queueHandler.setMutationInProgressStatusToFalse();
+        queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
+        queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
     }
 
     public void handleMutationCancellation(Mutation canceledMutation ) {

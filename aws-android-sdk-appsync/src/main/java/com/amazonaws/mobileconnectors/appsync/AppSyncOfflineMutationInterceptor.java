@@ -221,7 +221,6 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         //track when a mutation is in progress.
         private boolean mutationInProgress = false;
 
-        private Mutation mutationBeingExecuted = null;
 
         //Mark the current mutation as complete.
         //This will be invoked on the onResults and onError flows of the mutation callback.
@@ -247,10 +246,6 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             return true;
         }
 
-        public void setMutationBeingExecuted(Mutation m) {
-            mutationBeingExecuted = m;
-        }
-
 
         public QueueUpdateHandler(Looper looper) {
             super(looper);
@@ -262,10 +257,9 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
          */
         public void handleMessage(Message msg) {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Got message to take action on the mutation queue.");
-
             if (msg.what == MessageNumberUtil.SUCCESSFUL_EXEC || msg.what == MessageNumberUtil.FAIL_EXEC) {
                 if (!isMutationInProgress()) {
-                    // start executing the next originalMutation
+                    // start executing the next Mutation
                     Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Got message to process next mutation if one exists.");
                     appSyncOfflineMutationManager.processNextInQueueMutation();
                 }
@@ -288,6 +282,80 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             else {
                 // ignore case
                 Log.d(TAG, "Unknown message received in QueueUpdateHandler. Ignoring");
+            }
+            //Execute failsafe to make sure there isn't a stuck mutation in the queue
+            checkAndHandleStuckMutation();
+        }
+
+        //Default queueTimeout for Mutations
+        private long maxMutationTime = 30*1000;
+        //Grace period for cancelled mutations
+        private final long CANCEL_WINDOW = 15*1000;
+
+        //Tracking in process mutation using these instance variables
+        private InMemoryOfflineMutationObject inMemoryOfflineMutationObjectBeingExecuted = null;
+        private PersistentOfflineMutationObject persistentOfflineMutationObjectBeingExecuted = null;
+
+        //Start time for mutation
+        private long startTime = 0;
+
+        public void setInMemoryOfflineMutationObjectBeingExecuted(InMemoryOfflineMutationObject m) {
+            inMemoryOfflineMutationObjectBeingExecuted = m;
+            startTime = System.currentTimeMillis();
+        }
+
+        public void setPersistentOfflineMutationObjectBeingExecuted(PersistentOfflineMutationObject p ) {
+            persistentOfflineMutationObjectBeingExecuted = p;
+            startTime = System.currentTimeMillis();
+        }
+
+        public void clearPersistentOfflineMutationObjectBeingExecuted() {
+            persistentOfflineMutationObjectBeingExecuted = null;
+            startTime = 0;
+        }
+
+        public void clearInMemoryOfflineMutationObjectBeingExecuted() {
+            inMemoryOfflineMutationObjectBeingExecuted = null;
+            startTime = 0;
+        }
+
+        private void checkAndHandleStuckMutation() {
+            //Return if there is currently no mutation is in progress.
+            if ( inMemoryOfflineMutationObjectBeingExecuted == null && persistentOfflineMutationObjectBeingExecuted == null ) {
+                return;
+            }
+
+            //Calculate elapsed time
+            long elapsedTime = System.currentTimeMillis() - startTime;
+
+            //Handle persistentOfflineMutationObject
+            if ( persistentOfflineMutationObjectBeingExecuted != null ) {
+
+                //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
+                //to the next in queue.
+                if ( elapsedTime > (maxMutationTime + CANCEL_WINDOW)) {
+                    appSyncOfflineMutationManager.setInProgressMutationAsCompleted(persistentOfflineMutationObjectBeingExecuted.recordIdentifier);
+                    sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+                }
+                //If time has elapsed past the queueTimeout, mark the mutation as timed out.
+                else if (elapsedTime > maxMutationTime ) {
+                    //Signal to persistentOfflineMutationManager that this muation has been timed out.
+                    appSyncOfflineMutationManager.persistentOfflineMutationManager.addTimedoutMutation(persistentOfflineMutationObjectBeingExecuted);
+                }
+                return;
+            }
+
+            //Handle inMemory Mutation Object
+            if (elapsedTime > (maxMutationTime + CANCEL_WINDOW)) {
+                //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
+                //to the next in queue.
+                appSyncOfflineMutationManager.setInProgressMutationAsCompleted(inMemoryOfflineMutationObjectBeingExecuted.recordIdentifier);
+                sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+            }
+            else if ( elapsedTime > maxMutationTime ) {
+                //If time has elapsed past the queueTimeout, cancel the mutation by invoking dispose on the chain.
+                inMemoryOfflineMutationObjectBeingExecuted.chain.dispose();
+                dispose((Mutation) inMemoryOfflineMutationObjectBeingExecuted.request.operation);
             }
         }
     }
