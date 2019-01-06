@@ -122,15 +122,15 @@ public class PersistentOfflineMutationManager {
         return null;
     }
 
-    public synchronized void addTimedoutMutation(PersistentOfflineMutationObject p) {
+    synchronized void addTimedoutMutation(PersistentOfflineMutationObject p) {
         timedOutMutations.add(p);
     }
 
-    public synchronized void removeTimedoutMutation(PersistentOfflineMutationObject p ) {
+    synchronized void removeTimedoutMutation(PersistentOfflineMutationObject p ) {
         timedOutMutations.remove(p);
     }
 
-    public synchronized  Set<PersistentOfflineMutationObject> getTimedoutMutations() {
+    synchronized  Set<PersistentOfflineMutationObject> getTimedoutMutations() {
         return timedOutMutations;
     }
 }
