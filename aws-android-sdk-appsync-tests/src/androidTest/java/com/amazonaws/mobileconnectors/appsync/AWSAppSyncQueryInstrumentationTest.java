@@ -1139,8 +1139,6 @@ public class AWSAppSyncQueryInstrumentationTest {
     }
 
     private void addPostAndCancel(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final String url, final String content) {
-        final CountDownLatch mCountDownLatch = new CountDownLatch(1);
-
 
         new Thread(new Runnable() {
             @Override
@@ -1175,7 +1173,6 @@ public class AWSAppSyncQueryInstrumentationTest {
                     @Override
                     public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
                         addPostMutationResponse = response;
-                        mCountDownLatch.countDown();
                         if (Looper.myLooper() != null) {
                             Looper.myLooper().quit();
                         }
@@ -1187,7 +1184,6 @@ public class AWSAppSyncQueryInstrumentationTest {
                         e.printStackTrace();
                         //Set to null to indicate failure
                         addPostMutationResponse = null;
-                        mCountDownLatch.countDown();
                         if (Looper.myLooper() != null) {
                             Looper.myLooper().quit();
                         }
@@ -1207,14 +1203,9 @@ public class AWSAppSyncQueryInstrumentationTest {
 
             }
         }).start();
-
-        Log.d(TAG, "Waiting for latch to be counted down");
-        try {
-            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
-        } catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
     }
+
+
     private void addPostRequiredFieldsOnlyMutation(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final String url, final String content) {
         final CountDownLatch mCountDownLatch = new CountDownLatch(1);
 
