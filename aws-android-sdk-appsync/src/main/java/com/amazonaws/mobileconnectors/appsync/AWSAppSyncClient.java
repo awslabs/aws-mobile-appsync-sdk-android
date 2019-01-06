@@ -184,7 +184,8 @@ public class AWSAppSyncClient {
                         builder.mContext,
                         mutationMap,
                         this,
-                        builder.mConflictResolver))
+                        builder.mConflictResolver,
+                        builder.mMutationQueueExecutionTimeout))
                 .addApplicationInterceptor(new AppSyncComplexObjectsInterceptor(builder.mS3ObjectManager))
                 .okHttpClient(okHttpClient);
 
@@ -268,6 +269,7 @@ public class AWSAppSyncClient {
         ConflictResolverInterface mConflictResolver;
         AWSConfiguration mAwsConfiguration;
         boolean mSubscriptionsAutoReconnect = true;
+        long mMutationQueueExecutionTimeout = 30 * 1000;
 
         // Apollo
         String mServerUrl;
@@ -412,6 +414,16 @@ public class AWSAppSyncClient {
          */
         public Builder subscriptionsAutoReconnect( boolean subscriptionsAutoReconnect) {
             mSubscriptionsAutoReconnect = subscriptionsAutoReconnect;
+            return this;
+        }
+
+        /**
+         * Specify how long a mutation will be allowed to execute before it is evicted. Default value is 30 seconds.
+         * @param mutationQueueExecutionTimeout the max execution time allowed.
+         * @return
+         */
+        public Builder mutationQueueExecutionTimeout(long mutationQueueExecutionTimeout) {
+            mutationQueueExecutionTimeout = mutationQueueExecutionTimeout;
             return this;
         }
 

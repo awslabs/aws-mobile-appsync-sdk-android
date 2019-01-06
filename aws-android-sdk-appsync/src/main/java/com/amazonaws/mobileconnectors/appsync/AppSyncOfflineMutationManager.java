@@ -114,7 +114,7 @@ class AppSyncOfflineMutationManager {
      */
     private NetworkInfoReceiver networkInfoReceiver;
 
-    public void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
+    void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
 
         inMemoryOfflineMutationManager.addMutationObjectInQueue(mutationObject);
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:  Added mutation[" + mutationObject.recordIdentifier + "] to inMemory Queue"  );
@@ -213,7 +213,7 @@ class AppSyncOfflineMutationManager {
         }
     }
 
-    public void setInProgressMutationAsCompleted(String recordIdentifier) {
+    void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         inMemoryOfflineMutationManager.removeFirstInQueue();
         queueHandler.setMutationInProgressStatusToFalse();
@@ -221,7 +221,7 @@ class AppSyncOfflineMutationManager {
         queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
     }
 
-    public void handleMutationCancellation(Mutation canceledMutation ) {
+    void handleMutationCancellation(Mutation canceledMutation ) {
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Handling cancellation for mutation [" + canceledMutation +"]");
 
         //Check if the mutation being cancelled is the one currently being executed.

@@ -214,6 +214,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
     Map<String, PersistentOfflineMutationObject> persistentOfflineMutationObjectMap;
 
     private static final String TAG = AppSyncOfflineMutationInterceptor.class.getSimpleName();
+    private static final long QUEUE_POLL_INTERVAL = 10* 1000;
 
     class QueueUpdateHandler extends Handler {
         private final String TAG = QueueUpdateHandler.class.getSimpleName();
@@ -224,13 +225,13 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
 
         //Mark the current mutation as complete.
         //This will be invoked on the onResults and onError flows of the mutation callback.
-        public synchronized void setMutationInProgressStatusToFalse() {
+        synchronized void setMutationInProgressStatusToFalse() {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Setting mutationInProgress as false.");
             mutationInProgress = false;
         }
 
         //Return true if a mutation is currently in progress.
-        public synchronized boolean isMutationInProgress() {
+        synchronized boolean isMutationInProgress() {
             return mutationInProgress;
         }
 
@@ -288,9 +289,9 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         }
 
         //Default queueTimeout for Mutations
-        private long maxMutationTime = 30*1000;
+        private long maxMutationExecutionTime;
         //Grace period for cancelled mutations
-        private final long CANCEL_WINDOW = 15*1000;
+        private final long CANCEL_WINDOW = QUEUE_POLL_INTERVAL + (5 *1000);
 
         //Tracking in process mutation using these instance variables
         private InMemoryOfflineMutationObject inMemoryOfflineMutationObjectBeingExecuted = null;
@@ -299,22 +300,25 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         //Start time for mutation
         private long startTime = 0;
 
-        public void setInMemoryOfflineMutationObjectBeingExecuted(InMemoryOfflineMutationObject m) {
+        void setMaximumMutationExecutionTime(long time) {
+            maxMutationExecutionTime = time;
+        }
+        void setInMemoryOfflineMutationObjectBeingExecuted(InMemoryOfflineMutationObject m) {
             inMemoryOfflineMutationObjectBeingExecuted = m;
             startTime = System.currentTimeMillis();
         }
 
-        public void setPersistentOfflineMutationObjectBeingExecuted(PersistentOfflineMutationObject p ) {
+        void setPersistentOfflineMutationObjectBeingExecuted(PersistentOfflineMutationObject p ) {
             persistentOfflineMutationObjectBeingExecuted = p;
             startTime = System.currentTimeMillis();
         }
 
-        public void clearPersistentOfflineMutationObjectBeingExecuted() {
+        void clearPersistentOfflineMutationObjectBeingExecuted() {
             persistentOfflineMutationObjectBeingExecuted = null;
             startTime = 0;
         }
 
-        public void clearInMemoryOfflineMutationObjectBeingExecuted() {
+        void clearInMemoryOfflineMutationObjectBeingExecuted() {
             inMemoryOfflineMutationObjectBeingExecuted = null;
             startTime = 0;
         }
@@ -333,12 +337,12 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
 
                 //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
                 //to the next in queue.
-                if ( elapsedTime > (maxMutationTime + CANCEL_WINDOW)) {
+                if ( elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
                     appSyncOfflineMutationManager.setInProgressMutationAsCompleted(persistentOfflineMutationObjectBeingExecuted.recordIdentifier);
                     sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                 }
                 //If time has elapsed past the queueTimeout, mark the mutation as timed out.
-                else if (elapsedTime > maxMutationTime ) {
+                else if (elapsedTime > maxMutationExecutionTime) {
                     //Signal to persistentOfflineMutationManager that this muation has been timed out.
                     appSyncOfflineMutationManager.persistentOfflineMutationManager.addTimedoutMutation(persistentOfflineMutationObjectBeingExecuted);
                 }
@@ -346,13 +350,13 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             }
 
             //Handle inMemory Mutation Object
-            if (elapsedTime > (maxMutationTime + CANCEL_WINDOW)) {
+            if (elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
                 //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
                 //to the next in queue.
                 appSyncOfflineMutationManager.setInProgressMutationAsCompleted(inMemoryOfflineMutationObjectBeingExecuted.recordIdentifier);
                 sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
             }
-            else if ( elapsedTime > maxMutationTime ) {
+            else if ( elapsedTime > maxMutationExecutionTime) {
                 //If time has elapsed past the queueTimeout, cancel the mutation by invoking dispose on the chain.
                 inMemoryOfflineMutationObjectBeingExecuted.chain.dispose();
                 dispose((Mutation) inMemoryOfflineMutationObjectBeingExecuted.request.operation);
@@ -367,7 +371,8 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                                              Context context,
                                              Map<Mutation, MutationInformation> requestMap,
                                              AWSAppSyncClient client,
-                                             ConflictResolverInterface conflictResolver) {
+                                             ConflictResolverInterface conflictResolver,
+                                             long maxMutationExecutionTime) {
 
         final Map<ScalarType, CustomTypeAdapter> customTypeAdapters = new LinkedHashMap<>();
         this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
@@ -379,6 +384,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         queueHandlerThread = new HandlerThread("AWSAppSyncMutationQueueThread");
         queueHandlerThread.start();
         queueHandler = new QueueUpdateHandler(queueHandlerThread.getLooper());
+        queueHandler.setMaximumMutationExecutionTime(maxMutationExecutionTime);
 
         //Create a scheduled task that will run once every ten seconds to process mutations.
         //This is a catch all loop to provide a safety net for the mutation relay architecture.
@@ -391,9 +397,9 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                 message.obj = new MutationInterceptorMessage();
                 message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
                 queueHandler.sendMessage(message);
-                queueHandler.postDelayed(this, 10* 1000);
+                queueHandler.postDelayed(this, QUEUE_POLL_INTERVAL);
             }
-        }, 10* 1000);
+        }, QUEUE_POLL_INTERVAL);
 
         appSyncOfflineMutationManager.updateQueueHandler(queueHandler);
         inmemoryInterceptorCallbackMap = new HashMap<>();
