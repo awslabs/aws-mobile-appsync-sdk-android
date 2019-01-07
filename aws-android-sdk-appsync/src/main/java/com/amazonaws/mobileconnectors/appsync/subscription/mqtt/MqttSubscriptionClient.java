@@ -176,8 +176,12 @@ public class MqttSubscriptionClient implements SubscriptionClient {
             mMqttAndroidClient.disconnect(0,null, new IMqttActionListener() {
                         @Override
                         public void onSuccess(IMqttToken asyncActionToken) {
-                            mMqttAndroidClient.close();
-                            Log.d(TAG, "Subscription Infrastructure: Successfully closed the connection. Client ID [" + mMqttAndroidClient.getClientId() + "]");
+                            try {
+                                mMqttAndroidClient.close();
+                                Log.d(TAG, "Subscription Infrastructure: Successfully closed the connection. Client ID [" + mMqttAndroidClient.getClientId() + "]");
+                            } catch (Exception e) {
+                                Log.w(TAG, "Subscription Infrastructure: Error closing connection [" + e + "]");
+                            }
                         }
 
                         @Override

@@ -215,6 +215,13 @@ public class RealSubscriptionManager implements SubscriptionManager {
         //Clear the topic Connection map
         topicConnectionMap.clear();
 
+        //Add delay to allow for the server side propagation of the Connection URLs
+        try {
+            Thread.sleep(1 * 1000);
+        }catch (Exception e) {
+            Log.v(TAG, "Subscription Infrastructure: Thread.sleep for server propagation delay was interrupted");
+        }
+
         for (final SubscriptionResponse.MqttInfo info : response.mqttInfos) {
 
             //Check if this MQTT connection meta data has at least one topic that we have a subscription for
