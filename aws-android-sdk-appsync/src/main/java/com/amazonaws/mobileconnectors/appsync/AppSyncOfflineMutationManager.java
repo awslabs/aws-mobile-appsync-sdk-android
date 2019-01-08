@@ -30,6 +30,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.apollographql.apollo.CustomTypeAdapter;
+import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.S3InputObjectInterface;
 import com.apollographql.apollo.api.ScalarType;
@@ -62,13 +63,16 @@ class AppSyncOfflineMutationManager {
     private Object shouldProcessMutationsLock = new Object();
     private boolean shouldProcessMutations;
 
-
     InMemoryOfflineMutationManager inMemoryOfflineMutationManager;
     PersistentOfflineMutationManager persistentOfflineMutationManager;
     private ScalarTypeAdapters scalarTypeAdapters;
     private AppSyncMutationSqlCacheOperations mutationSqlCacheOperations;
     private AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
     private Context context;
+
+
+    //Mutation currently in progress from the inMemory queue
+    private InMemoryOfflineMutationObject currentMutation = null;
 
     //Constructor
     public AppSyncOfflineMutationManager(Context context,
@@ -110,7 +114,7 @@ class AppSyncOfflineMutationManager {
      */
     private NetworkInfoReceiver networkInfoReceiver;
 
-    public void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
+    void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
 
         inMemoryOfflineMutationManager.addMutationObjectInQueue(mutationObject);
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:  Added mutation[" + mutationObject.recordIdentifier + "] to inMemory Queue"  );
@@ -173,16 +177,35 @@ class AppSyncOfflineMutationManager {
         if (!persistentOfflineMutationManager.isQueueEmpty()) {
             if (queueHandler.setMutationInProgress()) {
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Processing next from persistent queue");
-                persistentOfflineMutationManager.processNextMutationObject();
+                PersistentOfflineMutationObject p = persistentOfflineMutationManager.processNextMutationObject();
+                //Tag this as being the currently executed mutation in the QueueHandler
+                if ( p != null ) {
+                    queueHandler.setPersistentOfflineMutationObjectBeingExecuted(p);
+                }
             }
             return;
         }
 
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Persistent mutations queue is EMPTY!. Will check inMemory Queue next");
+
         if (!inMemoryOfflineMutationManager.isQueueEmpty()) {
             if (queueHandler.setMutationInProgress()) {
                 Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Processing next from in Memory queue");
-                inMemoryOfflineMutationManager.processNextMutation();
+                currentMutation = inMemoryOfflineMutationManager.processNextMutation();
+                if (currentMutation == null ) {
+                    return;
+                }
+
+                //Tag this as being the currently executed mutation in the QueueHandler
+                queueHandler.setInMemoryOfflineMutationObjectBeingExecuted( currentMutation);
+
+                //If this mutation was already canceled, remove it from the queues and signal queueHandler to move on to the next one in the queue.
+                if ( inMemoryOfflineMutationManager.getCancelledMutations().contains((Mutation) currentMutation.request.operation)) {
+                    Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Handling cancellation for mutation [" + currentMutation.recordIdentifier + "] ");
+                    setInProgressMutationAsCompleted(currentMutation.recordIdentifier);
+                    inMemoryOfflineMutationManager.removeCancelledMutation((Mutation) currentMutation.request.operation);
+                    queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+                }
             }
         }
         else {
@@ -190,10 +213,35 @@ class AppSyncOfflineMutationManager {
         }
     }
 
-    public void setInProgressMutationAsCompleted(String recordIdentifier) {
+    void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         inMemoryOfflineMutationManager.removeFirstInQueue();
         queueHandler.setMutationInProgressStatusToFalse();
+        queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
+        queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
+    }
+
+    void handleMutationCancellation(Mutation canceledMutation ) {
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Handling cancellation for mutation [" + canceledMutation +"]");
+
+        //Check if the mutation being cancelled is the one currently being executed.
+        if (currentMutation != null && currentMutation.request != null && canceledMutation.equals(currentMutation.request.operation)) {
+            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Mutation being canceled is the one currently in progress. Handling it ");
+            setInProgressMutationAsCompleted(currentMutation.recordIdentifier);
+            queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+            return;
+        }
+
+        //Otherwise, it is further down in the queue. Add it to the cancelled Mutations tests so that it can be handled when it reaches the front
+        //of the queue.
+        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Lodging mutation in cancelled mutations list ");
+        inMemoryOfflineMutationManager.addCancelledMutation(canceledMutation);
+
+        //Remove it from the persistent queue
+        InMemoryOfflineMutationObject inMemoryOfflineMutationObject = inMemoryOfflineMutationManager.getMutationObject(canceledMutation);
+        if ( inMemoryOfflineMutationObject != null ) {
+            persistentOfflineMutationManager.removePersistentMutationObject(inMemoryOfflineMutationObject.recordIdentifier);
+        }
     }
 
     // Handler that processes the message sent by the NetworkInfoReceiver to kick off mutations
@@ -237,6 +285,7 @@ class AppSyncOfflineMutationManager {
             }
         }
     }
+
 
 
     /**

@@ -21,8 +21,10 @@ import android.os.Handler;
 import android.util.Log;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * PersistentOfflineMutationManager.
@@ -35,6 +37,7 @@ public class PersistentOfflineMutationManager {
     AppSyncOfflineMutationInterceptor.QueueUpdateHandler queueHandler;
     List<PersistentOfflineMutationObject> persistentOfflineMutationObjectList;
     Map<String, PersistentOfflineMutationObject> persistentOfflineMutationObjectMap;
+    Set<PersistentOfflineMutationObject> timedOutMutations;
 
     public PersistentOfflineMutationManager(AppSyncMutationSqlCacheOperations mutationSqlCacheOperations,
                                             AppSyncCustomNetworkInvoker networkInvoker) {
@@ -49,6 +52,8 @@ public class PersistentOfflineMutationManager {
         for (PersistentOfflineMutationObject object: persistentOfflineMutationObjectList) {
             persistentOfflineMutationObjectMap.put(object.recordIdentifier, object);
         }
+        timedOutMutations = new HashSet<PersistentOfflineMutationObject>();
+
         networkInvoker.setPersistentOfflineMutationManager(this);
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]:Exiting the constructor. There are [" + persistentOfflineMutationObjectList.size() + "] mutations in the persistent queue");
     }
@@ -106,6 +111,7 @@ public class PersistentOfflineMutationManager {
         return mutationRequestObject;
     }
 
+
     private synchronized PersistentOfflineMutationObject getFirstInQueue() {
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:In getFirstInQueue");
         if (persistentOfflineMutationObjectList.size() > 0) {
@@ -114,5 +120,17 @@ public class PersistentOfflineMutationManager {
             return mutationObject;
         }
         return null;
+    }
+
+    synchronized void addTimedoutMutation(PersistentOfflineMutationObject p) {
+        timedOutMutations.add(p);
+    }
+
+    synchronized void removeTimedoutMutation(PersistentOfflineMutationObject p ) {
+        timedOutMutations.remove(p);
+    }
+
+    synchronized  Set<PersistentOfflineMutationObject> getTimedoutMutations() {
+        return timedOutMutations;
     }
 }

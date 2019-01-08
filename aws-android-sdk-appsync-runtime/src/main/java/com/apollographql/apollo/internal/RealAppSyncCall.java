@@ -19,6 +19,8 @@ package com.apollographql.apollo.internal;
 
 import com.amazonaws.mobileconnectors.appsync.AppSyncMutationCall;
 import com.amazonaws.mobileconnectors.appsync.AppSyncQueryCall;
+
+import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.cache.normalized.ApolloStore;
 import com.apollographql.apollo.interceptor.ApolloInterceptor;
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
@@ -45,6 +47,7 @@ import com.apollographql.apollo.internal.interceptor.RealApolloInterceptorChain;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -186,6 +189,9 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
       case ACTIVE:
         state.set(CANCELED);
         try {
+          if (operation instanceof  Mutation ) {
+            cancelMutation();
+          }
           interceptorChain.dispose();
           if (queryReFetcher.isPresent()) {
             queryReFetcher.get().cancel();
@@ -204,6 +210,33 @@ public final class RealAppSyncCall<T> implements AppSyncQueryCall<T>, AppSyncMut
         break;
       default:
         throw new IllegalStateException("Unknown state");
+    }
+  }
+
+  private void cancelMutation() {
+    //Get the  AppSyncOfflineMutationInterceptor
+    Mutation mutation = (Mutation) operation;
+    Object appSyncOfflineMutationInterceptor = null;
+    for (ApolloInterceptor interceptor: applicationInterceptors) {
+      if ("AppSyncOfflineMutationInterceptor".equalsIgnoreCase(interceptor.getClass().getSimpleName())) {
+        appSyncOfflineMutationInterceptor = interceptor;
+        break;
+      }
+    }
+    if (appSyncOfflineMutationInterceptor == null ) {
+      return;
+    }
+
+    //Use reflection to invoke the dispose method on the Interceptor
+    Class[] cArg = new Class[1];
+    cArg[0] = Mutation.class;
+
+    try {
+      Method method = appSyncOfflineMutationInterceptor.getClass().getMethod("dispose", cArg);
+      method.invoke(appSyncOfflineMutationInterceptor, mutation);
+    }
+    catch (Exception e ) {
+      logger.w(e, "unable to invoke dispose method");
     }
   }
 

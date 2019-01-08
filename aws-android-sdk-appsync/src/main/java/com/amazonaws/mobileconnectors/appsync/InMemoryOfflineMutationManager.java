@@ -19,10 +19,12 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.util.Log;
 
+import com.apollographql.apollo.api.Mutation;
+
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-
-import static com.amazonaws.mobileconnectors.appsync.AppSyncOfflineMutationManager.MSG_EXEC;
+import java.util.Set;
 
 /**
  * InMemoryOfflineMutationManager.
@@ -33,6 +35,7 @@ public class InMemoryOfflineMutationManager {
 
     //Use a linked list to model the inMemory Queue
     List<InMemoryOfflineMutationObject> inMemoryOfflineMutationObjects = new LinkedList<>();
+    Set<Mutation> cancelledMutations = new HashSet<>();
 
     //lock object to make the methods thread safe.
     Object lock  = new Object();
@@ -60,13 +63,11 @@ public class InMemoryOfflineMutationManager {
 
     public InMemoryOfflineMutationObject processNextMutation() {
         InMemoryOfflineMutationObject offlineMutationObject = getFirstInQueue();
-        if (offlineMutationObject != null ) {
 
+        //Only execute if not canceled
+        if (offlineMutationObject != null && !getCancelledMutations().contains(offlineMutationObject.request.operation )) {
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]:Executing mutation [" +  offlineMutationObject.recordIdentifier +"]");
             offlineMutationObject.execute();
-
-        //    Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:Sending MSG_EXEC to mutation [" +  offlineMutationObject.recordIdentifier +"]");
-        //    offlineMutationObject.handler.sendEmptyMessage(MSG_EXEC);
         }
         return offlineMutationObject;
     }
@@ -75,6 +76,33 @@ public class InMemoryOfflineMutationManager {
         synchronized (lock ) {
             if (!inMemoryOfflineMutationObjects.isEmpty() ) {
                 return inMemoryOfflineMutationObjects.get(0);
+            }
+        }
+        return null;
+    }
+
+    void addCancelledMutation(Mutation m) {
+        synchronized (lock) {
+            cancelledMutations.add(m);
+        }
+    }
+
+    Set<Mutation> getCancelledMutations() {
+        synchronized (lock) {
+            return cancelledMutations;
+        }
+    }
+
+    void removeCancelledMutation(Mutation m) {
+        synchronized (lock) {
+            cancelledMutations.remove(m);
+        }
+    }
+
+    InMemoryOfflineMutationObject getMutationObject(Mutation m) {
+        for(InMemoryOfflineMutationObject inMemoryOfflineMutationObject: inMemoryOfflineMutationObjects) {
+            if (inMemoryOfflineMutationObject.equals(m)) {
+                return inMemoryOfflineMutationObject;
             }
         }
         return null;
