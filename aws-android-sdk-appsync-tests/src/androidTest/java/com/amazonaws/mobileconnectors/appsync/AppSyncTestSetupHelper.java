@@ -94,6 +94,7 @@ class AppSyncTestSetupHelper {
                     .region(Regions.fromName(appSyncRegion))
                     .s3ObjectManager(s3ObjectManager)
                     .subscriptionsAutoReconnect(subscriptionsAutoReconnect)
+                    .mutationQueueExecutionTimeout(30*1000)
                     .persistentMutationsCallback(new PersistentMutationsCallback() {
                         @Override
                         public void onResponse(PersistentMutationsResponse response) {
@@ -172,6 +173,7 @@ class AppSyncTestSetupHelper {
                     .region(Regions.fromName(appSyncRegion))
                     .s3ObjectManager(s3ObjectManager)
                     .subscriptionsAutoReconnect(subscriptionsAutoReconnect)
+                    .mutationQueueExecutionTimeout(30*1000)
                     .persistentMutationsCallback(new PersistentMutationsCallback() {
                         @Override
                         public void onResponse(PersistentMutationsResponse response) {

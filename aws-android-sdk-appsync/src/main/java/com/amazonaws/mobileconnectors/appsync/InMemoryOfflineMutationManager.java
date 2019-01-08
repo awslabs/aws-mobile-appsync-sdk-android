@@ -98,4 +98,13 @@ public class InMemoryOfflineMutationManager {
             cancelledMutations.remove(m);
         }
     }
+
+    InMemoryOfflineMutationObject getMutationObject(Mutation m) {
+        for(InMemoryOfflineMutationObject inMemoryOfflineMutationObject: inMemoryOfflineMutationObjects) {
+            if (inMemoryOfflineMutationObject.equals(m)) {
+                return inMemoryOfflineMutationObject;
+            }
+        }
+        return null;
+    }
 }

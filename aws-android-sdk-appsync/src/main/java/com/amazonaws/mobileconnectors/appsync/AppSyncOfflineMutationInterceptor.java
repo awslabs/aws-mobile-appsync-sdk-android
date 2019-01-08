@@ -345,6 +345,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                 else if (elapsedTime > maxMutationExecutionTime) {
                     //Signal to persistentOfflineMutationManager that this muation has been timed out.
                     appSyncOfflineMutationManager.persistentOfflineMutationManager.addTimedoutMutation(persistentOfflineMutationObjectBeingExecuted);
+                    appSyncOfflineMutationManager.persistentOfflineMutationManager.removePersistentMutationObject(persistentOfflineMutationObjectBeingExecuted.recordIdentifier);
                 }
                 return;
             }

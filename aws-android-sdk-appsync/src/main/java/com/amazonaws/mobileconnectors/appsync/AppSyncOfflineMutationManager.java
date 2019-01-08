@@ -236,6 +236,12 @@ class AppSyncOfflineMutationManager {
         //of the queue.
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Lodging mutation in cancelled mutations list ");
         inMemoryOfflineMutationManager.addCancelledMutation(canceledMutation);
+
+        //Remove it from the persistent queue
+        InMemoryOfflineMutationObject inMemoryOfflineMutationObject = inMemoryOfflineMutationManager.getMutationObject(canceledMutation);
+        if ( inMemoryOfflineMutationObject != null ) {
+            persistentOfflineMutationManager.removePersistentMutationObject(inMemoryOfflineMutationObject.recordIdentifier);
+        }
     }
 
     // Handler that processes the message sent by the NetworkInfoReceiver to kick off mutations
