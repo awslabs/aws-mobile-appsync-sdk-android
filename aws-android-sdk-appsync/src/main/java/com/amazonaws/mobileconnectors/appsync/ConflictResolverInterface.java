@@ -17,6 +17,8 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import com.apollographql.apollo.api.Mutation;
+
 import org.json.JSONObject;
 
 import javax.annotation.Nonnull;
@@ -30,6 +32,12 @@ public interface ConflictResolverInterface {
     public void resolveConflict(@Nonnull ConflictResolutionHandler handler,
                                 @Nonnull JSONObject serverState,
                                 @Nonnull JSONObject clientState,
+                                @Nonnull String recordIdentifier,
+                                @Nonnull String operationType);
+
+    public void resolveConflict(@Nonnull ConflictResolutionHandler handler,
+                                @Nonnull JSONObject serverState,
+                                @Nonnull Mutation originalMutation,
                                 @Nonnull String recordIdentifier,
                                 @Nonnull String operationType);
 
