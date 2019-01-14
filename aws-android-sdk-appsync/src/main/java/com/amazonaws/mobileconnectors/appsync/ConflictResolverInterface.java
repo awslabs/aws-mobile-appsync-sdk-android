@@ -35,10 +35,4 @@ public interface ConflictResolverInterface {
                                 @Nonnull String recordIdentifier,
                                 @Nonnull String operationType);
 
-    public void resolveConflict(@Nonnull ConflictResolutionHandler handler,
-                                @Nonnull JSONObject serverState,
-                                @Nonnull Mutation originalMutation,
-                                @Nonnull String recordIdentifier,
-                                @Nonnull String operationType);
-
 }

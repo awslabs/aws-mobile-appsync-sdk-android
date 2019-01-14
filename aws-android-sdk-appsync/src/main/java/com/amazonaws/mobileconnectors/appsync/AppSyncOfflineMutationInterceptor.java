@@ -38,8 +38,6 @@ import com.apollographql.apollo.interceptor.ApolloInterceptor;
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -98,52 +96,31 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
         this.clientState = clientState;
         this.recordIdentifier = recordIdentifier;
         this.appSyncOfflineMutationManager = appSyncOfflineMutationManager;
-
-        Log.v(TAG, "Client state is [" + this.clientState + "]");
-        Log.v(TAG, "Client state is [" + new JSONObject(this.currentMutation.variables().valueMap()).toString() + "]");
     }
 
     @Override
     public void onResponse(@Nonnull ApolloInterceptor.InterceptorResponse response) {
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse()");
 
-        //Check if the request failed due to a conflict
-        if ((response.parsedResponse.get() != null) && (response.parsedResponse.get().hasErrors())) {
-            Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse -- found error");
+        if(shouldRetry && ConflictResolutionHandler.conflictPresent(response.parsedResponse)) {
+            //Set shouldRetry to false. Conflicts will only be attempted once.
+            shouldRetry = false;
 
+            //Found Conflict
+            String conflictString = new JSONObject((Map)((Error) response.parsedResponse.get().errors().get(0)).customAttributes().get("data")).toString();
 
-            if ( response.parsedResponse.get().errors().get(0).toString().contains("The conditional request failed") ) {
-                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: onResponse -- Got a string match in the errors for \"The conditional request failed\".");
-                // if !shouldRetry AND conflict detected
-                if (shouldRetry) {
-                    Map data = (Map)((Error) response.parsedResponse.get().errors().get(0)).customAttributes().get("data");
-                    //Verify that data was passed as per the contract from the server for mutation conflicts.
-                    if (data != null ) {
+            //Send a message to the Queue handler to retry
+            Message message = new Message();
+            MutationInterceptorMessage msg = new MutationInterceptorMessage(originalMutation, currentMutation);
+            msg.serverState = conflictString;
+            msg.clientState = clientState;
+            msg.requestIdentifier = recordIdentifier;
 
-                        //Found Conflict
-                        String conflictString = new JSONObject(data).toString();
-                        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Conflict String: " + conflictString);
-                        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Client String: " + clientState);
-
-
-                        //Send a message to the Queue handler to retry
-                        Message message = new Message();
-                        MutationInterceptorMessage msg = new MutationInterceptorMessage(originalMutation, currentMutation);
-                        msg.serverState = conflictString;
-                        msg.clientState = clientState;
-                        msg.requestIdentifier = recordIdentifier;
-
-                        msg.requestClassName = currentMutation.getClass().getSimpleName();
-                        message.obj = msg;
-                        message.what = MessageNumberUtil.RETRY_EXEC;
-                        queueHandler.sendMessage(message);
-
-                        //Set shouldRetry to false. Conflicts will only be attempted once.
-                        shouldRetry = false;
-                        return;
-                    }
-                }
-            }
+            msg.requestClassName = currentMutation.getClass().getSimpleName();
+            message.obj = msg;
+            message.what = MessageNumberUtil.RETRY_EXEC;
+            queueHandler.sendMessage(message);
+            return;
         }
 
         //Call the customer's callback
@@ -154,7 +131,7 @@ class InterceptorCallback implements ApolloInterceptor.CallBack {
 
         //Send a message to the QueueHandler to process the next mutation in queue
         Message message = new Message();
-        message.obj = new MutationInterceptorMessage(originalMutation, currentMutation);
+        message.obj = new MutationInterceptorMessage();
         message.what = MessageNumberUtil.SUCCESSFUL_EXEC;
         queueHandler.sendMessage(message);
     }
@@ -214,7 +191,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
     private HandlerThread queueHandlerThread;
     final private ConflictResolverInterface conflictResolver;
     ConflictResolutionHandler conflictResolutionHandler;
-    Map<String, ApolloInterceptor.CallBack> inmemoryInterceptorCallbackMap;
+    Map<String, ApolloInterceptor.CallBack> callbackMapForInMemoryMutations;
     Map<String, PersistentOfflineMutationObject> persistentOfflineMutationObjectMap;
 
     private static final String TAG = AppSyncOfflineMutationInterceptor.class.getSimpleName();
@@ -273,11 +250,16 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Got message that a originalMutation process needs to be retried.");
                 MutationInterceptorMessage interceptorMessage = (MutationInterceptorMessage)msg.obj;
                 try {
-                    conflictResolver.resolveConflict(conflictResolutionHandler,
-                            new JSONObject(interceptorMessage.serverState),
-                            (Mutation) interceptorMessage.originalMutation,
-                            interceptorMessage.requestIdentifier,
-                            interceptorMessage.requestClassName);
+                    if (conflictResolver != null ) {
+                        conflictResolver.resolveConflict(conflictResolutionHandler,
+                                new JSONObject(interceptorMessage.serverState),
+                                new JSONObject(interceptorMessage.clientState),
+                                interceptorMessage.requestIdentifier,
+                                interceptorMessage.requestClassName);
+                    }
+                    else {
+                        failConflictMutation(interceptorMessage.requestIdentifier);
+                    }
                 } catch (Exception e) {
                     Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: " + e.toString());
                     e.printStackTrace();
@@ -406,65 +388,72 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         }, QUEUE_POLL_INTERVAL);
 
         appSyncOfflineMutationManager.updateQueueHandler(queueHandler);
-        inmemoryInterceptorCallbackMap = new HashMap<>();
+        callbackMapForInMemoryMutations = new HashMap<>();
         persistentOfflineMutationObjectMap = appSyncOfflineMutationManager.persistentOfflineMutationManager.persistentOfflineMutationObjectMap;
 
         conflictResolutionHandler =  new ConflictResolutionHandler(this);
         this.conflictResolver = conflictResolver;
     }
 
-    public <D extends Mutation.Data, T, V extends Mutation.Variables> void retryConflictMutation(@Nonnull Mutation<D, T, V> mutation, String uniqueIdintifierForOriginalMutation) {
+    public <D extends Mutation.Data, T, V extends Mutation.Variables> void retryConflictMutation(@Nonnull Mutation<D, T, V> mutation, String uniqueIdentifierForOriginalMutation) {
 
-        InterceptorCallback callback = (InterceptorCallback)inmemoryInterceptorCallbackMap.remove(uniqueIdintifierForOriginalMutation);
-        Log.d(TAG, "Callback is: "+ callback);
-
-        // put in details of persistent mutation
-        if (callback == null) {
-            Log.d(TAG, "Callback is null. great.");
+        //Remove callback from map. This will return null for persistent offline mutations
+        InterceptorCallback callback = (InterceptorCallback) callbackMapForInMemoryMutations.remove(uniqueIdentifierForOriginalMutation);
+        if (callback != null ) {
+            //Put the callback in with the mutation.toString() as the key. This will be picked up to route the the mutation results
+            // back to the callback later.
+            Log.d(TAG, "Proceeding with retry for inMemory offline mutation [" + uniqueIdentifierForOriginalMutation + "]");
+            callbackMapForInMemoryMutations.put(mutation.toString(), callback);
+        }
+        else {
+            // put in details of persistent mutation.
+            //TODO: Check if this logic is required.
+            Log.d(TAG, "Proceeding with retry for persistent offline mutation [" + uniqueIdentifierForOriginalMutation + "]");
             if (persistentOfflineMutationObjectMap.isEmpty()) {
-                Log.d("AppSync", "Populating mutations map.");
+                Log.d(TAG, "Populating mutations map.");
                 persistentOfflineMutationObjectMap.putAll(appSyncOfflineMutationManager.persistentOfflineMutationManager.persistentOfflineMutationObjectMap);
             }
-            Log.d(TAG, " + " + persistentOfflineMutationObjectMap.toString());
-            PersistentOfflineMutationObject object = persistentOfflineMutationObjectMap.remove(uniqueIdintifierForOriginalMutation);
+            PersistentOfflineMutationObject object = persistentOfflineMutationObjectMap.remove(uniqueIdentifierForOriginalMutation);
             persistentOfflineMutationObjectMap.put(mutation.toString(), object);
-            Log.d(TAG, " + " + persistentOfflineMutationObjectMap.toString());
         }
-        else { // put in details of inmemory callback
-            inmemoryInterceptorCallbackMap.put(mutation.toString(), callback);
-        }
-
-        Log.d(TAG, "Now making the mutate call using client: " + appSyncClient);
-
-        // GraphQLCall call = (GraphQLCall) ((InterceptorCallback)mutationsToRetryAfterConflictResolution.get(currentMutationIdentifier).callBack).customerCallBack;
-        appSyncClient.mutate(mutation, true).enqueue(new GraphQLCall.Callback<T>() {
-            @Override
-            public void onResponse(@Nonnull Response<T> response) {
-
-            }
-
-            @Override
-            public void onFailure(@Nonnull ApolloException e) {
-
-            }
-        });
+        appSyncClient.mutate(mutation, true).enqueue(null);
     }
 
     public void failConflictMutation(String identifier) {
-
-        //Get the callback and invoke onFailure
-        ApolloInterceptor.CallBack callback = inmemoryInterceptorCallbackMap.get(identifier);
+        ConflictResolutionFailedException e = new ConflictResolutionFailedException("Mutation [" + identifier + "] failed due to conflict");
+        //Attempt callback from map that houses callbacks for inMemory Mutations
+        ApolloInterceptor.CallBack callback = callbackMapForInMemoryMutations.get(identifier);
         if ( callback != null ) {
-            callback.onFailure(new ConflictResolutionFailedException("Mutation [" + identifier + "] failed due to conflict"));
+            //Invoke onFailure and remove callback from map
+            callback.onFailure(e);
+            callbackMapForInMemoryMutations.remove(identifier);
+        }
+        else {
+            final PersistentMutationsCallback callbackForPersistentMutation =
+                    appSyncOfflineMutationManager.persistentOfflineMutationManager.networkInvoker.persistentMutationsCallback;
+            if (callbackForPersistentMutation != null ) {
+                callbackForPersistentMutation.onFailure(
+                        new PersistentMutationsError(
+                                queueHandler.persistentOfflineMutationObjectBeingExecuted.getClass().getSimpleName(),
+                                identifier,
+                                e
+                        )
+                );
+            }
         }
 
         //Remove the Mutation and Callback from the inMemory Maps
         mutationsToRetryAfterConflictResolution.remove(identifier);
-        inmemoryInterceptorCallbackMap.remove(identifier);
 
         //Set the QueueHandler State
-        appSyncOfflineMutationManager.setInProgressMutationAsCompleted(identifier);
-        queueHandler.setMutationInProgressStatusToFalse();
+        if (queueHandler.persistentOfflineMutationObjectBeingExecuted != null ) {
+            appSyncOfflineMutationManager.setInProgressPersistentMutationAsCompleted(identifier);
+        }
+        else {
+            appSyncOfflineMutationManager.setInProgressMutationAsCompleted(identifier);
+        }
+        queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
+        queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
 
         //Signal next in Queue to be processed
         queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
@@ -496,13 +485,13 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
                     queueHandler,
                     (Mutation) request.operation,
                     (Mutation) request.operation,
-                    new JSONObject(request.operation.variables().valueMap()).toString(),
+                    appSyncOfflineMutationManager.getClientStateFromMutation((Mutation) request.operation),
                     request.uniqueId.toString(),
                     appSyncOfflineMutationManager);
 
             try {
                 //Add the custom callback to the in memoryInterceptorCallback map
-                inmemoryInterceptorCallbackMap.put(request.uniqueId.toString(), customCallBack);
+                callbackMapForInMemoryMutations.put(request.uniqueId.toString(), customCallBack);
 
                 //Hand off to the appSyncOfflineMutationManager to do the work.
                 appSyncOfflineMutationManager.addMutationObjectInQueue(new InMemoryOfflineMutationObject(request.uniqueId.toString(),
@@ -524,16 +513,18 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
         mutationsToRetryAfterConflictResolution.remove(request.operation);
 
         //Get the callback associated with the first attempt of this mutation.
-        InterceptorCallback originalCallback = (InterceptorCallback)inmemoryInterceptorCallbackMap.get(request.operation.toString());
+        Log.v(TAG, "Looking up originalCallback using key[" + request.operation.toString() + "]");
+        InterceptorCallback callbackForInMemoryMutation = (InterceptorCallback) callbackMapForInMemoryMutations.get(request.operation.toString());
 
-        if (originalCallback != null ) {
-            //Execute.
-            chain.proceedAsync(request,dispatcher,originalCallback);
+        if (callbackForInMemoryMutation != null ) {
+            Log.v(TAG, "callback found. Proceeding to execute inMemory offline mutation");
+            //Execute inMemory Mutation
+            chain.proceedAsync(request,dispatcher,callbackForInMemoryMutation);
             return;
         }
 
         // Original callback was null. This is due to the mutation being a persistent offline mutation which is being retried
-        final PersistentMutationsCallback persistentMutationsCallback =
+        final PersistentMutationsCallback callbackForPersistentMutation =
                 appSyncOfflineMutationManager.persistentOfflineMutationManager.networkInvoker.persistentMutationsCallback;
 
         final PersistentOfflineMutationObject object = persistentOfflineMutationObjectMap.get(request.operation.toString());
@@ -545,26 +536,28 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             public void onResponse(@Nonnull InterceptorResponse response) {
                 callBack.onResponse(response);
 
-                if ( persistentMutationsCallback != null) {
+                if ( callbackForPersistentMutation != null) {
                     JSONObject jsonObject;
                     try {
                         jsonObject = new JSONObject(response.clonedBufferString.get());
 
-                        persistentMutationsCallback.onResponse(new PersistentMutationsResponse(
+                        callbackForPersistentMutation.onResponse(new PersistentMutationsResponse(
                                 jsonObject.getJSONObject("data"),
                                 jsonObject.getJSONArray("errors"),
                                 request.operation.getClass().getSimpleName(),
                                 object.recordIdentifier));
 
                     } catch (Exception e) {
-                        persistentMutationsCallback.onFailure(new PersistentMutationsError(
+                        callbackForPersistentMutation.onFailure(new PersistentMutationsError(
                                 request.operation.getClass().getSimpleName(),
                                 object.recordIdentifier,
                                 new ApolloParseException(e.getLocalizedMessage()))
                         );
                     }
                 }
-                appSyncOfflineMutationManager.setInProgressMutationAsCompleted(object.recordIdentifier);
+                appSyncOfflineMutationManager.setInProgressPersistentMutationAsCompleted(object.recordIdentifier);
+                queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
+                queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
                 queueHandler.sendEmptyMessage(MessageNumberUtil.SUCCESSFUL_EXEC);
             }
 
@@ -576,13 +569,15 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             @Override
             public void onFailure(@Nonnull ApolloException e) {
                 callBack.onFailure(e);
-                if ( persistentMutationsCallback != null) {
-                    persistentMutationsCallback.onFailure(
+                if ( callbackForPersistentMutation != null) {
+                    callbackForPersistentMutation.onFailure(
                             new PersistentMutationsError(request.operation.getClass().getSimpleName(),
                                     object.recordIdentifier,
                                     e));
                 }
-                appSyncOfflineMutationManager.setInProgressMutationAsCompleted(object.recordIdentifier);
+                appSyncOfflineMutationManager.setInProgressPersistentMutationAsCompleted(object.recordIdentifier);
+                queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
+                queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
                 queueHandler.sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
             }
 

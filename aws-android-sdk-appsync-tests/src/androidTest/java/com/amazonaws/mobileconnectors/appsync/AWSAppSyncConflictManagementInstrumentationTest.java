@@ -31,6 +31,7 @@ import com.apollographql.apollo.exception.ApolloException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -56,12 +57,105 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
     private String articleID = null;
 
+    @BeforeClass
+    public static void setupOnce(){
+
+        // In this function, we will do one add and 5 updates that try out the various paths of conflict
+        // management. This function will exit once the add is completed and the updates are queued, but not executed.
+        // This has the effect of populating the persistent queue and exercising the persistent mutation execution flow
+        // when one of the tests in this suite starts.
+
+        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
+        final CountDownLatch addCountDownLatch = new CountDownLatch(1);
+        final String author = "Tull";
+        final String title = "Minstrel in the Gallery";
+
+        CreateArticleMutation.Data expected = new CreateArticleMutation.Data(new CreateArticleMutation.CreateArticle(
+                "Article",
+                "",
+                "",
+                "",
+                100,
+                null,
+                null
+        ));
+
+        CreateArticleInput createArticleInput = CreateArticleInput.builder()
+                .title(title)
+                .author(author)
+                .version(100)
+                .build();
+
+        CreateArticleMutation createArticleMutation = CreateArticleMutation.builder().input(createArticleInput).build();
+
+        awsAppSyncClient
+                .mutate(createArticleMutation, expected)
+                .enqueue(new GraphQLCall.Callback<CreateArticleMutation.Data>() {
+                    @Override
+                    public void onResponse(@Nonnull Response<CreateArticleMutation.Data> response) {
+                        String articleID = response.data().createArticle().id();
+
+                        final String[] titles = {title+ System.currentTimeMillis(),"RESOLVE_CONFLICT_INCORRECTLY", title + System.currentTimeMillis(), "ALWAYS DISCARD", title + System.currentTimeMillis() };
+                        for (int i = 0; i < 5; i++) {
+                            final UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
+                                    .id(articleID)
+                                    .title(titles[i])
+                                    .author(author)
+                                    .expectedVersion(1)
+                                    .build();
+
+                            UpdateArticleMutation.Data expectedData = new UpdateArticleMutation.Data(new UpdateArticleMutation.UpdateArticle(
+                                    "Article",
+                                    "",
+                                    "",
+                                    "",
+                                    1,
+                                    null,
+                                    null
+                            ));
+
+                            UpdateArticleMutation updateArticleMutation = UpdateArticleMutation.builder().input(updateArticleInput).build();
+
+                            awsAppSyncClient
+                                    .mutate(updateArticleMutation, expectedData)
+                                    .enqueue(new GraphQLCall.Callback<UpdateArticleMutation.Data>() {
+                                        @Override
+                                        public void onResponse(@Nonnull Response<UpdateArticleMutation.Data> response) {
+                                        }
+
+                                        @Override
+                                        public void onFailure(@Nonnull ApolloException e) {
+                                        }
+                                    });
+                        }
+                        addCountDownLatch.countDown();
+                    }
+
+                    @Override
+                    public void onFailure(@Nonnull ApolloException e) {
+                        Log.d(TAG, "Failure " + e);
+                        assertTrue(false);
+                        addCountDownLatch.countDown();
+                    }
+                });
+
+        try {
+            assertTrue(addCountDownLatch.await(60, TimeUnit.SECONDS));
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+    }
+
     @Before
     public void setUp() {
+        Log.v(TAG, "setup called");
     }
 
     @After
     public void tearDown() {
+        Log.v(TAG, "tearDown called");
     }
 
     @Test

@@ -268,45 +268,54 @@ class AppSyncTestSetupHelper {
                                     JSONObject clientState,
                                     String recordIdentifier,
                                     String operationType) {
-            handler.fail(recordIdentifier);
-        }
-            @Override
-        public void resolveConflict(ConflictResolutionHandler handler,
-                                    JSONObject serverState,
-                                    Mutation originalMutation,
-                                    String recordIdentifier,
-                                    String operationType) {
 
             Log.v(TAG, "OperationType is [" + operationType + "]");
             if (operationType.equalsIgnoreCase("UpdateArticleMutation")) {
                 try {
-                    if (originalMutation == null ) {
+                    if (clientState == null ) {
+                        Log.v(TAG, "Failing conflict as client state was null");
                         handler.fail(recordIdentifier);
                         return;
                     }
 
                     //For the purposes of this test conflict handler
                     //we will fail mutations if the title is ALWAYS DISCARD.
-                    UpdateArticleMutation mutation = (UpdateArticleMutation) originalMutation;
-                    final String title = mutation.variables().input().title();
-
-                    if ("ALWAYS DISCARD".equals(title)) {
+                    JSONObject input = clientState.getJSONObject("input");
+                    if (input == null ) {
+                        Log.v(TAG, "Failing conflict as input was null");
                         handler.fail(recordIdentifier);
                         return;
                     }
 
+                    final String title = input.getString("title");
 
+                    if ("ALWAYS DISCARD".equals(title)) {
+                        Log.v(TAG, "Failing conflict as title was ALWAYS DISCARD");
+                        handler.fail(recordIdentifier);
+                        return;
+                    }
 
+                    String id = input.getString("id");
+                    String author = input.getString("author");
+
+                    if (id == null || author == null || title == null ) {
+                        Log.v(TAG, "Failing conflict as id, author or title was null");
+                        handler.fail(recordIdentifier);
+                    }
                     int resolvedVersion = serverState.getInt("version");
                     if ("RESOLVE_CONFLICT_INCORRECTLY".equals(title)) {
                         //This will fail again.
+                        Log.v(TAG, "Resolving conflict incorrectly");
                         resolvedVersion = resolvedVersion - 1;
+                    }
+                    else {
+                        Log.v(TAG, "Resolving conflict correctly");
                     }
 
                     UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
-                            .id(mutation.variables().input().id())
-                            .title(mutation.variables().input().title())
-                            .author(mutation.variables().input().author())
+                            .id(id)
+                            .title(title)
+                            .author(author)
                             .expectedVersion(resolvedVersion)
                             .build();
 
