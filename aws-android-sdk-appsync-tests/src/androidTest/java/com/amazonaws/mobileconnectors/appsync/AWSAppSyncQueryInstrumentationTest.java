@@ -282,7 +282,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
             deleteArticleSubWatcher.execute(onDeleteArticleCallback);
 
-            sleep(30 * 1000);
+            sleep(20 * 1000);
             Log.d(TAG, "Subscribed and setup callback handlers.");
 
             addPost(awsAppSyncClient, title, author, url, content);
@@ -300,9 +300,9 @@ public class AWSAppSyncQueryInstrumentationTest {
 
 
             try {
-                assertTrue(addPostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(updatePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(deletePostMessageReceivedLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(addPostMessageReceivedLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(updatePostMessageReceivedLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(deletePostMessageReceivedLatch.await(60, TimeUnit.SECONDS));
 
             } catch (InterruptedException iex) {
                 iex.printStackTrace();
@@ -316,12 +316,12 @@ public class AWSAppSyncQueryInstrumentationTest {
             deleteArticleSubWatcher.cancel();
 
             try {
-                assertTrue(onCreatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(onUpdatePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(onDeletePostSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(onCreateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(onUpdateArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
-                assertTrue(onDeleteArticleSubscriptionCompletionLatch.await(30, TimeUnit.SECONDS));
+                assertTrue(onCreatePostSubscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(onUpdatePostSubscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(onDeletePostSubscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(onCreateArticleSubscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(onUpdateArticleSubscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
+                assertTrue(onDeleteArticleSubscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
 
             } catch (InterruptedException iex) {
                 iex.printStackTrace();
@@ -394,7 +394,7 @@ public class AWSAppSyncQueryInstrumentationTest {
 
         subscriptionWatcher.cancel();
         try {
-            assertTrue(subscriptionCompletedLatch.await(30, TimeUnit.SECONDS));
+            assertTrue(subscriptionCompletedLatch.await(60, TimeUnit.SECONDS));
         }
         catch (InterruptedException iex) {
             iex.printStackTrace();
