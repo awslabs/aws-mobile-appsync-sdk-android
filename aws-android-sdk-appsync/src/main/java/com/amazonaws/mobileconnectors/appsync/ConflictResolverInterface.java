@@ -17,8 +17,6 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.api.Mutation;
-
 import org.json.JSONObject;
 
 import javax.annotation.Nonnull;
