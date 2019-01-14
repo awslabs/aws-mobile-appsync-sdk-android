@@ -699,8 +699,6 @@ public class AWSAppSyncQueryInstrumentationTest {
         //Add a post
         addPost(awsAppSyncClient,title,author,url,content);
         assertNotNull(addPostMutationResponse);
-        assertNotNull("CreatePost Response should not be null.", addPostMutationResponse.data());
-        assertNotNull(addPostMutationResponse);
         assertNotNull(addPostMutationResponse.data());
         assertNotNull(addPostMutationResponse.data().createPost());
         assertNotNull(addPostMutationResponse.data().createPost().id());
@@ -1101,6 +1099,7 @@ public class AWSAppSyncQueryInstrumentationTest {
                 AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
 
                 AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
+
                 call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
                             @Override
                             public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
@@ -1173,6 +1172,7 @@ public class AWSAppSyncQueryInstrumentationTest {
                     @Override
                     public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
                         addPostMutationResponse = response;
+
                         if (Looper.myLooper() != null) {
                             Looper.myLooper().quit();
                         }

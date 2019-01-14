@@ -80,7 +80,9 @@ public class AWSAppSyncClient {
     AppSyncStore mSyncStore;
     private Context applicationContext;
     S3ObjectManager mS3ObjectManager;
-    Map<Mutation, MutationInformation> mutationMap;
+
+    //Map that houses retried mutations.
+    private Map<Mutation, MutationInformation> mutationsToRetryAfterConflictResolution;
 
     private enum AuthMode {
         API_KEY("API_KEY"),
@@ -157,7 +159,7 @@ public class AWSAppSyncClient {
         //Setup up the local store
         AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, defaultMutationSqlStoreName);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
-        mutationMap = new HashMap<>();
+        mutationsToRetryAfterConflictResolution = new HashMap<>();
 
         //Instantiate the optimistic update interceptor
         AppSyncOptimisticUpdateInterceptor optimisticUpdateInterceptor = new AppSyncOptimisticUpdateInterceptor();
@@ -182,7 +184,7 @@ public class AWSAppSyncClient {
                                 networkInvoker),
                         false,
                         builder.mContext,
-                        mutationMap,
+                        mutationsToRetryAfterConflictResolution,
                         this,
                         builder.mConflictResolver,
                         builder.mMutationQueueExecutionTimeout))
@@ -538,14 +540,14 @@ public class AWSAppSyncClient {
 
     protected <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, boolean isRetry) {
         if (isRetry) {
-            mutationMap.put(mutation, null);
+            mutationsToRetryAfterConflictResolution.put(mutation, null);
         }
         return mApolloClient.mutate(mutation);
     }
 
     protected <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates, boolean isRetry) {
         if (isRetry) {
-            mutationMap.put(mutation, null);
+            mutationsToRetryAfterConflictResolution.put(mutation, null);
         }
         return mApolloClient.mutate(mutation, withOptimisticUpdates);
     }

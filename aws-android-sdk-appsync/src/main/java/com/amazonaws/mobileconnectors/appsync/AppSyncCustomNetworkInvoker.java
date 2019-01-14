@@ -115,8 +115,6 @@ public class AppSyncCustomNetworkInvoker {
                                @Override
                                public void run() {
 
-                                   httpCall = httpCall(persistentOfflineMutationObject);
-
                                    //Upload S3 Object if present in the mutation. The S3 Object is uploaded first before the mutation is executed.
                                    if (!persistentOfflineMutationObject.bucket.equals("")) {
                                        //Fail if S3 Object Manager has not been provided
@@ -197,6 +195,7 @@ public class AppSyncCustomNetworkInvoker {
                                        }
                                    }
 
+                                   httpCall = httpCall(persistentOfflineMutationObject);
                                    //Execute the mutation
                                    httpCall.enqueue(new Callback() {
                                        @Override
@@ -228,35 +227,30 @@ public class AppSyncCustomNetworkInvoker {
 
                                            if (response.isSuccessful()) {
                                                String responseString = response.body().string();
+
                                                try {
                                                    JSONObject jsonObject = new JSONObject(responseString);
 
-                                                   JSONObject data = jsonObject.getJSONObject("data");
+                                                   //If conflict was present, route it through for conflict handling
+                                                   if ( ConflictResolutionHandler.conflictPresent(responseString) ) {
+                                                       JSONArray errors = jsonObject.optJSONArray("errors");
+                                                       MutationInterceptorMessage interceptorMessage = new MutationInterceptorMessage();
+                                                       interceptorMessage.requestIdentifier = persistentOfflineMutationObject.recordIdentifier;
+                                                       interceptorMessage.clientState = persistentOfflineMutationObject.clientState;
+                                                       interceptorMessage.requestClassName = persistentOfflineMutationObject.responseClassName;
+                                                       interceptorMessage.serverState = new JSONObject(errors.getJSONObject(0).getString("data")).toString();
 
-                                                   JSONArray errors = jsonObject.optJSONArray("errors");
-                                                   if (errors != null) {
-                                                       if (errors.getJSONObject(0).optString("errorType") != null) {
-                                                           if (errors.getJSONObject(0).getString("errorType").equals("DynamoDB:ConditionalCheckFailedException")) {
-                                                               // HANDLE CONFLICT FLOW HERE
-                                                               // TODO: Validate and Refactor as this is potentially duplicated code
-                                                               MutationInterceptorMessage interceptorMessage = new MutationInterceptorMessage();
-                                                               interceptorMessage.requestIdentifier = persistentOfflineMutationObject.recordIdentifier;
-                                                               interceptorMessage.clientState = persistentOfflineMutationObject.clientState;
-                                                               interceptorMessage.requestClassName = persistentOfflineMutationObject.responseClassName;
-                                                               interceptorMessage.serverState = new JSONObject(errors.getJSONObject(0).getString("data")).toString();
-                                                               Message message = new Message();
-                                                               message.obj = interceptorMessage;
-                                                               message.what = MessageNumberUtil.RETRY_EXEC;
-                                                               queueHandler.sendMessage(message);
-                                                               return;
-                                                           }
-                                                       }
+                                                       Message message = new Message();
+                                                       message.obj = interceptorMessage;
+                                                       message.what = MessageNumberUtil.RETRY_EXEC;
+                                                       queueHandler.sendMessage(message);
+                                                       return;
                                                    }
 
                                                    if (persistentMutationsCallback != null) {
                                                        persistentMutationsCallback.onResponse(new PersistentMutationsResponse(
-                                                               data,
-                                                               errors,
+                                                               jsonObject.getJSONObject("data"),
+                                                               jsonObject.optJSONArray("errors"),
                                                                persistentOfflineMutationObject.responseClassName,
                                                                persistentOfflineMutationObject.recordIdentifier));
                                                    }

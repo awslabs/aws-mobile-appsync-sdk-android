@@ -38,6 +38,8 @@ import com.apollographql.apollo.internal.json.InputFieldJsonWriter;
 import com.apollographql.apollo.internal.json.JsonWriter;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
+import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -126,7 +128,7 @@ class AppSyncOfflineMutationManager {
                             mutationObject.recordIdentifier,
                             httpRequestBody(mutationObject.request.operation),
                             mutationObject.request.operation.getClass().getSimpleName(),
-                            new JSONObject(mutationObject.request.operation.variables().valueMap()).toString())
+                            getClientStateFromMutation((Mutation) mutationObject.request.operation))
             );
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Added mutation[" + mutationObject.recordIdentifier + "] to Persistent Queue. No S3 Objects found"  );
 
@@ -137,7 +139,7 @@ class AppSyncOfflineMutationManager {
                             mutationObject.recordIdentifier,
                             httpRequestBody(mutationObject.request.operation),
                             mutationObject.request.operation.getClass().getSimpleName(),
-                            new JSONObject(mutationObject.request.operation.variables().valueMap()).toString(),
+                            getClientStateFromMutation((Mutation) mutationObject.request.operation),
                             s3InputObjectInterface.bucket(),
                             s3InputObjectInterface.key(),
                             s3InputObjectInterface.region(),
@@ -216,6 +218,13 @@ class AppSyncOfflineMutationManager {
     void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         inMemoryOfflineMutationManager.removeFirstInQueue();
+        queueHandler.setMutationInProgressStatusToFalse();
+        queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
+        queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
+    }
+
+    void setInProgressPersistentMutationAsCompleted(String recordIdentifier) {
+        persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
         queueHandler.setMutationInProgressStatusToFalse();
         queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
         queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
@@ -337,6 +346,21 @@ class AppSyncOfflineMutationManager {
         jsonWriter.endObject();
         jsonWriter.close();
         return buffer.readUtf8();
+    }
+
+    String getClientStateFromMutation(Mutation mutation) {
+        String clientState = "";
+
+        try {
+            JSONObject jsonRepresentation = new JSONObject(httpRequestBody(mutation));
+            JSONObject variables = jsonRepresentation.getJSONObject("variables");
+            clientState = variables.toString();
+        } catch (IOException ioe) {
+            Log.v(TAG, "IOException while getting clientState from Mutation: [" + ioe + "]");
+        } catch (JSONException jse) {
+            Log.v(TAG, "IOException while getting clientState from Mutation: [" + jse + "]");
+        }
+        return clientState;
     }
 }
 

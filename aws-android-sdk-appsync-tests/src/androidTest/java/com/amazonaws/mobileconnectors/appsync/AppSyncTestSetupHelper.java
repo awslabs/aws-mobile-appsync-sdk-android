@@ -23,11 +23,14 @@ import android.util.Log;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.mobileconnectors.appsync.demo.UpdateArticleMutation;
+import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.apollographql.apollo.api.Mutation;
 import com.apollographql.apollo.api.S3ObjectManager;
 
 import org.json.JSONException;
@@ -92,6 +95,7 @@ class AppSyncTestSetupHelper {
                     .credentialsProvider(credentialsProvider)
                     .serverUrl(endPoint)
                     .region(Regions.fromName(appSyncRegion))
+                    .conflictResolver( new TestConflictResolver())
                     .s3ObjectManager(s3ObjectManager)
                     .subscriptionsAutoReconnect(subscriptionsAutoReconnect)
                     .mutationQueueExecutionTimeout(30*1000)
@@ -172,6 +176,7 @@ class AppSyncTestSetupHelper {
                     .serverUrl(endPoint)
                     .region(Regions.fromName(appSyncRegion))
                     .s3ObjectManager(s3ObjectManager)
+                    .conflictResolver( new TestConflictResolver())
                     .subscriptionsAutoReconnect(subscriptionsAutoReconnect)
                     .mutationQueueExecutionTimeout(30*1000)
                     .persistentMutationsCallback(new PersistentMutationsCallback() {
@@ -254,4 +259,80 @@ class AppSyncTestSetupHelper {
         }
     }
 
+    static class TestConflictResolver implements ConflictResolverInterface {
+        private static final String TAG = TestConflictResolver.class.getSimpleName();
+
+        @Override
+        public void resolveConflict(ConflictResolutionHandler handler,
+                                    JSONObject serverState,
+                                    JSONObject clientState,
+                                    String recordIdentifier,
+                                    String operationType) {
+
+            Log.v(TAG, "OperationType is [" + operationType + "]");
+            if (operationType.equalsIgnoreCase("UpdateArticleMutation")) {
+                try {
+                    if (clientState == null ) {
+                        Log.v(TAG, "Failing conflict as client state was null");
+                        handler.fail(recordIdentifier);
+                        return;
+                    }
+
+                    //For the purposes of this test conflict handler
+                    //we will fail mutations if the title is ALWAYS DISCARD.
+                    JSONObject input = clientState.getJSONObject("input");
+                    if (input == null ) {
+                        Log.v(TAG, "Failing conflict as input was null");
+                        handler.fail(recordIdentifier);
+                        return;
+                    }
+
+                    final String title = input.getString("title");
+
+                    if ("ALWAYS DISCARD".equals(title)) {
+                        Log.v(TAG, "Failing conflict as title was ALWAYS DISCARD");
+                        handler.fail(recordIdentifier);
+                        return;
+                    }
+
+                    String id = input.getString("id");
+                    String author = input.getString("author");
+
+                    if (id == null || author == null || title == null ) {
+                        Log.v(TAG, "Failing conflict as id, author or title was null");
+                        handler.fail(recordIdentifier);
+                    }
+                    int resolvedVersion = serverState.getInt("version");
+                    if ("RESOLVE_CONFLICT_INCORRECTLY".equals(title)) {
+                        //This will fail again.
+                        Log.v(TAG, "Resolving conflict incorrectly");
+                        resolvedVersion = resolvedVersion - 1;
+                    }
+                    else {
+                        Log.v(TAG, "Resolving conflict correctly");
+                    }
+
+                    UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
+                            .id(id)
+                            .title(title)
+                            .author(author)
+                            .expectedVersion(resolvedVersion)
+                            .build();
+
+                    UpdateArticleMutation updateArticleMutation = UpdateArticleMutation.builder().input(updateArticleInput).build();
+
+                    handler.retryMutation(updateArticleMutation, recordIdentifier);
+                } catch (JSONException je) {
+                    je.printStackTrace();
+                    // in case of un-expected errors, we fail the mutation
+                    // we can also call the below method if we want server data to be accepted instead of client.
+                    handler.fail(recordIdentifier);
+                }
+            }
+            else {
+                handler.fail(recordIdentifier);
+            }
+
+        }
+    }
 }
