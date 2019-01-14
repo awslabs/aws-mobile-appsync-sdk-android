@@ -282,7 +282,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
             deleteArticleSubWatcher.execute(onDeleteArticleCallback);
 
-            sleep(20 * 1000);
+            sleep(60 * 1000);
             Log.d(TAG, "Subscribed and setup callback handlers.");
 
             addPost(awsAppSyncClient, title, author, url, content);
