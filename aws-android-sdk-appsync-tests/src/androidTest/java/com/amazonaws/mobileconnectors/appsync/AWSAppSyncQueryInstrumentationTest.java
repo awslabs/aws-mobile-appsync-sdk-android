@@ -1008,6 +1008,85 @@ public class AWSAppSyncQueryInstrumentationTest {
 
     }
 
+    @Test
+    public  void testCancelMutationWithinCallback() {
+
+        AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+        final CountDownLatch add2CountDownlatch = new CountDownLatch(1);
+
+        AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
+                "Post",
+                "",
+                "",
+                "",
+                "",
+                "",
+                null,
+                null,
+                0
+        ));
+
+        CreatePostInput createPostInput1 = CreatePostInput.builder()
+                .title("L.A. Woman")
+                .author("Doors" + System.currentTimeMillis())
+                .url("Doors.com")
+                .content("City at night")
+                .ups(new Integer(1))
+                .downs(new Integer(0))
+                .build();
+
+        AddPostMutation addPostMutation1 = AddPostMutation.builder().input(createPostInput1).build();
+        final AppSyncMutationCall call1 = awsAppSyncClient.mutate(addPostMutation1, expected);
+
+        CreatePostInput createPostInput2 = CreatePostInput.builder()
+                .title("Break On Through")
+                .author("Doors" + System.currentTimeMillis())
+                .url("Doors.com")
+                .content("To the other side")
+                .ups(new Integer(1))
+                .downs(new Integer(0))
+                .build();
+        AddPostMutation addPostMutation2 = AddPostMutation.builder().input(createPostInput2).build();
+        final AppSyncMutationCall call2 = awsAppSyncClient.mutate(addPostMutation2, expected);
+
+
+        call1.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
+              call1.cancel();
+            }
+
+            @Override
+            public void onFailure(@Nonnull final ApolloException e) {
+                e.printStackTrace();
+             assertTrue("OnError received for first mutation. Unexpected", false);
+            }
+        });
+
+        call2.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
+                call2.cancel();
+                add2CountDownlatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull final ApolloException e) {
+                e.printStackTrace();
+                assertTrue("OnError received for Second mutation. Unexpected", false);
+                add2CountDownlatch.countDown();
+            }
+        });
+
+        try {
+            add2CountDownlatch.await(60, TimeUnit.SECONDS);
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+    }
+
 
     private void queryPosts(AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher) {
 

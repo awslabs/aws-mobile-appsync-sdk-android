@@ -217,7 +217,7 @@ class AppSyncOfflineMutationManager {
 
     void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
-        inMemoryOfflineMutationManager.removeFirstInQueue();
+        inMemoryOfflineMutationManager.removeFromQueue(recordIdentifier);
         queueHandler.setMutationInProgressStatusToFalse();
         queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
         queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();

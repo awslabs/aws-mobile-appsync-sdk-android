@@ -52,10 +52,13 @@ public class InMemoryOfflineMutationManager {
         }
     }
 
-    public InMemoryOfflineMutationObject removeFirstInQueue() {
+    public InMemoryOfflineMutationObject removeFromQueue(String recordIdentifer) {
         synchronized ( lock ) {
             if (!inMemoryOfflineMutationObjects.isEmpty() ) {
-                return inMemoryOfflineMutationObjects.remove(0);
+                InMemoryOfflineMutationObject mutationObject = inMemoryOfflineMutationObjects.get(0);
+                if (mutationObject != null && recordIdentifer.equals(mutationObject.recordIdentifier)) {
+                    return inMemoryOfflineMutationObjects.remove(0);
+                }
             }
         }
         return null;
