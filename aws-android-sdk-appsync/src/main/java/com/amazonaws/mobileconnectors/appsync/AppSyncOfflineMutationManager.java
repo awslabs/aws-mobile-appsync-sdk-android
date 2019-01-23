@@ -362,5 +362,14 @@ class AppSyncOfflineMutationManager {
         }
         return clientState;
     }
+
+    boolean mutationQueueEmpty() {
+        return ( persistentOfflineMutationManager.isQueueEmpty() && inMemoryOfflineMutationManager.isQueueEmpty());
+    }
+
+    void clearMutationQueue(){
+        inMemoryOfflineMutationManager.clearMutationQueue();
+        persistentOfflineMutationManager.clearMutationQueue();
+    }
 }
 

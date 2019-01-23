@@ -110,4 +110,11 @@ public class InMemoryOfflineMutationManager {
         }
         return null;
     }
+
+    void clearMutationQueue() {
+        synchronized (lock) {
+            inMemoryOfflineMutationObjects.clear();
+            cancelledMutations.clear();
+        }
+    }
 }

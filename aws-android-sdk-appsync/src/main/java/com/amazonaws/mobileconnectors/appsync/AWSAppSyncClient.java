@@ -83,6 +83,7 @@ public class AWSAppSyncClient {
 
     //Map that houses retried mutations.
     private Map<Mutation, MutationInformation> mutationsToRetryAfterConflictResolution;
+    private AppSyncOfflineMutationManager mAppSyncOfflineMutationManager = null;
 
     private enum AuthMode {
         API_KEY("API_KEY"),
@@ -172,16 +173,18 @@ public class AWSAppSyncClient {
                         builder.mPersistentMutationsCallback,
                         builder.mS3ObjectManager);
 
-        //Create the Apollo Client and setup the interceptor chain.
+        mAppSyncOfflineMutationManager =  new AppSyncOfflineMutationManager(builder.mContext,
+                builder.customTypeAdapters,
+                sqlCacheOperations,
+                networkInvoker);
+
+                //Create the Apollo Client and setup the interceptor chain.
         ApolloClient.Builder clientBuilder = ApolloClient.builder()
                 .serverUrl(builder.mServerUrl)
                 .normalizedCache(builder.mNormalizedCacheFactory, builder.mResolver)
                 .addApplicationInterceptor(optimisticUpdateInterceptor)
                 .addApplicationInterceptor(new AppSyncOfflineMutationInterceptor(
-                        new AppSyncOfflineMutationManager(builder.mContext,
-                                builder.customTypeAdapters,
-                                sqlCacheOperations,
-                                networkInvoker),
+                        mAppSyncOfflineMutationManager,
                         false,
                         builder.mContext,
                         mutationsToRetryAfterConflictResolution,
@@ -427,7 +430,7 @@ public class AWSAppSyncClient {
          * @return
          */
         public Builder mutationQueueExecutionTimeout(long mutationQueueExecutionTimeout) {
-            mutationQueueExecutionTimeout = mutationQueueExecutionTimeout;
+            mMutationQueueExecutionTimeout = mutationQueueExecutionTimeout;
             return this;
         }
 
@@ -698,4 +701,22 @@ public class AWSAppSyncClient {
         return this.sync(baseQuery, baseQueryCallback, subscription, subscriptionCallback, null, null, 0 );
     }
 
+    /**
+     * Used to check if the mutation queue is empty.
+     * @return true if queue is empty, false otherwise.
+     */
+    public boolean mutationQueueEmpty() {
+        if (mAppSyncOfflineMutationManager != null ) {
+            return mAppSyncOfflineMutationManager.mutationQueueEmpty();
+        }
+        return true;
+    }
+
+    /**
+     * Clear the mutation queue. A Mutation that is currently in progress will continue to execute until finished.
+     *
+     */
+    public void clearMutationQueue() {
+        mAppSyncOfflineMutationManager.clearMutationQueue();
+    }
 }
