@@ -133,4 +133,9 @@ public class PersistentOfflineMutationManager {
     synchronized  Set<PersistentOfflineMutationObject> getTimedoutMutations() {
         return timedOutMutations;
     }
+
+    synchronized void clearMutationQueue() {
+        mutationSqlCacheOperations.clearCurrentCache();
+        persistentOfflineMutationObjectList.clear();
+    }
 }

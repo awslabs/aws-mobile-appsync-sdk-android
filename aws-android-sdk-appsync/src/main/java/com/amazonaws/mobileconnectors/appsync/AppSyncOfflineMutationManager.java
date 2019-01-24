@@ -217,7 +217,7 @@ class AppSyncOfflineMutationManager {
 
     void setInProgressMutationAsCompleted(String recordIdentifier) {
         persistentOfflineMutationManager.removePersistentMutationObject(recordIdentifier);
-        inMemoryOfflineMutationManager.removeFirstInQueue();
+        inMemoryOfflineMutationManager.removeFromQueue(recordIdentifier);
         queueHandler.setMutationInProgressStatusToFalse();
         queueHandler.clearInMemoryOfflineMutationObjectBeingExecuted();
         queueHandler.clearPersistentOfflineMutationObjectBeingExecuted();
@@ -361,6 +361,15 @@ class AppSyncOfflineMutationManager {
             Log.v(TAG, "IOException while getting clientState from Mutation: [" + jse + "]");
         }
         return clientState;
+    }
+
+    boolean mutationQueueEmpty() {
+        return ( persistentOfflineMutationManager.isQueueEmpty() && inMemoryOfflineMutationManager.isQueueEmpty());
+    }
+
+    void clearMutationQueue(){
+        inMemoryOfflineMutationManager.clearMutationQueue();
+        persistentOfflineMutationManager.clearMutationQueue();
     }
 }
 
