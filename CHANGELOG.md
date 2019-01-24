@@ -7,7 +7,7 @@
 * Added support to check if mutation queue is empty and to clear mutation queue. See [issue #96](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/96), and [issue #101](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/101)
 
 ### Bug Fixes
-* Fixed bug in mutationQueue Execution set method. [issue #105](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/105)
+* Fixed bug in `mutationQueueExecutionTimeout` method. See [issue #105](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/105)
 * Fixed bug in mutation processing logic to handle case where cancel is called in the mutation callback. See [issue #102](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/102)
 
 ## [Release 2.7.5](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.5)
