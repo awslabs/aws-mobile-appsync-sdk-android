@@ -1091,7 +1091,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     public void testMutationQueueEmpty() {
         AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(true,2*1000);
         assertNotNull(awsAppSyncClient);
-        assertTrue(awsAppSyncClient.mutationQueueEmpty());
+        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         final CountDownLatch addCountdownlatch = new CountDownLatch(1);
 
@@ -1133,13 +1133,13 @@ public class AWSAppSyncQueryInstrumentationTest {
                 addCountdownlatch.countDown();
             }
         });
-        assertFalse(awsAppSyncClient.mutationQueueEmpty());
+        assertFalse(awsAppSyncClient.isMutationQueueEmpty());
         try {
             addCountdownlatch.await(60, TimeUnit.SECONDS);
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
-        assertTrue(awsAppSyncClient.mutationQueueEmpty());
+        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
     }
 
@@ -1147,7 +1147,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     public void testMutationQueueClear() {
         AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM(true,2*1000);
         assertNotNull(awsAppSyncClient);
-        assertTrue(awsAppSyncClient.mutationQueueEmpty());
+        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         final int lastMutation = 10;
         final CountDownLatch addCountdownlatch = new CountDownLatch(1);
@@ -1194,9 +1194,9 @@ public class AWSAppSyncQueryInstrumentationTest {
                 }
             });
         }
-        assertFalse(awsAppSyncClient.mutationQueueEmpty());
+        assertFalse(awsAppSyncClient.isMutationQueueEmpty());
         awsAppSyncClient.clearMutationQueue();
-        assertTrue(awsAppSyncClient.mutationQueueEmpty());
+        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         try {
             assertFalse(addCountdownlatch.await(60, TimeUnit.SECONDS));

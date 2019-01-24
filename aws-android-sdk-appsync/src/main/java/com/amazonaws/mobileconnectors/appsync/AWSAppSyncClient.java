@@ -705,7 +705,7 @@ public class AWSAppSyncClient {
      * Used to check if the mutation queue is empty.
      * @return true if queue is empty, false otherwise.
      */
-    public boolean mutationQueueEmpty() {
+    public boolean isMutationQueueEmpty() {
         if (mAppSyncOfflineMutationManager != null ) {
             return mAppSyncOfflineMutationManager.mutationQueueEmpty();
         }
