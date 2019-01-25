@@ -160,11 +160,14 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
     @Test
     public void testAddUpdateArticleNoConflict( ) {
+        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
         String title = "Thick as a brick";
         String author = "Tull" + System.currentTimeMillis();
 
-        String articleID = addArticle(title,author,1);
-        updateArticle(articleID, title, author + System.currentTimeMillis(), 1, 2);
+        String articleID = addArticle(awsAppSyncClient,title,author,1);
+        updateArticle(awsAppSyncClient, articleID, title, author + System.currentTimeMillis(), 1, 2);
     }
 
 
@@ -172,7 +175,6 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
     public void testAddUpdateArticleConflictDiscard( ) {
         final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
-        final CountDownLatch addCountDownLatch = new CountDownLatch(1);
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
 
         articleID = null;
@@ -182,7 +184,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         String title = "ALWAYS DISCARD";
         String author = "Tull @" + System.currentTimeMillis();
 
-        String articleID = addArticle(title,author,100);
+        String articleID = addArticle(awsAppSyncClient,title,author,100);
 
         UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
                 .id(articleID)
@@ -232,21 +234,24 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
     @Test
     public void testAddUpdateArticleConflictResolve( ) {
+        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        assertNotNull(awsAppSyncClient);
+
         String title = "Hallowed Point";
         String author = "Seasons in the Abyss @" + System.currentTimeMillis();
 
-        String articleID = addArticle(title, author + System.currentTimeMillis(),100);
+        String articleID = addArticle(awsAppSyncClient,title, author + System.currentTimeMillis(),100);
 
         //Send expectedVersion as 2. The conflict resolution mechanism should update version to 101 and the test should pass.
-        updateArticle(articleID, title, author + "@" + System.currentTimeMillis(),2, 101);
+        updateArticle(awsAppSyncClient,articleID, title, author + "@" + System.currentTimeMillis(),2, 101);
         //No conflict
-        updateArticle(articleID, title, author + "@" + System.currentTimeMillis(),101, 102);
+        updateArticle(awsAppSyncClient,articleID, title, author + "@" + System.currentTimeMillis(),101, 102);
 
         //Send expectedVersion as 101. The conflict resolution mechanism should update version to 103 and the test should pass.
-        updateArticle(articleID, title, author + "@" + System.currentTimeMillis(),101, 103);
+        updateArticle(awsAppSyncClient,articleID, title, author + "@" + System.currentTimeMillis(),101, 103);
 
         //Send expectedVersion as 110. The conflict resolution mechanism should update version to 104 and the test should pass.
-        updateArticle(articleID, title, author + "@" + System.currentTimeMillis(),110, 104);
+        updateArticle(awsAppSyncClient,articleID, title, author + "@" + System.currentTimeMillis(),110, 104);
 
     }
 
@@ -254,11 +259,11 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
     public void testAddUpdateArticleConflictResolveWithAnotherConflict( ) {
         String title = "RESOLVE_CONFLICT_INCORRECTLY";
         String author = "Trivium @" + System.currentTimeMillis();
-
-        String articleID = addArticle(title, author + System.currentTimeMillis(),100);
-
         final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
+
+        String articleID = addArticle(awsAppSyncClient,title, author + System.currentTimeMillis(),100);
+
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
         final UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
                 .id(articleID)
@@ -306,12 +311,9 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         testAddUpdateArticleConflictResolve();
     }
 
-    private String addArticle( final String title, final String author, final int version) {
+    private String addArticle( final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final int version) {
 
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
-        assertNotNull(awsAppSyncClient);
         final CountDownLatch addCountDownLatch = new CountDownLatch(1);
-        final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
 
         articleID = null;
 
@@ -363,10 +365,8 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
     }
 
 
-    private void updateArticle(final String id, final String title, final String author, final int expectedVersion,
+    private void updateArticle(final AWSAppSyncClient awsAppSyncClient, final String id, final String title, final String author, final int expectedVersion,
                                final int versionNumberAfterUpdate) {
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
-        assertNotNull(awsAppSyncClient);
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
         final UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
                 .id(id)
