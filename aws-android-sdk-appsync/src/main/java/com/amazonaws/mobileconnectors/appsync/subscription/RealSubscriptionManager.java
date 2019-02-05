@@ -101,9 +101,12 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
     //Remove Subscription Object from subscriptionsById map
     private void removeSubscriptionObjectFromIdMap(SubscriptionObject subscriptionObject) {
+        if (subscriptionObject == null || subscriptionObject.subscription == null ) {
+            return;
+        }
         synchronized (subscriptionsByIdLock) {
             subscriptionObject.getTopics().clear();
-            subscriptionsById.remove(subscriptionObject);
+            subscriptionsById.remove(subscriptionObject.subscription);
         }
     }
 
