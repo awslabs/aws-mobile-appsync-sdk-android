@@ -1,5 +1,12 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.7](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.7)
+
+### Bug Fixes
+
+* Fixed a memory leak in `subscriptionsById` map. See [issue #111](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/111).
+* Prevent a NPE on the `userCallback` when canceling a subscription. See [issue #114](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/114).
+
 ## [Release 2.7.6](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.6)
 
 ### Misc. Updates
