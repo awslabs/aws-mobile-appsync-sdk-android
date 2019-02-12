@@ -164,8 +164,10 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
                             try {
                                 subscriptionManager.unsubscribe(subscription);
                                 subscriptionManager.removeListener(subscription, userCallback);
-                                userCallback.onCompleted();
-                                userCallback = null;
+                                if (userCallback != null ) {
+                                    userCallback.onCompleted();
+                                    userCallback = null;
+                                }
                             } finally {
                                 state.set(CANCELED);
                             }
