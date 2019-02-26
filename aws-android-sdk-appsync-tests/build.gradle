@@ -39,6 +39,6 @@ dependencies {
     androidTestImplementation project(':aws-android-sdk-appsync')
 
     implementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
-    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
-    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
+    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
+    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 }

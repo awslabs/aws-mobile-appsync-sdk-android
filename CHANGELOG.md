@@ -1,5 +1,12 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.8](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.8)
+
+### Bug Fixes
+
+* Adjusted network connectivity check in mutation processing logic. See [issue #108](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/108), [issue #121](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/121)
+* Fixed `NoSuchElementException` in Subscription Reconnection logic. See [issue #114](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/114).
+
 ## [Release 2.7.7](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.7)
 
 ### Bug Fixes
