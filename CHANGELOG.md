@@ -2,6 +2,9 @@
 
 ## [Release 2.7.8](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.8)
 
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.12.1` instead of `2.11.0`.
+
 ### Bug Fixes
 
 * Adjusted network connectivity check in mutation processing logic. See [issue #108](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/108), [issue #121](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/121)
