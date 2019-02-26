@@ -62,7 +62,7 @@ class AppSyncOfflineMutationManager {
     private NetworkUpdateHandler networkUpdateHandler;
     private HandlerThread handlerThread;
 
-    private Object shouldProcessMutationsLock = new Object();
+    private final Object shouldProcessMutationsLock = new Object();
     private boolean shouldProcessMutations;
 
     InMemoryOfflineMutationManager inMemoryOfflineMutationManager;
@@ -158,19 +158,12 @@ class AppSyncOfflineMutationManager {
     }
 
     public void processNextInQueueMutation() {
-        synchronized (shouldProcessMutationsLock) {
-            if (!shouldProcessMutations ) {
-                Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Internet wasn't available. Exiting");
-                return;
-            }
-        }
 
-        //Double check to make sure we do have network connectivity, as there can be latency in
-        // the propagation of the network state through the broadcast receiver.
+        //Check to make sure we do have network connectivity.
         final NetworkInfo info = ((ConnectivityManager) context
                 .getSystemService(Context.CONNECTIVITY_SERVICE)).getActiveNetworkInfo();
 
-        if (info != null && !info.isConnected()) {
+        if (info == null || !info.isConnected()) {
             Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Internet wasn't available. Exiting");
             return;
         }
@@ -263,8 +256,6 @@ class AppSyncOfflineMutationManager {
         @Override
         public void handleMessage(Message msg) {
             if (msg.what == MSG_CHECK) {
-                // remove messages of the same type
-                networkUpdateHandler.removeMessages(MSG_CHECK);
 
                 // set shouldProcess to true
                 Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Internet CONNECTED.");
@@ -319,7 +310,7 @@ class AppSyncOfflineMutationManager {
         public void onReceive(Context context, Intent intent) {
             if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
                 final boolean networkConnected = isNetworkConnected();
-               handler.sendEmptyMessage(networkConnected ? MSG_CHECK : MSG_DISCONNECT);
+                handler.sendEmptyMessage(networkConnected ? MSG_CHECK : MSG_DISCONNECT);
             }
         }
 

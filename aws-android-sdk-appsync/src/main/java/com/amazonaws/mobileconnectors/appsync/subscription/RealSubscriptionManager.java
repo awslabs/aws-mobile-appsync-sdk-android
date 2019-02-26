@@ -34,6 +34,7 @@ import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -418,7 +419,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
 
     //Reconnection management
     Thread reconnectThread = null;
-    Object reconnectionLock = new Object();
+    final Object reconnectionLock = new Object();
     boolean reconnectionInProgress = false;
     private CountDownLatch reconnectCountdownLatch = null;
 
@@ -438,7 +439,7 @@ public class RealSubscriptionManager implements SubscriptionManager {
                     while (reconnectionInProgress) {
                         waitMillis = RetryInterceptor.calculateBackoff(retryCount);
                         try {
-                            Log.v(TAG, "Subscription Infrastructure: Sleeping for [" + (waitMillis/1000)+ "] seconds");
+                            Log.v(TAG, "Subscription Infrastructure: Sleeping for [" + (waitMillis)+ "] ms");
                             Thread.sleep(waitMillis);
                         }
                         catch (InterruptedException ie) {
@@ -446,17 +447,22 @@ public class RealSubscriptionManager implements SubscriptionManager {
                         }
                         //Grab any non canceled subscription object to retry.
                         SubscriptionObject subscriptionToRetry = null;
-                        for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
-                            if (!subscriptionObject.isCancelled()) {
-                                subscriptionToRetry = subscriptionObject;
+                        AppSyncSubscriptionCall.Callback callback = null;
+
+                        synchronized (subscriptionsByIdLock) {
+                            for (SubscriptionObject subscriptionObject : subscriptionsById.values()) {
+                                if (!subscriptionObject.isCancelled() && !subscriptionObject.getListeners().isEmpty()) {
+                                    subscriptionToRetry = subscriptionObject;
+                                    callback = (AppSyncSubscriptionCall.Callback) subscriptionToRetry.getListeners().iterator().next();
+                                    break;
+                                }
                             }
                         }
-
                         //Initiate Retry if required
-                        if (subscriptionToRetry != null) {
+                        if (subscriptionToRetry != null && callback != null ) {
                             Log.v(TAG, "Subscription Infrastructure: Attempting to reconnect");
                             reconnectCountdownLatch = new CountDownLatch(1);
-                            mApolloClient.subscribe(subscriptionToRetry.subscription).execute((AppSyncSubscriptionCall.Callback) subscriptionToRetry.getListeners().iterator().next());
+                            mApolloClient.subscribe(subscriptionToRetry.subscription).execute(callback);
 
                             try {
                                 reconnectCountdownLatch.await(1, TimeUnit.MINUTES);

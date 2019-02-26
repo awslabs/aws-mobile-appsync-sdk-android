@@ -817,10 +817,11 @@ public class AWSAppSyncQueryInstrumentationTest {
             public void run() {
                 //Set Wifi Network offline
                 WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
-                for (int i = 0; i < 15; i++) {
+                for (int i = 0; i < 3; i++) {
                     assertTrue(wifiManager.setWifiEnabled(false));
                     sleep((int) (3 * 1000 ));
                     assertTrue(wifiManager.setWifiEnabled(true));
+                    sleep((int) (7 * 1000 ));
                 }
               }
         }
