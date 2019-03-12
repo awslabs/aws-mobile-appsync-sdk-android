@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.9](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.9)
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.12.4` instead of `2.12.1`.
+
 ## [Release 2.7.8](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.8)
 
 ### Misc. Updates
