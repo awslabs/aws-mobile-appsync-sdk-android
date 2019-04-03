@@ -119,19 +119,28 @@ final class AWSAppSyncDeltaSyncDBOperations {
     DeltaSyncRecord getRecordByID(long id) {
         DeltaSyncRecord record = null;
 
-        Cursor cursor = database.query(AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
-                allColumns, AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID + " = ?",
-                new String[]{"" + id},
-                null,
-                null,
-                null);
+        Cursor cursor = null;
 
-        if (cursor != null && cursor.getCount() > 0 && cursor.moveToNext()) {
-            record.id = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID));
-            record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
-            record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
+        try {
+            cursor = database.query(AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
+                    allColumns, AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID + " = ?",
+                    new String[]{"" + id},
+                    null,
+                    null,
+                    null);
+
+            if (cursor != null && cursor.getCount() > 0 && cursor.moveToNext()) {
+                record.id = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID));
+                record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
+                record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
+            }
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
+
         }
-        cursor.close();
+
         return record;
     }
 
@@ -142,20 +151,28 @@ final class AWSAppSyncDeltaSyncDBOperations {
     DeltaSyncRecord getRecordByKey(String key) {
         DeltaSyncRecord record = null;
 
-        Cursor cursor = database.query(AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
-                allColumns, AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY + " = ?",
-                new String[]{key},
-                null,
-                null,
-                null);
+        Cursor cursor = null;
 
-        if (cursor != null && cursor.getCount() > 0 && cursor.moveToNext()) {
-            record = new DeltaSyncRecord();
-            record.id = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID));
-            record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
-            record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
+        try {
+            cursor = database.query(AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
+                    allColumns, AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY + " = ?",
+                    new String[]{key},
+                    null,
+                    null,
+                    null);
+
+            if (cursor != null && cursor.getCount() > 0 && cursor.moveToNext()) {
+                record = new DeltaSyncRecord();
+                record.id = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID));
+                record.key = cursor.getString(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_DELTA_SYNC_KEY));
+                record.lastRunTimeInMilliSeconds = cursor.getLong(cursor.getColumnIndex(AWSAppSyncDeltaSyncSqlHelper.COLUMN_LAST_RUN_TIME));
+            }
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
+            }
         }
-        cursor.close();
+
         return record;
     }
 

@@ -216,14 +216,21 @@ public final class SqlNormalizedCache extends NormalizedCache {
         allColumns, AppSyncSqlHelper.COLUMN_KEY + " = ?", new String[]{key},
         null, null, null);
     if (cursor == null || !cursor.moveToFirst()) {
+      if (cursor != null && !cursor.isClosed())  {
+        cursor.close();
+      }
       return Optional.absent();
     }
+
     try {
-      return Optional.of(cursorToRecord(cursor));
+      Record rec = cursorToRecord(cursor);
+      return Optional.of(rec);
     } catch (IOException exception) {
       return Optional.absent();
     } finally {
-      cursor.close();
+      if (!cursor.isClosed()) {
+        cursor.close();
+      }
     }
   }
 

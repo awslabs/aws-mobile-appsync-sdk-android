@@ -96,39 +96,50 @@ public final class AppSyncMutationSqlCacheOperations {
 
     List<PersistentOfflineMutationObject> fetchAllRecords() {
         LinkedList<PersistentOfflineMutationObject> mutationObjects = new LinkedList<>();
-        Cursor cursor = database.query(AppSyncMutationsSqlHelper.TABLE_MUTATION_RECORDS,
-                allColumns, null, null,
-                null, null, AppSyncMutationsSqlHelper.COLUMN_ID);
-        if (cursor == null || !cursor.moveToFirst()) {
-            return mutationObjects;
-        }
 
-        if (cursor.moveToFirst()) {
-            while (!cursor.isAfterLast()) {
-                String recordIdentifier = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.RECORD_IDENTIFIER));
-                String record = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_RECORD));
-                String responseClass = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.RESPONSE_CLASS));
-                String clientState = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_CLIENT_STATE));
-                String bucket = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_BUCKET));
-                String key = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_KEY));
-                String region = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_REGION));
-                String localUri = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_LOCAL_URI));
-                String mimeType = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_MIME_TYPE));
-                PersistentOfflineMutationObject mutationObject = new PersistentOfflineMutationObject(recordIdentifier,
-                        record,
-                        responseClass,
-                        clientState,
-                        bucket,
-                        key,
-                        region,
-                        localUri,
-                        mimeType);
-                mutationObjects.add(mutationObject);
-                cursor.moveToNext();
+        Cursor cursor = null;
+
+        try {
+            cursor = database.query(AppSyncMutationsSqlHelper.TABLE_MUTATION_RECORDS,
+                    allColumns, null, null,
+                    null, null, AppSyncMutationsSqlHelper.COLUMN_ID);
+
+            if (cursor == null || !cursor.moveToFirst()) {
+                return mutationObjects;
+            }
+
+            if (cursor.moveToFirst()) {
+                while (!cursor.isAfterLast()) {
+
+                    String recordIdentifier = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.RECORD_IDENTIFIER));
+                    String record = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_RECORD));
+                    String responseClass = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.RESPONSE_CLASS));
+                    String clientState = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_CLIENT_STATE));
+                    String bucket = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_BUCKET));
+                    String key = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_KEY));
+                    String region = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_REGION));
+                    String localUri = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_LOCAL_URI));
+                    String mimeType = cursor.getString(cursor.getColumnIndex(AppSyncMutationsSqlHelper.COLUMN_MIME_TYPE));
+                    PersistentOfflineMutationObject mutationObject = new PersistentOfflineMutationObject(recordIdentifier,
+                            record,
+                            responseClass,
+                            clientState,
+                            bucket,
+                            key,
+                            region,
+                            localUri,
+                            mimeType);
+                    mutationObjects.add(mutationObject);
+                    cursor.moveToNext();
+                }
+            }
+
+        } finally {
+            if (cursor != null && !cursor.isClosed()) {
+                cursor.close();
             }
         }
 
-        cursor.close();
         return mutationObjects;
     }
 
