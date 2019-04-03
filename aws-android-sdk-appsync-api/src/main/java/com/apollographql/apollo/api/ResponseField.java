@@ -41,9 +41,9 @@ public class ResponseField {
   private final boolean optional;
   private final List<Condition> conditions;
 
-  private static final String VARIABLE_IDENTIFIER_KEY = "kind";
-  private static final String VARIABLE_IDENTIFIER_VALUE = "Variable";
-  private static final String VARIABLE_NAME_KEY = "variableName";
+  public static final String VARIABLE_IDENTIFIER_KEY = "kind";
+  public static final String VARIABLE_IDENTIFIER_VALUE = "Variable";
+  public static final String VARIABLE_NAME_KEY = "variableName";
 
   /**
    * Factory method for creating a Field instance representing {@link Type#STRING}.
@@ -250,13 +250,6 @@ public class ResponseField {
     return conditions;
   }
 
-  public String cacheKey(Operation.Variables variables) {
-    if (arguments.isEmpty()) {
-      return fieldName();
-    }
-    return String.format("%s(%s)", fieldName(), orderIndependentKey(arguments, variables));
-  }
-
   /**
    * Resolve field argument value by name. If argument represents a references to the variable, it will be resolved from
    * provided operation variables values.
@@ -283,59 +276,10 @@ public class ResponseField {
     return argumentValue;
   }
 
-  private String orderIndependentKey(Map<String, Object> objectMap, Operation.Variables variables) {
-    if (isArgumentValueVariableType(objectMap)) {
-      return orderIndependentKeyForVariableArgument(objectMap, variables);
-    }
-    List<Map.Entry<String, Object>> sortedArguments = new ArrayList<>(objectMap.entrySet());
-    Collections.sort(sortedArguments, new Comparator<Map.Entry<String, Object>>() {
-      @Override public int compare(Map.Entry<String, Object> argumentOne, Map.Entry<String, Object> argumentTwo) {
-        return argumentOne.getKey().compareTo(argumentTwo.getKey());
-      }
-    });
-    StringBuilder independentKey = new StringBuilder();
-    for (int i = 0; i < sortedArguments.size(); i++) {
-      Map.Entry<String, Object> argument = sortedArguments.get(i);
-      if (argument.getValue() instanceof Map) {
-        //noinspection unchecked
-        final Map<String, Object> objectArg = (Map<String, Object>) argument.getValue();
-        boolean isArgumentVariable = isArgumentValueVariableType(objectArg);
-        independentKey
-            .append(argument.getKey())
-            .append(":")
-            .append(isArgumentVariable ? "" : "[")
-            .append(orderIndependentKey(objectArg, variables))
-            .append(isArgumentVariable ? "" : "]");
-      } else {
-        independentKey.append(argument.getKey())
-            .append(":")
-            .append(argument.getValue().toString());
-      }
-      if (i < sortedArguments.size() - 1) {
-        independentKey.append(",");
-      }
-    }
-    return independentKey.toString();
-  }
-
-  private boolean isArgumentValueVariableType(Map<String, Object> objectMap) {
+  public static boolean isArgumentValueVariableType(Map<String, Object> objectMap) {
     return objectMap.containsKey(VARIABLE_IDENTIFIER_KEY)
         && objectMap.get(VARIABLE_IDENTIFIER_KEY).equals(VARIABLE_IDENTIFIER_VALUE)
         && objectMap.containsKey(VARIABLE_NAME_KEY);
-  }
-
-  private String orderIndependentKeyForVariableArgument(Map<String, Object> objectMap, Operation.Variables variables) {
-    Object variable = objectMap.get(VARIABLE_NAME_KEY);
-    //noinspection SuspiciousMethodCalls
-    Object resolvedVariable = variables.valueMap().get(variable);
-    if (resolvedVariable == null) {
-      return null;
-    } else if (resolvedVariable instanceof Map) {
-      //noinspection unchecked
-      return orderIndependentKey((Map<String, Object>) resolvedVariable, variables);
-    } else {
-      return resolvedVariable.toString();
-    }
   }
 
   /**
