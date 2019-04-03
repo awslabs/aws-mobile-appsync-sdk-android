@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.10](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.10)
+
+### Bug Fixes
+
+* Fixed a bug that caused cursors to remain open in certain scenarios. See [PR #141](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/141) Thanks @alanvan0502 ! See [issue #140](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/140)
+
 ## [Release 2.7.9](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.9)
 
 ### Misc. Updates
