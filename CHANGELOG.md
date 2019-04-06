@@ -7,7 +7,7 @@
 * Fixed a bug that caused cursors to remain open in certain scenarios. See [PR #141](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/141) Thanks @alanvan0502 ! See [issue #140](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/140)
 
 ### Misc. Updates
-* `AWSAppSync` now depends on `AWSCore` version `2.12.4` instead of `2.12.1`.
+* `AWSAppSync` now depends on `AWSCore` version `2.13.0` instead of `2.12.1`.
 
 ## [Release 2.7.8](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.8)
 
