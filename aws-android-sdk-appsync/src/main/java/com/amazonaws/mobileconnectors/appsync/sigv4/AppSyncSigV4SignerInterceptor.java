@@ -21,6 +21,7 @@ import com.amazonaws.DefaultRequest;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.http.HttpMethodName;
+import com.amazonaws.mobileconnectors.appsync.utils.StringUtils;
 import com.amazonaws.util.VersionInfoUtils;
 
 import java.io.IOException;
@@ -122,7 +123,8 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         dr.setHttpMethod(HttpMethodName.valueOf(req.method()));
 
         //Add User Agent
-        dr.addHeader(HEADER_USER_AGENT, VersionInfoUtils.getUserAgent());
+        String userAgent = StringUtils.toHumanReadableAscii(VersionInfoUtils.getUserAgent());
+        dr.addHeader(HEADER_USER_AGENT, userAgent);
 
         //write the body to a byte array stream.
         final Buffer buffer = new Buffer();
