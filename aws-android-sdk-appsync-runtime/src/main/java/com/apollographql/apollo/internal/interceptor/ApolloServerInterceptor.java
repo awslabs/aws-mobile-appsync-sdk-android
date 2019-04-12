@@ -111,6 +111,8 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
                     callBack.onCompleted();
                 }
             });
+        } else {
+            callBack.onFailure(new ApolloNetworkException("Failed to prepare http call, prepared call was null"));
         }
       }
     });
