@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 Amazon.com,
+ * Copyright 2019-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Amazon Software License (the "License").
