@@ -61,14 +61,14 @@ public abstract class ResponseNormalizer<R> implements ResponseReaderShadow<R> {
   }
 
   @Override public void willResolve(ResponseField field, Operation.Variables variables) {
-    String key = cacheKeyBuilder().build(field, variables);
+    String key = field.cacheKey(variables);
     path.add(key);
   }
 
   @Override public void didResolve(ResponseField field, Operation.Variables variables) {
     path.remove(path.size() - 1);
     Object value = valueStack.pop();
-    String cacheKey = cacheKeyBuilder().build(field, variables);
+    String cacheKey = field.cacheKey(variables);
     String dependentKey = currentRecordBuilder.key() + "." + cacheKey;
     dependentKeys.add(dependentKey);
     currentRecordBuilder.addField(cacheKey, value);
@@ -129,8 +129,6 @@ public abstract class ResponseNormalizer<R> implements ResponseReaderShadow<R> {
   }
 
   @Nonnull public abstract CacheKey resolveCacheKey(@Nonnull ResponseField field, @Nonnull R record);
-
-  @Nonnull public abstract CacheKeyBuilder cacheKeyBuilder();
 
   void willResolveRecord(CacheKey cacheKey) {
     pathStack = new SimpleStack<>();
@@ -196,14 +194,6 @@ public abstract class ResponseNormalizer<R> implements ResponseReaderShadow<R> {
 
     @Nonnull @Override public CacheKey resolveCacheKey(@Nonnull ResponseField field, @Nonnull Object record) {
       return CacheKey.NO_KEY;
-    }
-
-    @Nonnull @Override public CacheKeyBuilder cacheKeyBuilder() {
-      return new CacheKeyBuilder() {
-        @Nonnull @Override public String build(@Nonnull ResponseField field, @Nonnull Operation.Variables variables) {
-          return CacheKey.NO_KEY.key();
-        }
-      };
     }
   };
 }
