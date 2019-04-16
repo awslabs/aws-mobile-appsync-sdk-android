@@ -1,5 +1,12 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.10](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.10)
+
+### Bug Fixes
+
+* Fixed a bug that cause `NullPointerException` in the `ApolloServerInterceptor`. See [PR #146](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/146) Thanks @alanvan0502 !
+* Sanitized useragent string of unicode characters that caused requests to fail. The unicode characters in this case came from the platform name (TM) symbol. See [PR #146](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/146) Thanks @alanvan0502 !
+
 ## [Release 2.7.9](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.9)
 
 ### Bug Fixes

@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 Amazon.com,
+ * Copyright 2019-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
  * Licensed under the Amazon Software License (the "License").
@@ -14,6 +14,7 @@
  * for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.amazonaws.mobileconnectors.appsync.utils;
 
 import okio.Buffer;
