@@ -50,13 +50,12 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.android.support:appcompat-v7:28.0.0-rc02'
+    implementation "com.amazonaws:aws-android-sdk-appsync:$VERSION_NAME"
+    implementation "com.amazonaws:aws-android-sdk-appsync-runtime:$VERSION_NAME"
+    implementation "com.amazonaws:aws-android-sdk-appsync-api:$VERSION_NAME"
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-
-    androidTestImplementation "com.amazonaws:aws-android-sdk-appsync:$VERSION_NAME"
-    androidTestImplementation "com.amazonaws:aws-android-sdk-appsync-runtime:$VERSION_NAME"
-    androidTestImplementation "com.amazonaws:aws-android-sdk-appsync-api:$VERSION_NAME"
 
     implementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
     compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.0'
