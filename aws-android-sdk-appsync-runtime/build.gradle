@@ -1,4 +1,5 @@
 apply plugin: 'java-library'
+apply plugin: 'maven-publish'
 
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
@@ -10,6 +11,17 @@ dependencies {
     compile "com.nytimes.android:cache:2.0.2" // impl
 
     compile project(':aws-android-sdk-appsync-api') // api
+}
+
+publishing {
+    publications {
+        pluginPublication(MavenPublication) {
+            from  components.java
+            groupId 'com.amazonaws'
+            artifactId 'aws-android-sdk-appsync-runtime'
+            version VERSION_NAME + "-SNAPSHOT"
+        }
+    }
 }
 
 sourceCompatibility = "1.7"

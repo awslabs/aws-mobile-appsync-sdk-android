@@ -20,7 +20,10 @@ android:
   - android-22
   - sys-img-armeabi-v7a-android-22
 script:
+- ./gradlew publishToMavenLocal
+- cd aws-android-sdk-appsync-tests
 - android list target
 - "./gradlew build connectedCheck --stacktrace "
+- cd ..
 after_failure:
   - cat aws-android-sdk-appsync-tests/build/outputs/androidTest-results/connected/*.xml
