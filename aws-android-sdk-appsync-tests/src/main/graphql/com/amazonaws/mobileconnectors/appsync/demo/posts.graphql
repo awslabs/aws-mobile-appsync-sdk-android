@@ -9,7 +9,7 @@ query GetPost($id:ID!) {
  }
 }
 
-query GetPostInputType($input: DeletePostInput) {
+query GetPostInputType($input: GetPostInput!) {
  getPostInputType(input: $input) {
      id
      title

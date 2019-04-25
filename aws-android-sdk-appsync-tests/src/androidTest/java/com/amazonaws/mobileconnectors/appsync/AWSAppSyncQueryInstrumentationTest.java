@@ -21,7 +21,6 @@ import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
-import android.support.test.filters.FlakyTest;
 import android.support.test.filters.Suppress;
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
@@ -42,6 +41,7 @@ import com.amazonaws.mobileconnectors.appsync.demo.OnUpdatePostSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.DeletePostInput;
+import com.amazonaws.mobileconnectors.appsync.demo.type.GetPostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.apollographql.apollo.GraphQLCall;
@@ -57,6 +57,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -82,7 +84,6 @@ public class AWSAppSyncQueryInstrumentationTest {
     private static final String TAG = AWSAppSyncQueryInstrumentationTest.class.getSimpleName();
 
     private Response<GetPostQuery.Data> getPostQueryResponse;
-    private Response<GetPostInputTypeQuery.Data> getPostInputTypeQueryResponse;
     private Response<AllPostsQuery.Data> allPostsResponse;
 
     private Response<AddPostMutation.Data> addPostMutationResponse;
@@ -680,14 +681,13 @@ public class AWSAppSyncQueryInstrumentationTest {
         assertNotNull(awsAppSyncClient);
         String postID = "bae84e6f-3c65-4c52-a68e-b7d32c6fa8ff";
 
-        queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
+        Response<GetPostInputTypeQuery.Data> getPostInputTypeQueryResponse = queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
         assertNotNull(getPostInputTypeQueryResponse);
         assertNotNull(getPostInputTypeQueryResponse.data());
         assertNotNull(getPostInputTypeQueryResponse.data().getPostInputType());
         assertEquals(postID, getPostInputTypeQueryResponse.data().getPostInputType().id());
-        getPostInputTypeQueryResponse = null;
 
-        queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY,postID);
+        getPostInputTypeQueryResponse = queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY,postID);
         assertNotNull(getPostInputTypeQueryResponse);
         assertNotNull(getPostInputTypeQueryResponse.data());
         assertNotNull(getPostInputTypeQueryResponse.data().getPostInputType());
@@ -1284,17 +1284,18 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
-    private void queryPostWithInputType( AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher, final String id) {
+    private Response<GetPostInputTypeQuery.Data> queryPostWithInputType( AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher, final String id) {
 
         final CountDownLatch queryCountDownLatch = new CountDownLatch(1);
-        DeletePostInput deletePostInput = DeletePostInput.builder().id(id).build();
+        GetPostInput getPostInput = GetPostInput.builder().id(id).build();
         Log.d(TAG, "Calling Query GetPost");
-        awsAppSyncClient.query(GetPostInputTypeQuery.builder().input(deletePostInput).build())
+        final List<Response<GetPostInputTypeQuery.Data>> result = new ArrayList<Response<GetPostInputTypeQuery.Data>>(1);
+        awsAppSyncClient.query(GetPostInputTypeQuery.builder().input(getPostInput).build())
                 .responseFetcher(responseFetcher)
                 .enqueue(new GraphQLCall.Callback<GetPostInputTypeQuery.Data>() {
                     @Override
                     public void onResponse(@Nonnull Response<GetPostInputTypeQuery.Data> response) {
-                        getPostInputTypeQueryResponse = response;
+                        result.add(response);
                         queryCountDownLatch.countDown();
                     }
 
@@ -1302,7 +1303,7 @@ public class AWSAppSyncQueryInstrumentationTest {
                     public void onFailure(@Nonnull ApolloException e) {
                         e.printStackTrace();
                         //Set to null to indicate failure
-                        getPostInputTypeQueryResponse = null;
+                        result.add(null);
                         queryCountDownLatch.countDown();
                     }
                 });
@@ -1311,6 +1312,7 @@ public class AWSAppSyncQueryInstrumentationTest {
         } catch (InterruptedException iex) {
             iex.printStackTrace();
         }
+        return result.get(0);
     }
 
 

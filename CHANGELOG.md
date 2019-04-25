@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.11](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.11)
+
+### Bug Fixes
+* All the GraphQL input types now derive from the base class [InputType](https://github.com/awslabs/aws-mobile-appsync-sdk-android/blob/c88808c75cf25948a78eee210515c8b7dfcca12b/aws-android-sdk-appsync-api/src/main/java/com/apollographql/apollo/api/InputType.java). To compute cache key for input types, we first serialize it to map, resolve all variable references, sort them by name and then serialize result map to json string. See [issue #103](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/103)
+
+
 ## [Release 2.7.9](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.9)
 
 ### Bug Fixes
