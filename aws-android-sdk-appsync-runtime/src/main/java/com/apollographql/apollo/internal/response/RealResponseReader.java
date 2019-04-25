@@ -176,7 +176,10 @@ import java.util.Map;
       for (int i = 0; i < values.size(); i++) {
         readerShadow.willResolveElement(i);
         Object value = values.get(i);
-        if (value != null) {
+        if (value == null) {
+          result.add(null);
+          readerShadow.didResolveNull();
+        } else {
           T item = (T) listReader.read(new ListItemReader(field, value));
           result.add(item);
         }
