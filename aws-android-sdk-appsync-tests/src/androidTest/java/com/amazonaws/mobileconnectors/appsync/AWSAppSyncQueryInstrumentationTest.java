@@ -680,14 +680,16 @@ public class AWSAppSyncQueryInstrumentationTest {
         AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
         String postID = "bae84e6f-3c65-4c52-a68e-b7d32c6fa8ff";
+        String name = "Home [Scene Six]";
+        int version = 0;
 
-        Response<GetPostInputTypeQuery.Data> getPostInputTypeQueryResponse = queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
+        Response<GetPostInputTypeQuery.Data> getPostInputTypeQueryResponse = queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID, name, version);
         assertNotNull(getPostInputTypeQueryResponse);
         assertNotNull(getPostInputTypeQueryResponse.data());
         assertNotNull(getPostInputTypeQueryResponse.data().getPostInputType());
         assertEquals(postID, getPostInputTypeQueryResponse.data().getPostInputType().id());
 
-        getPostInputTypeQueryResponse = queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY,postID);
+        getPostInputTypeQueryResponse = queryPostWithInputType(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY, postID, name, version);
         assertNotNull(getPostInputTypeQueryResponse);
         assertNotNull(getPostInputTypeQueryResponse.data());
         assertNotNull(getPostInputTypeQueryResponse.data().getPostInputType());
@@ -1284,10 +1286,11 @@ public class AWSAppSyncQueryInstrumentationTest {
         }
     }
 
-    private Response<GetPostInputTypeQuery.Data> queryPostWithInputType( AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher, final String id) {
+    private Response<GetPostInputTypeQuery.Data> queryPostWithInputType( AWSAppSyncClient awsAppSyncClient, final ResponseFetcher responseFetcher, final String id,
+                                                                         final String name, final int version) {
 
         final CountDownLatch queryCountDownLatch = new CountDownLatch(1);
-        GetPostInput getPostInput = GetPostInput.builder().id(id).build();
+        GetPostInput getPostInput = GetPostInput.builder().id(id).name(name).version(version).build();
         Log.d(TAG, "Calling Query GetPost");
         final List<Response<GetPostInputTypeQuery.Data>> result = new ArrayList<Response<GetPostInputTypeQuery.Data>>(1);
         awsAppSyncClient.query(GetPostInputTypeQuery.builder().input(getPostInput).build())
