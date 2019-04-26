@@ -22,6 +22,7 @@ import android.os.Message;
 import android.util.Log;
 
 import com.amazonaws.AmazonClientException;
+import com.amazonaws.mobileconnectors.appsync.utils.StringUtils;
 import com.amazonaws.util.VersionInfoUtils;
 import com.apollographql.apollo.api.S3InputObjectInterface;
 import com.apollographql.apollo.api.S3ObjectManager;
@@ -305,10 +306,12 @@ public class AppSyncCustomNetworkInvoker {
 
     private Call httpCall(PersistentOfflineMutationObject mutationObject) {
         RequestBody requestBody = RequestBody.create(MEDIA_TYPE, mutationObject.requestString);
+        String userAgent = StringUtils.toHumanReadableAscii(VersionInfoUtils.getUserAgent());
+
         Request.Builder requestBuilder = new Request.Builder()
                 .url(serverUrl)
                 .post(requestBody)
-                .addHeader(HEADER_USER_AGENT, VersionInfoUtils.getUserAgent() + " OfflineMutation")
+                .addHeader(HEADER_USER_AGENT, userAgent + " OfflineMutation")
                 .header(HEADER_ACCEPT_TYPE, ACCEPT_TYPE)
                 .header(HEADER_CONTENT_TYPE, CONTENT_TYPE);
         return httpCallFactory.newCall(requestBuilder.build());

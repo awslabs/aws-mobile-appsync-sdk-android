@@ -90,27 +90,30 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
       @Override public void run() {
         callBack.onFetch(FetchSourceType.NETWORK);
 
-          try {
+        try {
           httpCall = httpCall(request.operation);
         } catch (IOException e) {
           logger.e(e, "Failed to prepare http call for operation %s", request.operation.name().name());
           callBack.onFailure(new ApolloNetworkException("Failed to prepare http call", e));
           return;
         }
+        if (httpCall != null) {
+            httpCall.enqueue(new Callback() {
+                @Override public void onFailure(@Nonnull Call call, @Nonnull IOException e) {
+                    if (disposed) return;
+                    logger.e(e, "Failed to execute http call for operation %s", request.operation.name().name());
+                    callBack.onFailure(new ApolloNetworkException("Failed to execute http call", e));
+                }
 
-        httpCall.enqueue(new Callback() {
-          @Override public void onFailure(@Nonnull Call call, @Nonnull IOException e) {
-            if (disposed) return;
-            logger.e(e, "Failed to execute http call for operation %s", request.operation.name().name());
-            callBack.onFailure(new ApolloNetworkException("Failed to execute http call", e));
-          }
-
-          @Override public void onResponse(@Nonnull Call call, @Nonnull Response response) throws IOException {
-            if (disposed) return;
-            callBack.onResponse(new ApolloInterceptor.InterceptorResponse(response));
-            callBack.onCompleted();
-          }
-        });
+                @Override public void onResponse(@Nonnull Call call, @Nonnull Response response) throws IOException {
+                    if (disposed) return;
+                    callBack.onResponse(new ApolloInterceptor.InterceptorResponse(response));
+                    callBack.onCompleted();
+                }
+            });
+        } else {
+            callBack.onFailure(new ApolloNetworkException("Failed to prepare http call, prepared call was null"));
+        }
       }
     });
   }

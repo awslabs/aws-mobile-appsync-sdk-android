@@ -5,6 +5,15 @@
 ### Bug Fixes
 * All the GraphQL input types now derive from the base class [InputType](https://github.com/awslabs/aws-mobile-appsync-sdk-android/blob/c88808c75cf25948a78eee210515c8b7dfcca12b/aws-android-sdk-appsync-api/src/main/java/com/apollographql/apollo/api/InputType.java). To compute cache key for input types, we first serialize it to map, resolve all variable references, sort them by name and then serialize result map to json string. See [issue #103](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/103)
 
+## [Release 2.7.10](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.10)
+
+### Bug Fixes
+
+* Fixed a bug that cause `NullPointerException` in the `ApolloServerInterceptor`. See [PR #146](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/146) Thanks @alanvan0502 !
+* Sanitized useragent string of unicode characters that caused requests to fail. The unicode characters in this case came from the platform name (TM) symbol. See [PR #146](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/146) Thanks @alanvan0502 !
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.13.2` instead of `2.13.0`.
 
 ## [Release 2.7.9](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.9)
 
