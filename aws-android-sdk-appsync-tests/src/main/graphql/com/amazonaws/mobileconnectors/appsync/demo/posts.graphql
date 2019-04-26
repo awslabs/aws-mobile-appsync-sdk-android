@@ -9,6 +9,17 @@ query GetPost($id:ID!) {
  }
 }
 
+query GetPostInputType($input: GetPostInput!) {
+ getPostInputType(input: $input) {
+     id
+     title
+     author
+     content
+     url
+     version
+ }
+}
+
 query AllPosts {
    listPosts {
     items {

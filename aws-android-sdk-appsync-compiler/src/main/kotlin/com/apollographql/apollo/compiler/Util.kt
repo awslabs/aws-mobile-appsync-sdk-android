@@ -258,7 +258,7 @@ fun TypeName.isNullable(): Boolean = isOptional() || annotations.contains(Annota
 fun TypeName.isOptional(): Boolean {
   val rawType = (this as? ParameterizedTypeName)?.rawType ?: this
   return rawType == ClassNames.OPTIONAL || rawType == ClassNames.GUAVA_OPTIONAL || rawType == ClassNames.JAVA_OPTIONAL
-      || rawType == ClassNames.INPUT_TYPE
+      || rawType == ClassNames.INPUT
 }
 
 fun TypeName.unwrapOptionalType(withoutAnnotations: Boolean = false): TypeName {
@@ -272,7 +272,7 @@ fun TypeName.unwrapOptionalType(withoutAnnotations: Boolean = false): TypeName {
 fun TypeName.unwrapOptionalValue(varName: String, checkIfPresent: Boolean = true,
     transformation: ((CodeBlock) -> CodeBlock)? = null): CodeBlock {
   return if (isOptional() && this is ParameterizedTypeName) {
-    if (rawType == ClassNames.INPUT_TYPE) {
+    if (rawType == ClassNames.INPUT) {
       val valueCode = CodeBlock.of("\$L.value", varName)
       if (checkIfPresent) {
         CodeBlock.of("\$L != null ? \$L : null", valueCode, transformation?.invoke(valueCode) ?: valueCode)

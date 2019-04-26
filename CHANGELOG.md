@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.7.11](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.11)
+
+### Bug Fixes
+* All the GraphQL input types now derive from the base class [InputType](https://github.com/awslabs/aws-mobile-appsync-sdk-android/blob/c88808c75cf25948a78eee210515c8b7dfcca12b/aws-android-sdk-appsync-api/src/main/java/com/apollographql/apollo/api/InputType.java). [cacheKey](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/143/files#diff-3b667778e3f6cc993de08b4e7459c329) method from ResponseField is no longer used to compute the cache key and is being deleted. [CacheFieldValueResolver](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/143/files#diff-0b41556c1e8c6bd843aafff408e59f1d) now accepts an instance of [CacheKeyBuilder](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/143/files#diff-e329cc0b9923fb69cc28ea780b055493) which is used to compute cache keys instead of the cacheKey method. See [issue #103](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/103)
+
 ## [Release 2.7.10](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.10)
 
 ### Bug Fixes

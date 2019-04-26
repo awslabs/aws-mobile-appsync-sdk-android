@@ -49,6 +49,7 @@ class InputTypeSpecBuilder(
               TypeSpec.classBuilder(objectClassName)
                       .addAnnotation(Annotations.GENERATED_BY_APOLLO)
                       .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+                      .addSuperinterface(ClassNames.INPUT_TYPE)
                       .addConstructor()
                       .addFields()
                       .addBuilder()
@@ -127,11 +128,14 @@ class InputTypeSpecBuilder(
         .addSuperinterface(InputFieldMarshaller::class.java)
         .addMethod(methodSpec)
         .build()
-    return MethodSpec.methodBuilder(MARSHALLER_PARAM_NAME)
-        .addModifiers(Modifier.PUBLIC)
-        .returns(InputFieldMarshaller::class.java)
-        .addStatement("return \$L", marshallerType)
-        .build()
+    var marshallerSpec = MethodSpec.methodBuilder(MARSHALLER_PARAM_NAME)
+            .addModifiers(Modifier.PUBLIC)
+            .returns(InputFieldMarshaller::class.java)
+            .addStatement("return \$L", marshallerType);
+    if (! objectClassName.toString().equals("S3ObjectInput")) {
+        marshallerSpec = marshallerSpec.addAnnotation(Annotations.OVERRIDE)
+    }
+    return marshallerSpec.build()
   }
 
   private fun TypeSpec.Builder.addFields(): TypeSpec.Builder {

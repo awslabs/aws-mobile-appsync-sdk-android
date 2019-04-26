@@ -46,11 +46,12 @@ object ClassNames {
   val JAVA_OPTIONAL: ClassName = ClassName.get("java.util", "Optional")
   val API_UTILS: ClassName = ClassName.get(Utils::class.java)
   val FRAGMENT: ClassName = ClassName.get(GraphqlFragment::class.java)
-  val INPUT_TYPE: ClassName = ClassName.get(Input::class.java)
+  val INPUT: ClassName = ClassName.get(Input::class.java)
   val BUILDER: ClassName = ClassName.get("", "Builder")
   val MUTATOR: ClassName = ClassName.get(Mutator::class.java)
   var S3ObjectInput: ClassName = ClassName.get(S3InputObjectInterface::class.java)
   var S3Object: ClassName = ClassName.get(S3ObjectInterface::class.java)
+  val INPUT_TYPE: ClassName = ClassName.get(InputType::class.java)
 
   fun <K : Any> parameterizedListOf(type: Class<K>): TypeName =
       ParameterizedTypeName.get(LIST, ClassName.get(type))
@@ -84,6 +85,6 @@ object ClassNames {
       ParameterizedTypeName.get(JAVA_OPTIONAL, type)
 
   fun parameterizedInputType(type: TypeName): TypeName =
-      ParameterizedTypeName.get(INPUT_TYPE, type)
+      ParameterizedTypeName.get(INPUT, type)
 
 }

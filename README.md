@@ -396,6 +396,18 @@ private GraphQLCall.Callback<AddPostMutation.Data> postsCallback = new GraphQLCa
 };
 ```
 
+## Running the Integration tests
+
+Integration test for the SDK are in ```aws-android-sdk-appsync-tests``` folder and is an independent gradle project. The tests depend on certain artifacts being published to the local maven repository. In order to publish required artifacts to the local maven repository and run the tests execute following commands from the project root:
+
+```
+./gradlew publishToMavenLocal
+cd aws-android-sdk-appsync-tests/
+./gradlew connectedAndroidTest
+```
+
+To run tests from Android Studio, run ```./gradlew publishToMavenLocal``` from project root, open ```aws-android-sdk-appsync-tests/``` folder in Android Studio and run the tests normally.
+
 ## License
 
 This library is licensed under the Amazon Software License.
