@@ -251,6 +251,20 @@ public class ResponseField {
   }
 
   /**
+   * @deprecated Since 2.8.1. This method will be removed in the next minor version.
+   * Please use CacheKeyBuilder instead.
+   *
+   * @param variables
+   * @return
+   */
+  public String cacheKey(Operation.Variables variables) {
+    if (arguments.isEmpty()) {
+      return fieldName();
+    }
+    return String.format("%s(%s)", fieldName(), orderIndependentKey(arguments, variables));
+  }
+
+  /**
    * Resolve field argument value by name. If argument represents a references to the variable, it will be resolved from
    * provided operation variables values.
    *
@@ -276,10 +290,59 @@ public class ResponseField {
     return argumentValue;
   }
 
+  private String orderIndependentKey(Map<String, Object> objectMap, Operation.Variables variables) {
+    if (isArgumentValueVariableType(objectMap)) {
+      return orderIndependentKeyForVariableArgument(objectMap, variables);
+    }
+    List<Map.Entry<String, Object>> sortedArguments = new ArrayList<>(objectMap.entrySet());
+    Collections.sort(sortedArguments, new Comparator<Map.Entry<String, Object>>() {
+      @Override public int compare(Map.Entry<String, Object> argumentOne, Map.Entry<String, Object> argumentTwo) {
+        return argumentOne.getKey().compareTo(argumentTwo.getKey());
+      }
+    });
+    StringBuilder independentKey = new StringBuilder();
+    for (int i = 0; i < sortedArguments.size(); i++) {
+      Map.Entry<String, Object> argument = sortedArguments.get(i);
+      if (argument.getValue() instanceof Map) {
+        //noinspection unchecked
+        final Map<String, Object> objectArg = (Map<String, Object>) argument.getValue();
+        boolean isArgumentVariable = isArgumentValueVariableType(objectArg);
+        independentKey
+                .append(argument.getKey())
+                .append(":")
+                .append(isArgumentVariable ? "" : "[")
+                .append(orderIndependentKey(objectArg, variables))
+                .append(isArgumentVariable ? "" : "]");
+      } else {
+        independentKey.append(argument.getKey())
+                .append(":")
+                .append(argument.getValue().toString());
+      }
+      if (i < sortedArguments.size() - 1) {
+        independentKey.append(",");
+      }
+    }
+    return independentKey.toString();
+  }
+
   public static boolean isArgumentValueVariableType(Map<String, Object> objectMap) {
     return objectMap.containsKey(VARIABLE_IDENTIFIER_KEY)
         && objectMap.get(VARIABLE_IDENTIFIER_KEY).equals(VARIABLE_IDENTIFIER_VALUE)
         && objectMap.containsKey(VARIABLE_NAME_KEY);
+  }
+
+  private String orderIndependentKeyForVariableArgument(Map<String, Object> objectMap, Operation.Variables variables) {
+    Object variable = objectMap.get(VARIABLE_NAME_KEY);
+    //noinspection SuspiciousMethodCalls
+    Object resolvedVariable = variables.valueMap().get(variable);
+    if (resolvedVariable == null) {
+      return null;
+    } else if (resolvedVariable instanceof Map) {
+      //noinspection unchecked
+      return orderIndependentKey((Map<String, Object>) resolvedVariable, variables);
+    } else {
+      return resolvedVariable.toString();
+    }
   }
 
   /**

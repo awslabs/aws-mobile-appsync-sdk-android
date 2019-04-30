@@ -37,6 +37,24 @@ public final class CacheFieldValueResolver implements FieldValueResolver<Record>
   private final CacheHeaders cacheHeaders;
   private final CacheKeyBuilder cacheKeyBuilder;
 
+  /**
+   * @deprecated Since 2.8.1. This method will be removed in the next minor version.
+   * Please use the other constructor instead.
+   * 
+   * @param readableCache
+   * @param variables
+   * @param cacheKeyResolver
+   * @param cacheHeaders
+   */
+  public CacheFieldValueResolver(ReadableStore readableCache, Operation.Variables variables,
+                                 CacheKeyResolver cacheKeyResolver, CacheHeaders cacheHeaders) {
+    this.readableCache = readableCache;
+    this.variables = variables;
+    this.cacheKeyResolver = cacheKeyResolver;
+    this.cacheHeaders = cacheHeaders;
+    this.cacheKeyBuilder = null;
+  }
+
   public CacheFieldValueResolver(ReadableStore readableCache, Operation.Variables variables,
       CacheKeyResolver cacheKeyResolver, CacheHeaders cacheHeaders, CacheKeyBuilder cacheKeyBuilder) {
     this.readableCache = readableCache;
