@@ -39,8 +39,8 @@ public final class CacheFieldValueResolver implements FieldValueResolver<Record>
 
   /**
    * @deprecated Since 2.8.1. This method will be removed in the next minor version.
-   * Please use the other constructor instead.
-   * 
+   * Please use {@link CacheFieldValueResolver(ReadableStore, Operation.Variables, CacheKeyResolver, CacheHeaders, CacheKeyBuilder)}
+   *
    * @param readableCache
    * @param variables
    * @param cacheKeyResolver

@@ -252,7 +252,7 @@ public class ResponseField {
 
   /**
    * @deprecated Since 2.8.1. This method will be removed in the next minor version.
-   * Please use CacheKeyBuilder instead.
+   * Please use {@link com.apollographql.apollo.internal.cache.normalized.CacheKeyBuilder} instead.
    *
    * @param variables
    * @return
