@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.8.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.1)
+
+### Bug Fixes
+* This release adds back the public methods namely, [cacheKey](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/165/files#diff-3b667778e3f6cc993de08b4e7459c329R260) and [CacheFieldValueResolver](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/165/files#diff-0b41556c1e8c6bd843aafff408e59f1dR49) that were removed as part of [release 2.8.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.0). These methods have been deprecated and will be removed in the next minor version.
+
 ## [Release 2.8.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.0)
 
 ### Bug Fixes
