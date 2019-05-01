@@ -410,4 +410,4 @@ To run tests from Android Studio, run ```./gradlew publishToMavenLocal``` from p
 
 ## License
 
-This library is licensed under the Amazon Software License.
+This library is licensed under the Apache License 2.0.
