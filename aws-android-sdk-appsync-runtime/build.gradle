@@ -8,9 +8,9 @@ dependencies {
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.1'
     implementation "com.squareup.okhttp3:okhttp:3.8.1" // impl
-    implementation "com.nytimes.android:cache:2.0.2" // impl
+    api "com.nytimes.android:cache:2.0.2" // impl
 
-    implementation project(':aws-android-sdk-appsync-api') // api
+    api project(':aws-android-sdk-appsync-api') // api
 }
 
 publishing {
