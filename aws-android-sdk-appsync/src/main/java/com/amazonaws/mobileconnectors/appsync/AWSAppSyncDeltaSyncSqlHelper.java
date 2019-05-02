@@ -35,6 +35,8 @@ class AWSAppSyncDeltaSyncSqlHelper extends SQLiteOpenHelper {
     private static final String DATABASE_NAME = "appsync_deltasync_db";
     private static final int DATABASE_VERSION = 1;
 
+    private static AWSAppSyncDeltaSyncSqlHelper sInstance;
+
     //Database Create Statement
     private static final String DATABASE_CREATE = String.format(
             "create table %s( %s integer primary key autoincrement, %s text not null, %s Integer);",
@@ -43,9 +45,15 @@ class AWSAppSyncDeltaSyncSqlHelper extends SQLiteOpenHelper {
             COLUMN_DELTA_SYNC_KEY,
             COLUMN_LAST_RUN_TIME);
 
+    synchronized public static AWSAppSyncDeltaSyncSqlHelper create(Context context) {
+        if (sInstance == null) {
+            sInstance = new AWSAppSyncDeltaSyncSqlHelper(context);
+        }
+        return sInstance;
+    }
 
     //Constructor
-    public AWSAppSyncDeltaSyncSqlHelper(Context context) {
+    private AWSAppSyncDeltaSyncSqlHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 

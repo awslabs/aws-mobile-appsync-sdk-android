@@ -125,7 +125,7 @@ class AWSAppSyncDeltaSync {
             if (awsAppSyncDeltaSyncSqlHelper == null ) {
                 //Setup up the local store
                 Log.d(TAG, "Initializing the database");
-                awsAppSyncDeltaSyncSqlHelper = new AWSAppSyncDeltaSyncSqlHelper(mContext);
+                awsAppSyncDeltaSyncSqlHelper = AWSAppSyncDeltaSyncSqlHelper.create(mContext);
             }
 
             if( dbHelper == null ) {
