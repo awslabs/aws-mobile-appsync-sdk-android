@@ -35,7 +35,7 @@ public class AppSyncMutationsSqlHelper extends SQLiteOpenHelper {
     public static final String COLUMN_MIME_TYPE= "mime_type";
     public static final String COLUMN_CLIENT_STATE = "client_state";
 
-    private static final String DATABASE_NAME = "appsync.mutations.db";
+    private static final String defaultMutationSqlStoreName = "appsyncstore_mutation";
     private static final int DATABASE_VERSION = 2;
 
     // Database creation sql statement
@@ -49,20 +49,17 @@ public class AppSyncMutationsSqlHelper extends SQLiteOpenHelper {
     private static final String CREATE_KEY_INDEX =
             String.format("CREATE INDEX %s ON %s (%s)", IDX_RECORDS_KEY, TABLE_MUTATION_RECORDS, RECORD_IDENTIFIER);
 
+    private static AppSyncMutationsSqlHelper sInstance;
+
     private AppSyncMutationsSqlHelper(Context context) {
-        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+        super(context, defaultMutationSqlStoreName, null, DATABASE_VERSION);
     }
 
-    public AppSyncMutationsSqlHelper(Context context, String name) {
-        super(context, name, null, DATABASE_VERSION);
-    }
-
-    public static AppSyncMutationsSqlHelper create(Context context) {
-        return new AppSyncMutationsSqlHelper(context);
-    }
-
-    public static AppSyncMutationsSqlHelper create(Context context, String name) {
-        return new AppSyncMutationsSqlHelper(context, name);
+    synchronized public static AppSyncMutationsSqlHelper create(Context context) {
+        if (sInstance == null) {
+            sInstance = new AppSyncMutationsSqlHelper(context);
+        }
+        return sInstance;
     }
 
     @Override

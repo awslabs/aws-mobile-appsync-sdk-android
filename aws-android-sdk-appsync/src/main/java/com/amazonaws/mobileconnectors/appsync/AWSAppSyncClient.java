@@ -72,7 +72,6 @@ import okhttp3.OkHttpClient;
 
 public class AWSAppSyncClient {
     private static final String defaultSqlStoreName = "appsyncstore";
-    private static final String defaultMutationSqlStoreName = "appsyncstore_mutation";
 
     private static final String TAG = AWSAppSyncClient.class.getSimpleName();
 
@@ -158,7 +157,7 @@ public class AWSAppSyncClient {
                 .build();
 
         //Setup up the local store
-        AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, defaultMutationSqlStoreName);
+        AppSyncMutationsSqlHelper mutationsSqlHelper = AppSyncMutationsSqlHelper.create(builder.mContext);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
         mutationsToRetryAfterConflictResolution = new HashMap<>();
 
