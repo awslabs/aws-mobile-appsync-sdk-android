@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.8.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.2)
+
+### Enhancements
+* AWS AppSync plugin for gradle is now compatible with Gradle version 5.x. See [issue#91](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/91) for details.
+
 ## [Release 2.8.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.1)
 
 ### Bug Fixes
