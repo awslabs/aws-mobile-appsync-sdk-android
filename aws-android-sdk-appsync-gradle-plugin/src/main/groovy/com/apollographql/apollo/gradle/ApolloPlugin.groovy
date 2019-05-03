@@ -148,7 +148,7 @@ class ApolloPlugin implements Plugin<Project> {
             description = "Generate an IR file using apollo-codegen for ${sourceSetOrVariantName.capitalize()} GraphQL queries"
             dependsOn(ApolloCodeGenInstallTask.NAME)
             sourceSets.each { sourceSet ->
-                inputs.file(sourceSet.graphql).skipWhenEmpty()
+                inputs.files(sourceSet.graphql).skipWhenEmpty()
             }
         }
 

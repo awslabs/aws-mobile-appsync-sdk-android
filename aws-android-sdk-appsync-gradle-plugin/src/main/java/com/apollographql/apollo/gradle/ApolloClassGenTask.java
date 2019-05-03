@@ -46,7 +46,12 @@ public class ApolloClassGenTask extends SourceTask {
     inputs.outOfDate(new Action<InputFileDetails>() {
       @Override
       public void execute(InputFileDetails inputFileDetails) {
-        GraphQLCompiler.Arguments args = new GraphQLCompiler.Arguments(inputFileDetails.getFile(), outputDir,
+        File inputFile = inputFileDetails.getFile();
+        if (!inputFile.isFile()) {
+          // skip if input is not a file
+          return;
+        }
+        GraphQLCompiler.Arguments args = new GraphQLCompiler.Arguments(inputFile, outputDir,
             apolloExtension.getCustomTypeMapping(), nullableValueType, apolloExtension.isGenerateAccessors(),
             apolloExtension.isUseSemanticNaming(), apolloExtension.isGenerateModelBuilder(),
             apolloExtension.getOutputPackageName());

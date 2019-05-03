@@ -7,10 +7,10 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.1'
-    compile "com.squareup.okhttp3:okhttp:3.8.1" // impl
-    compile "com.nytimes.android:cache:2.0.2" // impl
+    implementation "com.squareup.okhttp3:okhttp:3.8.1" // impl
+    api "com.nytimes.android:cache:2.0.2" // impl
 
-    compile project(':aws-android-sdk-appsync-api') // api
+    api project(':aws-android-sdk-appsync-api') // api
 }
 
 publishing {

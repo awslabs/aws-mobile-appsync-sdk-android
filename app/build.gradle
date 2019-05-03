@@ -27,11 +27,11 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation"org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.android.support:appcompat-v7:28.+'
     implementation 'com.android.support:support-compat:28.+'
     implementation 'com.android.support:recyclerview-v7:28.+'
-    compile 'com.android.support:design:28.+'
+    implementation 'com.android.support:design:28.+'
 
     
     implementation 'com.android.support.constraint:constraint-layout:1.1.2'
@@ -43,8 +43,8 @@ dependencies {
     implementation project(':aws-android-sdk-appsync-api')
     implementation project(':aws-android-sdk-appsync')
 
-    compile 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
-    compile 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
+    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
     implementation "com.amazonaws:aws-android-sdk-core:$aws_version"
     implementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
 
