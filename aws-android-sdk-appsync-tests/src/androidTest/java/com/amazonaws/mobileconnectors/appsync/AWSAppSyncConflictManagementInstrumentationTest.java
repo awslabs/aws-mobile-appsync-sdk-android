@@ -1,11 +1,9 @@
-
 /**
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  * <p>
  * SPDX-License-Identifier: Apache-2.0
  */
-
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.support.test.runner.AndroidJUnit4;
@@ -33,6 +31,7 @@ import javax.annotation.Nonnull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -40,22 +39,25 @@ import static org.junit.Assert.assertTrue;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-
 public class AWSAppSyncConflictManagementInstrumentationTest {
 
     private static final String TAG = AWSAppSyncConflictManagementInstrumentationTest.class.getSimpleName();
 
     private String articleID = null;
 
+    private static AppSyncTestSetupHelper appSyncTestSetupHelper;
+
     @BeforeClass
-    public static void setupOnce(){
+    public static void setupBeforeClass() {
 
         // In this function, we will do one add and 5 updates that try out the various paths of conflict
         // management. This function will exit once the add is completed and the updates are queued, but not executed.
         // This has the effect of populating the persistent queue and exercising the persistent mutation execution flow
         // when one of the tests in this suite starts.
 
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        appSyncTestSetupHelper = new AppSyncTestSetupHelper();
+
+        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
 
         final CountDownLatch addCountDownLatch = new CountDownLatch(1);
@@ -85,9 +87,19 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
                 .enqueue(new GraphQLCall.Callback<CreateArticleMutation.Data>() {
                     @Override
                     public void onResponse(@Nonnull Response<CreateArticleMutation.Data> response) {
+                        assertNotNull(response);
+                        assertNotNull(response.data());
+                        assertNotNull(response.data().createArticle());
                         String articleID = response.data().createArticle().id();
+                        assertNotNull(articleID);
 
-                        final String[] titles = {title+ System.currentTimeMillis(),"RESOLVE_CONFLICT_INCORRECTLY", title + System.currentTimeMillis(), "ALWAYS DISCARD", title + System.currentTimeMillis() };
+                        final String[] titles = {title + System.currentTimeMillis(),
+                                "RESOLVE_CONFLICT_INCORRECTLY",
+                                title + System.currentTimeMillis(),
+                                "ALWAYS DISCARD",
+                                title + System.currentTimeMillis()
+                        };
+
                         for (int i = 0; i < 5; i++) {
                             final UpdateArticleInput updateArticleInput = UpdateArticleInput.builder()
                                     .id(articleID)
@@ -125,8 +137,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
                     @Override
                     public void onFailure(@Nonnull ApolloException e) {
-                        Log.d(TAG, "Failure " + e);
-                        assertTrue(false);
+                        fail("Error in mutating the article. " + e.getLocalizedMessage());
                         addCountDownLatch.countDown();
                     }
                 });
@@ -138,19 +149,9 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         }
     }
 
-    @Before
-    public void setUp() {
-        Log.v(TAG, "setup called");
-    }
-
-    @After
-    public void tearDown() {
-        Log.v(TAG, "tearDown called");
-    }
-
     @Test
-    public void testAddUpdateArticleNoConflict( ) {
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+    public void testAddUpdateArticleNoConflict() {
+        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
 
         String title = "Thick as a brick";
@@ -160,10 +161,9 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         updateArticle(awsAppSyncClient, articleID, title, author + System.currentTimeMillis(), 1, 2);
     }
 
-
     @Test
-    public void testAddUpdateArticleConflictDiscard( ) {
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+    public void testAddUpdateArticleConflictDiscard() {
+        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
 
@@ -224,7 +224,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
     @Test
     public void testAddUpdateArticleConflictResolve( ) {
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
 
         String title = "Hallowed Point";
@@ -234,6 +234,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
         //Send expectedVersion as 2. The conflict resolution mechanism should update version to 101 and the test should pass.
         updateArticle(awsAppSyncClient,articleID, title, author + "@" + System.currentTimeMillis(),2, 101);
+
         //No conflict
         updateArticle(awsAppSyncClient,articleID, title, author + "@" + System.currentTimeMillis(),101, 102);
 
@@ -249,7 +250,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
     public void testAddUpdateArticleConflictResolveWithAnotherConflict( ) {
         String title = "RESOLVE_CONFLICT_INCORRECTLY";
         String author = "Trivium @" + System.currentTimeMillis();
-        final AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
+        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
 
         String articleID = addArticle(awsAppSyncClient,title, author + System.currentTimeMillis(),100);
@@ -301,7 +302,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         testAddUpdateArticleConflictResolve();
     }
 
-    private String addArticle( final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final int version) {
+    private String addArticle(final AWSAppSyncClient awsAppSyncClient, final String title, final String author, final int version) {
 
         final CountDownLatch addCountDownLatch = new CountDownLatch(1);
 
@@ -353,7 +354,6 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         }
         return articleID;
     }
-
 
     private void updateArticle(final AWSAppSyncClient awsAppSyncClient, final String id, final String title, final String author, final int expectedVersion,
                                final int versionNumberAfterUpdate) {

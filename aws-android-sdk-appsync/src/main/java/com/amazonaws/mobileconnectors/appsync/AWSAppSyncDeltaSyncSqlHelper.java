@@ -39,6 +39,11 @@ class AWSAppSyncDeltaSyncSqlHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
+    //Constructor
+    public AWSAppSyncDeltaSyncSqlHelper(Context context, String databaseName) {
+        super(context, databaseName, null, DATABASE_VERSION);
+    }
+
 
     @Override
     /*

@@ -65,3 +65,9 @@ fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
+
+# appsync endpoint and region
+awsconfiguration.json
+
+# idea folder for tests
+aws-android-sdk-appsync-tests/.idea/

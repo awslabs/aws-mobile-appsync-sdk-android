@@ -8,7 +8,6 @@
       <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-compiler/aws-android-sdk-appsync-compiler.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-compiler/aws-android-sdk-appsync-compiler.iml" />
       <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-gradle-plugin/aws-android-sdk-appsync-gradle-plugin.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-gradle-plugin/aws-android-sdk-appsync-gradle-plugin.iml" />
       <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-runtime/aws-android-sdk-appsync-runtime.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-runtime/aws-android-sdk-appsync-runtime.iml" />
-      <module fileurl="file://$PROJECT_DIR$/aws-android-sdk-appsync-tests/aws-android-sdk-appsync-tests.iml" filepath="$PROJECT_DIR$/aws-android-sdk-appsync-tests/aws-android-sdk-appsync-tests.iml" />
       <module fileurl="file://$PROJECT_DIR$/aws-mobile-appsync-sdk-android.iml" filepath="$PROJECT_DIR$/aws-mobile-appsync-sdk-android.iml" />
     </modules>
   </component>
