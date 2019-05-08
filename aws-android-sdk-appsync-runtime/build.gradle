@@ -24,16 +24,5 @@ publishing {
     }
 }
 
-publishing {
-    publications {
-        pluginPublication(MavenPublication) {
-            from  components.java
-            groupId 'com.amazonaws'
-            artifactId 'aws-android-sdk-appsync-runtime'
-            version VERSION_NAME + "-SNAPSHOT"
-        }
-    }
-}
-
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
