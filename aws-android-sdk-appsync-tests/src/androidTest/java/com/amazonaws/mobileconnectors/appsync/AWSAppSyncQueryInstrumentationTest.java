@@ -649,7 +649,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     public void testCache() {
         AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
-        String postID = "bae84e6f-3c65-4c52-a68e-b7d32c6fa8ff";
+        String postID = "89511826-4414-4569-8d5d-075e9f12a923";
 
         queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY,postID);
         assertNotNull(getPostQueryResponse);
@@ -669,7 +669,7 @@ public class AWSAppSyncQueryInstrumentationTest {
     public void testCacheWithInputType() {
         AWSAppSyncClient awsAppSyncClient = AppSyncTestSetupHelper.createAppSyncClientWithIAM();
         assertNotNull(awsAppSyncClient);
-        String postID = "bae84e6f-3c65-4c52-a68e-b7d32c6fa8ff";
+        String postID = "89511826-4414-4569-8d5d-075e9f12a923";
         String name = "Home [Scene Six]";
         int version = 0;
 
