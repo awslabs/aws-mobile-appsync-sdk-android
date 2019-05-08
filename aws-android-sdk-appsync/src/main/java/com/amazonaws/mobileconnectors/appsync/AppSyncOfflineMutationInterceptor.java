@@ -336,16 +336,18 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             }
 
             //Handle inMemory Mutation Object
-            if (elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
-                //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
-                //to the next in queue.
-                appSyncOfflineMutationManager.setInProgressMutationAsCompleted(inMemoryOfflineMutationObjectBeingExecuted.recordIdentifier);
-                sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
-            }
-            else if ( elapsedTime > maxMutationExecutionTime) {
-                //If time has elapsed past the queueTimeout, cancel the mutation by invoking dispose on the chain.
-                inMemoryOfflineMutationObjectBeingExecuted.chain.dispose();
-                dispose((Mutation) inMemoryOfflineMutationObjectBeingExecuted.request.operation);
+            if (inMemoryOfflineMutationObjectBeingExecuted != null) {
+                if (elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
+                    //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
+                    //to the next in queue.
+                    appSyncOfflineMutationManager.setInProgressMutationAsCompleted(inMemoryOfflineMutationObjectBeingExecuted.recordIdentifier);
+                    sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+                }
+                else if ( elapsedTime > maxMutationExecutionTime) {
+                    //If time has elapsed past the queueTimeout, cancel the mutation by invoking dispose on the chain.
+                    inMemoryOfflineMutationObjectBeingExecuted.chain.dispose();
+                    dispose((Mutation) inMemoryOfflineMutationObjectBeingExecuted.request.operation);
+                }
             }
         }
     }
