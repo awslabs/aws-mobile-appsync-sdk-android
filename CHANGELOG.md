@@ -1,11 +1,29 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.8.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.2)
+
+### Enhancements
+* AWS AppSync plugin for gradle is now compatible with Gradle version 5.x. See [issue#91](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/91) for details.
+
+## [Release 2.8.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.1)
+
+### Bug Fixes
+* This release adds back the public methods namely, [cacheKey](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/165/files#diff-3b667778e3f6cc993de08b4e7459c329R260) and [CacheFieldValueResolver](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/165/files#diff-0b41556c1e8c6bd843aafff408e59f1dR49) that were removed as part of [release 2.8.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.0). These methods have been deprecated and will be removed in the next minor version.
+
+## [Release 2.8.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.0)
+
+### Bug Fixes
+* All the GraphQL input types now derive from the base class [InputType](https://github.com/awslabs/aws-mobile-appsync-sdk-android/blob/c88808c75cf25948a78eee210515c8b7dfcca12b/aws-android-sdk-appsync-api/src/main/java/com/apollographql/apollo/api/InputType.java). [cacheKey](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/143/files#diff-3b667778e3f6cc993de08b4e7459c329) method from ResponseField is no longer used to compute the cache key and is being deleted. [CacheFieldValueResolver](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/143/files#diff-0b41556c1e8c6bd843aafff408e59f1d) now accepts an instance of [CacheKeyBuilder](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/143/files#diff-e329cc0b9923fb69cc28ea780b055493) which is used to compute cache keys instead of the cacheKey method. See [issue #103](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/103)
+
 ## [Release 2.7.10](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.10)
 
 ### Bug Fixes
 
 * Fixed a bug that cause `NullPointerException` in the `ApolloServerInterceptor`. See [PR #146](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/146) Thanks @alanvan0502 !
 * Sanitized useragent string of unicode characters that caused requests to fail. The unicode characters in this case came from the platform name (TM) symbol. See [PR #146](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/146) Thanks @alanvan0502 !
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.13.2` instead of `2.13.0`.
 
 ## [Release 2.7.9](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.7.9)
 

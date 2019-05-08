@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.internal.field;
@@ -25,6 +15,7 @@ import com.apollographql.apollo.cache.normalized.CacheKeyResolver;
 import com.apollographql.apollo.cache.normalized.CacheReference;
 import com.apollographql.apollo.cache.normalized.Record;
 import com.apollographql.apollo.internal.cache.normalized.ReadableStore;
+import com.apollographql.apollo.internal.cache.normalized.CacheKeyBuilder;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,13 +25,33 @@ public final class CacheFieldValueResolver implements FieldValueResolver<Record>
   private final Operation.Variables variables;
   private final CacheKeyResolver cacheKeyResolver;
   private final CacheHeaders cacheHeaders;
+  private final CacheKeyBuilder cacheKeyBuilder;
 
+  /**
+   * @deprecated Since 2.8.1. This method will be removed in the next minor version.
+   * Please use {@link CacheFieldValueResolver(ReadableStore, Operation.Variables, CacheKeyResolver, CacheHeaders, CacheKeyBuilder)}
+   *
+   * @param readableCache
+   * @param variables
+   * @param cacheKeyResolver
+   * @param cacheHeaders
+   */
   public CacheFieldValueResolver(ReadableStore readableCache, Operation.Variables variables,
-      CacheKeyResolver cacheKeyResolver, CacheHeaders cacheHeaders) {
+                                 CacheKeyResolver cacheKeyResolver, CacheHeaders cacheHeaders) {
     this.readableCache = readableCache;
     this.variables = variables;
     this.cacheKeyResolver = cacheKeyResolver;
     this.cacheHeaders = cacheHeaders;
+    this.cacheKeyBuilder = null;
+  }
+
+  public CacheFieldValueResolver(ReadableStore readableCache, Operation.Variables variables,
+      CacheKeyResolver cacheKeyResolver, CacheHeaders cacheHeaders, CacheKeyBuilder cacheKeyBuilder) {
+    this.readableCache = readableCache;
+    this.variables = variables;
+    this.cacheKeyResolver = cacheKeyResolver;
+    this.cacheHeaders = cacheHeaders;
+    this.cacheKeyBuilder = cacheKeyBuilder;
   }
 
   @SuppressWarnings("unchecked") @Override public <T> T valueFor(Record record, ResponseField field) {
@@ -108,7 +119,7 @@ public final class CacheFieldValueResolver implements FieldValueResolver<Record>
 
 
   @SuppressWarnings("unchecked") private <T> T fieldValue(Record record, ResponseField field) {
-    String fieldKey = field.cacheKey(variables);
+    String fieldKey = cacheKeyBuilder.build(field, variables);
     if (!record.hasField(fieldKey)) {
       throw new NullPointerException("Missing value: " + field.fieldName());
     }

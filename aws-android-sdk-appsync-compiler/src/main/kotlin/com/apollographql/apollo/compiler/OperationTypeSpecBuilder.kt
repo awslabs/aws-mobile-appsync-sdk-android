@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.compiler
@@ -195,7 +185,7 @@ class OperationTypeSpecBuilder(
     return MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
         .addParameters(operation.variables
-            .map { it.name.decapitalize() to it.type }
+            .map { it.name.decapitalize() to it.type.capitalize() }
             .map { it.first to JavaTypeResolver(context, context.typesPackage).resolve(it.second) }
             .map { ParameterSpec.builder(it.second.unwrapOptionalType(), it.first).build() })
         .addCode(code)
@@ -215,7 +205,7 @@ class OperationTypeSpecBuilder(
       ).let { addType(it.build()) }
     }
     return operation.variables
-        .map { it.name.decapitalize() to it.type }
+        .map { it.name.decapitalize() to it.type.capitalize() }
         .map { it.first to JavaTypeResolver(context, context.typesPackage).resolve(it.second).unwrapOptionalType() }
         .let {
           BuilderTypeSpecBuilder(

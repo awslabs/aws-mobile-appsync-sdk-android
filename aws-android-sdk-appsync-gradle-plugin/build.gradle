@@ -13,11 +13,22 @@ dependencies {
 
     compileOnly gradleApi()
     compileOnly localGroovy()
-    compile "com.moowork.gradle:gradle-node-plugin:1.0.0" // compileOnly
-    compile 'com.android.tools.build:gradle:3.2.1' // compileOnly
-    compile 'com.squareup.moshi:moshi:1.5.0' // impl
+    implementation "com.moowork.gradle:gradle-node-plugin:1.0.0" // compileOnly
+    implementation 'com.android.tools.build:gradle:3.2.1' // compileOnly
+    implementation 'com.squareup.moshi:moshi:1.5.0' // impl
 
-    compile project(':aws-android-sdk-appsync-compiler') // impl
+    implementation project(':aws-android-sdk-appsync-compiler') // impl
+}
+
+publishing {
+    publications {
+        pluginPublication(MavenPublication) {
+            from components.java
+            groupId 'com.amazonaws'
+            artifactId 'aws-android-sdk-appsync-gradle-plugin'
+            version VERSION_NAME + "-SNAPSHOT"
+        }
+    }
 }
 
 publishing {
