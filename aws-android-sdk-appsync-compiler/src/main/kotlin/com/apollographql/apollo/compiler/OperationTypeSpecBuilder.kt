@@ -185,7 +185,7 @@ class OperationTypeSpecBuilder(
     return MethodSpec.constructorBuilder()
         .addModifiers(Modifier.PUBLIC)
         .addParameters(operation.variables
-            .map { it.name.decapitalize() to it.type }
+            .map { it.name.decapitalize() to it.type.capitalize() }
             .map { it.first to JavaTypeResolver(context, context.typesPackage).resolve(it.second) }
             .map { ParameterSpec.builder(it.second.unwrapOptionalType(), it.first).build() })
         .addCode(code)
@@ -205,7 +205,7 @@ class OperationTypeSpecBuilder(
       ).let { addType(it.build()) }
     }
     return operation.variables
-        .map { it.name.decapitalize() to it.type }
+        .map { it.name.decapitalize() to it.type.capitalize() }
         .map { it.first to JavaTypeResolver(context, context.typesPackage).resolve(it.second).unwrapOptionalType() }
         .let {
           BuilderTypeSpecBuilder(

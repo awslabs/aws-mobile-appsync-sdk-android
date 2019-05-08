@@ -146,7 +146,7 @@ class VariablesTypeSpecBuilder(
     private val VARIABLES_CLASS_NAME: String = "Variables"
     private val VARIABLES_TYPE_NAME: ClassName = ClassName.get("", VARIABLES_CLASS_NAME)
     private fun Variable.javaTypeName(context: CodeGenerationContext, packageName: String) =
-        JavaTypeResolver(context, packageName).resolve(type).unwrapOptionalType()
+        JavaTypeResolver(context, packageName).resolve(type.capitalize()).unwrapOptionalType()
 
     private val VALUE_MAP_FIELD_NAME = "valueMap"
     private val WRITER_PARAM = ParameterSpec.builder(InputFieldWriter::class.java, "writer").build()
