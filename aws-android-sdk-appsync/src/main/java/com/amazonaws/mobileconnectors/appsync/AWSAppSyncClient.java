@@ -62,9 +62,16 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 
 public class AWSAppSyncClient {
+    /** Name of the default client database (Query Cache) that stores the query responses. */
     static final String DEFAULT_QUERY_SQL_STORE_NAME = "appsyncstore";
+
+    /** Name of the default client database (Mutation Queue) that stores the persistent mutations. */
     static final String DEFAULT_MUTATION_SQL_STORE_NAME = "appsyncstore_mutation";
+
+    /** Name of the client database (Subscriptions Metadata) that stores the LastSyncTime used by Delta Sync. */
     static final String DEFAULT_DELTA_SYNC_SQL_STORE_NAME = "appsync_deltasync_db";
+
+    /** Delimiter that is used in the client database (cache) names. */
     static final String DATABASE_NAME_DELIMITER = "_";
 
     private static final String TAG = AWSAppSyncClient.class.getSimpleName();
@@ -299,9 +306,16 @@ public class AWSAppSyncClient {
         PersistentMutationsCallback mPersistentMutationsCallback;
 
         // Android
+        // Android application context
         Context mContext;
+
+        // Used for complex objects - upload and download
         S3ObjectManager mS3ObjectManager;
+
+        // This will be the prefix of the client databases (caches) - Query, Mutations and Subscriptions
         String mClientDatabasePrefix;
+
+        // Flag when true uses the prefix passed through the .clientDatabasePrefix(String) builder
         boolean mUseClientDatabasePrefix;
 
         private Builder() { }
@@ -498,17 +512,21 @@ public class AWSAppSyncClient {
                         clientDatabasePrefixFromConfigJson = appSyncJsonObject.getString("ClientDatabasePrefix");
                     } catch (Exception ex) {
                         Log.e(TAG, "Error is reading the ClientDatabasePrefix from AppSync configuration in awsconfiguration.json.");
-                    }
-
-                    if (clientDatabasePrefixFromConfigJson == null && mUseClientDatabasePrefix) {
-                        throw new RuntimeException("ClientDatabasePrefix is not present in AppSync configuration in awsconfiguration.json " +
-                                "however .useClientDatabasePrefix(true) is passed in.");
+                        // Not throwing an exception for backwards compatibility reasons
+                        // where the awsconfiguration.json doesn't have ClientDatabasePrefix.
                     }
 
                     // ClientDatabasePrefix passed via code takes precedence over the one present in awsconfiguration.json
                     mClientDatabasePrefix = mClientDatabasePrefix != null ? mClientDatabasePrefix : clientDatabasePrefixFromConfigJson;
 
-                    if (!mUseClientDatabasePrefix) {
+                    // If mUseClientDatabasePrefix is true, a valid prefix is required
+                    // Else do not use a prefix and use the default database names without a prefix
+                    if (mUseClientDatabasePrefix) {
+                        if (clientDatabasePrefixFromConfigJson == null) {
+                            throw new RuntimeException("ClientDatabasePrefix is not present in AppSync configuration in awsconfiguration.json " +
+                                    "however .useClientDatabasePrefix(true) is passed in.");
+                        }
+                    } else {
                         mClientDatabasePrefix = null;
                     }
 
@@ -555,6 +573,9 @@ public class AWSAppSyncClient {
                 }
             }
 
+            // Handle case where the prefix is passed via code instead of awsconfiguration.json
+            // If mUseClientDatabasePrefix is true, a valid prefix is required
+            // Else do not use a prefix and use the default database names without a prefix
             if (mUseClientDatabasePrefix) {
                 if (mClientDatabasePrefix == null) {
                     throw new RuntimeException("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.");
@@ -593,8 +614,7 @@ public class AWSAppSyncClient {
     }
 
     /**
-     *
-     * @return
+     * @return builder object
      */
     public static Builder builder() {
         return new Builder();
@@ -782,7 +802,7 @@ public class AWSAppSyncClient {
      * continue to execute until finished.
      *
      * @deprecated Please use
-     *     #clearCache(ClearCacheOptions.builder().mutations().build()) instead.
+     *     #clearCache(ClearCacheOptions.builder().clearMutations().build()) instead.
      */
     @Deprecated
     public void clearMutationQueue() {
@@ -808,9 +828,12 @@ public class AWSAppSyncClient {
     }
 
     /**
-     * Clears the cache on the local device which stores
-     * the data returned by the queries, offline mutations
-     * and the metadata stored by the delta sync operations.
+     * Clears the different client databases on the local device
+     * which stores the following:
+     *
+     * 1) Query Cache - query responses
+     * 2) Mutation Queue - offline persistent mutations
+     * 3) Delta Sync Metadata Cache - Subscriptions Metadata
      */
     public void clearCache() {
         clearCache(ClearCacheOptions.builder()
@@ -821,12 +844,12 @@ public class AWSAppSyncClient {
     }
 
     /**
-     * Clears the cache on the local device which stores
-     * the data returned by the queries, offline mutations
-     * and the metadata stored by the delta sync operations.
+     * Clears the different client databases on the local device
+     * based on the ClearCacheOptions object passed in.
      *
-     * The ClearCacheOptions object indicates which caches to
-     * clear.
+     * 1) ClearCacheOptions#clearQueries - Query Cache - query responses
+     * 2) ClearCacheOptions#clearMutations - Mutation Queue - offline persistent mutations
+     * 3) ClearCacheOptions#clearSubscriptions - Delta Sync Metadata Cache - Subscriptions Metadata
      */
     public void clearCache(ClearCacheOptions clearCacheOptions) {
         try {

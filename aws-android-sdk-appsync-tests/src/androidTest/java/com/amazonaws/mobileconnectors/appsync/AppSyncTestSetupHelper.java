@@ -34,7 +34,6 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.DeletePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
-import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
@@ -461,7 +460,6 @@ public class AppSyncTestSetupHelper {
     AWSConfiguration awsConfiguration;
 
     Context context;
-    Map<String, AWSAppSyncClient> appSyncClientMap;
     Response<AddPostMutation.Data> addPostMutationResponse;
 
     public void setupBeforeClass() {

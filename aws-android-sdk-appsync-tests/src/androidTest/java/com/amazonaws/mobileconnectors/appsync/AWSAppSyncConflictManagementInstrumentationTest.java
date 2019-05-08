@@ -4,6 +4,7 @@
  * <p>
  * SPDX-License-Identifier: Apache-2.0
  */
+
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.support.test.runner.AndroidJUnit4;
@@ -17,8 +18,6 @@ import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
