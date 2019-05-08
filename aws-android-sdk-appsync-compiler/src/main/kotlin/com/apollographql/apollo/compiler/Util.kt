@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.compiler
@@ -258,7 +248,7 @@ fun TypeName.isNullable(): Boolean = isOptional() || annotations.contains(Annota
 fun TypeName.isOptional(): Boolean {
   val rawType = (this as? ParameterizedTypeName)?.rawType ?: this
   return rawType == ClassNames.OPTIONAL || rawType == ClassNames.GUAVA_OPTIONAL || rawType == ClassNames.JAVA_OPTIONAL
-      || rawType == ClassNames.INPUT_TYPE
+      || rawType == ClassNames.INPUT
 }
 
 fun TypeName.unwrapOptionalType(withoutAnnotations: Boolean = false): TypeName {
@@ -272,7 +262,7 @@ fun TypeName.unwrapOptionalType(withoutAnnotations: Boolean = false): TypeName {
 fun TypeName.unwrapOptionalValue(varName: String, checkIfPresent: Boolean = true,
     transformation: ((CodeBlock) -> CodeBlock)? = null): CodeBlock {
   return if (isOptional() && this is ParameterizedTypeName) {
-    if (rawType == ClassNames.INPUT_TYPE) {
+    if (rawType == ClassNames.INPUT) {
       val valueCode = CodeBlock.of("\$L.value", varName)
       if (checkIfPresent) {
         CodeBlock.of("\$L != null ? \$L : null", valueCode, transformation?.invoke(valueCode) ?: valueCode)

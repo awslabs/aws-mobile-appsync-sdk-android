@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.api;
@@ -41,9 +31,9 @@ public class ResponseField {
   private final boolean optional;
   private final List<Condition> conditions;
 
-  private static final String VARIABLE_IDENTIFIER_KEY = "kind";
-  private static final String VARIABLE_IDENTIFIER_VALUE = "Variable";
-  private static final String VARIABLE_NAME_KEY = "variableName";
+  public static final String VARIABLE_IDENTIFIER_KEY = "kind";
+  public static final String VARIABLE_IDENTIFIER_VALUE = "Variable";
+  public static final String VARIABLE_NAME_KEY = "variableName";
 
   /**
    * Factory method for creating a Field instance representing {@link Type#STRING}.
@@ -250,6 +240,13 @@ public class ResponseField {
     return conditions;
   }
 
+  /**
+   * @deprecated Since 2.8.1. This method will be removed in the next minor version.
+   * Please use {@link com.apollographql.apollo.internal.cache.normalized.CacheKeyBuilder} instead.
+   *
+   * @param variables
+   * @return
+   */
   public String cacheKey(Operation.Variables variables) {
     if (arguments.isEmpty()) {
       return fieldName();
@@ -301,15 +298,15 @@ public class ResponseField {
         final Map<String, Object> objectArg = (Map<String, Object>) argument.getValue();
         boolean isArgumentVariable = isArgumentValueVariableType(objectArg);
         independentKey
-            .append(argument.getKey())
-            .append(":")
-            .append(isArgumentVariable ? "" : "[")
-            .append(orderIndependentKey(objectArg, variables))
-            .append(isArgumentVariable ? "" : "]");
+                .append(argument.getKey())
+                .append(":")
+                .append(isArgumentVariable ? "" : "[")
+                .append(orderIndependentKey(objectArg, variables))
+                .append(isArgumentVariable ? "" : "]");
       } else {
         independentKey.append(argument.getKey())
-            .append(":")
-            .append(argument.getValue().toString());
+                .append(":")
+                .append(argument.getValue().toString());
       }
       if (i < sortedArguments.size() - 1) {
         independentKey.append(",");
@@ -318,7 +315,7 @@ public class ResponseField {
     return independentKey.toString();
   }
 
-  private boolean isArgumentValueVariableType(Map<String, Object> objectMap) {
+  public static boolean isArgumentValueVariableType(Map<String, Object> objectMap) {
     return objectMap.containsKey(VARIABLE_IDENTIFIER_KEY)
         && objectMap.get(VARIABLE_IDENTIFIER_KEY).equals(VARIABLE_IDENTIFIER_VALUE)
         && objectMap.containsKey(VARIABLE_NAME_KEY);

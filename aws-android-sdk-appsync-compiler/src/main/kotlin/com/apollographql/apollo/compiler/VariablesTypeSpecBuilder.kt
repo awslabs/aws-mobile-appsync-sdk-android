@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.compiler
@@ -156,7 +146,7 @@ class VariablesTypeSpecBuilder(
     private val VARIABLES_CLASS_NAME: String = "Variables"
     private val VARIABLES_TYPE_NAME: ClassName = ClassName.get("", VARIABLES_CLASS_NAME)
     private fun Variable.javaTypeName(context: CodeGenerationContext, packageName: String) =
-        JavaTypeResolver(context, packageName).resolve(type).unwrapOptionalType()
+        JavaTypeResolver(context, packageName).resolve(type.capitalize()).unwrapOptionalType()
 
     private val VALUE_MAP_FIELD_NAME = "valueMap"
     private val WRITER_PARAM = ParameterSpec.builder(InputFieldWriter::class.java, "writer").build()

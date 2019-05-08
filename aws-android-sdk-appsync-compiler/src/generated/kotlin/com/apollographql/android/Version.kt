@@ -1,3 +1,3 @@
 // Generated file. Do not edit!
 package com.apollographql.android
-val VERSION = "2.7.9"
+val VERSION = "2.8.2"

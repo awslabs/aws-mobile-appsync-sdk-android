@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.internal.cache.normalized;
@@ -60,6 +50,7 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
   private final ReadWriteLock lock;
   private final Set<RecordChangeSubscriber> subscribers;
   private final Executor dispatcher;
+  private final CacheKeyBuilder cacheKeyBuilder;
   private final ApolloLogger logger;
 
   public RealAppSyncStore(@Nonnull NormalizedCache normalizedCache, @Nonnull CacheKeyResolver cacheKeyResolver,
@@ -74,6 +65,7 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
     this.logger = checkNotNull(logger, "logger == null");
     this.lock = new ReentrantReadWriteLock();
     this.subscribers = Collections.newSetFromMap(new WeakHashMap<RecordChangeSubscriber, Boolean>());
+    this.cacheKeyBuilder = new RealCacheKeyBuilder();
   }
 
   @Override public ResponseNormalizer<Map<String, Object>> networkResponseNormalizer() {
@@ -82,6 +74,10 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
           @Nonnull Map<String, Object> record) {
         return cacheKeyResolver.fromFieldRecordSet(field, record);
       }
+
+      @Nonnull @Override public CacheKeyBuilder cacheKeyBuilder() {
+        return cacheKeyBuilder;
+      }
     };
   }
 
@@ -89,6 +85,10 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
     return new ResponseNormalizer<Record>() {
       @Nonnull @Override public CacheKey resolveCacheKey(@Nonnull ResponseField field, @Nonnull Record record) {
         return CacheKey.from(record.key());
+      }
+
+      @Nonnull @Override public CacheKeyBuilder cacheKeyBuilder() {
+        return cacheKeyBuilder;
       }
     };
   }
@@ -357,7 +357,7 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
 
         ResponseFieldMapper<D> responseFieldMapper = operation.responseFieldMapper();
         CacheFieldValueResolver fieldValueResolver = new CacheFieldValueResolver(cache, operation.variables(),
-            cacheKeyResolver(), CacheHeaders.NONE);
+            cacheKeyResolver(), CacheHeaders.NONE, cacheKeyBuilder);
         //noinspection unchecked
         RealResponseReader<Record> responseReader = new RealResponseReader<>(operation.variables(), rootRecord,
             fieldValueResolver, scalarTypeAdapters, ResponseNormalizer.NO_OP_NORMALIZER);
@@ -377,7 +377,7 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
         }
 
         CacheFieldValueResolver fieldValueResolver = new CacheFieldValueResolver(cache, operation.variables(),
-            cacheKeyResolver(), cacheHeaders);
+            cacheKeyResolver(), cacheHeaders, cacheKeyBuilder);
         RealResponseReader<Record> responseReader = new RealResponseReader<>(operation.variables(), rootRecord,
             fieldValueResolver, scalarTypeAdapters, responseNormalizer);
         try {
@@ -406,7 +406,7 @@ public final class RealAppSyncStore implements ApolloStore, ReadableStore, Write
         }
 
         CacheFieldValueResolver fieldValueResolver = new CacheFieldValueResolver(cache, variables,
-            cacheKeyResolver(), CacheHeaders.NONE);
+            cacheKeyResolver(), CacheHeaders.NONE, cacheKeyBuilder);
         //noinspection unchecked
         RealResponseReader<Record> responseReader = new RealResponseReader<>(variables, rootRecord,
             fieldValueResolver, scalarTypeAdapters, ResponseNormalizer.NO_OP_NORMALIZER);

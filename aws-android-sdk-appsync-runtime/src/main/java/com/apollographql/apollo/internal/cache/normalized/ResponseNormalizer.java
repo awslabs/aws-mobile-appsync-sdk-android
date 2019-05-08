@@ -2,17 +2,7 @@
  * Copyright 2018-2019 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  *
- * Licensed under the Amazon Software License (the "License").
- * You may not use this file except in compliance with the
- * License. A copy of the License is located at
- *
- *     http://aws.amazon.com/asl/
- *
- * or in the "license" file accompanying this file. This file is
- * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
- * CONDITIONS OF ANY KIND, express or implied. See the License
- * for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 package com.apollographql.apollo.internal.cache.normalized;
@@ -61,14 +51,14 @@ public abstract class ResponseNormalizer<R> implements ResponseReaderShadow<R> {
   }
 
   @Override public void willResolve(ResponseField field, Operation.Variables variables) {
-    String key = field.cacheKey(variables);
+    String key = cacheKeyBuilder().build(field, variables);
     path.add(key);
   }
 
   @Override public void didResolve(ResponseField field, Operation.Variables variables) {
     path.remove(path.size() - 1);
     Object value = valueStack.pop();
-    String cacheKey = field.cacheKey(variables);
+    String cacheKey = cacheKeyBuilder().build(field, variables);
     String dependentKey = currentRecordBuilder.key() + "." + cacheKey;
     dependentKeys.add(dependentKey);
     currentRecordBuilder.addField(cacheKey, value);
@@ -129,6 +119,8 @@ public abstract class ResponseNormalizer<R> implements ResponseReaderShadow<R> {
   }
 
   @Nonnull public abstract CacheKey resolveCacheKey(@Nonnull ResponseField field, @Nonnull R record);
+
+  @Nonnull public abstract CacheKeyBuilder cacheKeyBuilder();
 
   void willResolveRecord(CacheKey cacheKey) {
     pathStack = new SimpleStack<>();
@@ -194,6 +186,14 @@ public abstract class ResponseNormalizer<R> implements ResponseReaderShadow<R> {
 
     @Nonnull @Override public CacheKey resolveCacheKey(@Nonnull ResponseField field, @Nonnull Object record) {
       return CacheKey.NO_KEY;
+    }
+
+    @Nonnull @Override public CacheKeyBuilder cacheKeyBuilder() {
+      return new CacheKeyBuilder() {
+        @Nonnull @Override public String build(@Nonnull ResponseField field, @Nonnull Operation.Variables variables) {
+          return CacheKey.NO_KEY.key();
+        }
+      };
     }
   };
 }

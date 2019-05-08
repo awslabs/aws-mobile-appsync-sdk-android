@@ -21,7 +21,7 @@ In the project's `build.gradle`, add the following dependency in
 the build script:
 
 ```groovy
-    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.7.+'
+    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
 ```
 
 **Sample project's build.gradle**
@@ -32,7 +32,7 @@ the build script:
         // ..other code..
         dependencies {
             classpath 'com.android.tools.build:gradle:3.0.1'
-            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.7.+'
+            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
             // NOTE: Do not place your application dependencies here; they belong
             // in the individual module build.gradle files
         }
@@ -50,7 +50,7 @@ In the app's `build.gradle`, add the following plugin:
 Add the following dependency:
 
 ```groovy
-    compile 'com.amazonaws:aws-android-sdk-appsync:2.7.+'
+    compile 'com.amazonaws:aws-android-sdk-appsync:2.8.+'
 ```
 
 **Sample app's build.gradle**
@@ -63,7 +63,7 @@ Add the following dependency:
     }
     dependencies {
         // Typical dependencies
-        compile 'com.amazonaws:aws-android-sdk-appsync:2.7.+'
+        compile 'com.amazonaws:aws-android-sdk-appsync:2.8.+'
     }
 ```
 
@@ -396,6 +396,18 @@ private GraphQLCall.Callback<AddPostMutation.Data> postsCallback = new GraphQLCa
 };
 ```
 
+## Running the Integration tests
+
+Integration test for the SDK are in ```aws-android-sdk-appsync-tests``` folder and is an independent gradle project. The tests depend on certain artifacts being published to the local maven repository. In order to publish required artifacts to the local maven repository and run the tests execute following commands from the project root:
+
+```
+./gradlew publishToMavenLocal
+cd aws-android-sdk-appsync-tests/
+./gradlew connectedAndroidTest
+```
+
+To run tests from Android Studio, run ```./gradlew publishToMavenLocal``` from project root, open ```aws-android-sdk-appsync-tests/``` folder in Android Studio and run the tests normally.
+
 ## License
 
-This library is licensed under the Amazon Software License.
+This library is licensed under the Apache License 2.0.
