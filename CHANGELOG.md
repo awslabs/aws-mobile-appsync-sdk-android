@@ -1,5 +1,11 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.8.3](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.3)
+
+### Bug Fixes
+* Fixed a bug with inconsistent capitalization of class names in generated code that represent GraphQL input types. See [PR #150](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/150) for details.
+* Fixed a bug with inconsistent capitalization of variables in generated code that represent fields for GraphQL types. See [PR #172](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/172) for details.
+
 ## [Release 2.8.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.2)
 
 ### Enhancements
