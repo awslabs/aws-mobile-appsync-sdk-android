@@ -75,7 +75,7 @@ mutation UpdatePost($input: UpdatePostInput!) {
   }
 }
 
-mutation DeletePost($input: DeletePostInput!) {
+mutation DeletePost($input: deletePostInput!) {
   deletePost(input: $input) {
       id
       title

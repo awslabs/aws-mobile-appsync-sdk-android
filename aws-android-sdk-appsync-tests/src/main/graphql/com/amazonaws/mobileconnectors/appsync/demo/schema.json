@@ -1488,7 +1488,7 @@
               "name" : null,
               "ofType" : {
                 "kind" : "INPUT_OBJECT",
-                "name" : "DeletePostInput",
+                "name" : "deletePostInput",
                 "ofType" : null
               }
             },
@@ -1809,11 +1809,11 @@
         "possibleTypes" : null
       }, {
         "kind" : "INPUT_OBJECT",
-        "name" : "DeletePostInput",
+        "name" : "deletePostInput",
         "description" : null,
         "fields" : null,
         "inputFields" : [ {
-          "name" : "id",
+          "name" : "Id",
           "description" : null,
           "type" : {
             "kind" : "NON_NULL",
