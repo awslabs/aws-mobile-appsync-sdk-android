@@ -71,3 +71,4 @@ awsconfiguration.json
 
 # idea folder for tests
 aws-android-sdk-appsync-tests/.idea/
+.idea/

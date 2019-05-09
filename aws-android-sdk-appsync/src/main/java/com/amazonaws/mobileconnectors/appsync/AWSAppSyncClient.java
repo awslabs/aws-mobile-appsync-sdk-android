@@ -816,13 +816,10 @@ public class AWSAppSyncClient {
     private void clearDeltaSyncStore() {
         Log.d(TAG, "Clearing the delta sync store.");
 
-        // Create the database
         AWSAppSyncDeltaSyncSqlHelper awsAppSyncDeltaSyncSqlHelper =
                 new AWSAppSyncDeltaSyncSqlHelper(
                     applicationContext,
                     deltaSyncSqlStoreName);
-
-        // Execute "DELETE FROM TABLE_NAME"
         new AWSAppSyncDeltaSyncDBOperations(awsAppSyncDeltaSyncSqlHelper)
                 .clearDeltaSyncStore();
     }

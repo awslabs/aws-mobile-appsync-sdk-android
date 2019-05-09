@@ -173,7 +173,12 @@ final class AWSAppSyncDeltaSyncDBOperations {
         return record;
     }
 
+    /**
+     * Clear the Delta Sync Store by removing
+     * all the records from the table.
+     */
     void clearDeltaSyncStore() {
+        // Execute "DELETE FROM TABLE_NAME"
         deleteAllRecordsStatement.execute();
     }
 
