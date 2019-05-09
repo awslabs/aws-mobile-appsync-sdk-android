@@ -220,7 +220,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             long numPostsFromCache = 0;
             for (AllPostsQuery.Item item : listPosts.items()) {
                 postID = item.id();
-                Response<GetPostQuery.Data> getPostQueryResponse = appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
+                Response<GetPostQuery.Data> getPostQueryResponse = appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY, postID).get("CACHE");
                 assertNotNull(getPostQueryResponse);
                 assertNotNull(getPostQueryResponse.data());
                 assertNotNull(getPostQueryResponse.data().getPost());
@@ -281,8 +281,10 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             for (final String clientName : appSyncClientMap.keySet()) {
                 final AWSAppSyncClient awsAppSyncClient = appSyncClientMap.get(clientName);
                 assertNotNull(awsAppSyncClient);
-                if (awsAppSyncClient != null) {
+                try {
                     awsAppSyncClient.clearCache();
+                } catch (AWSAppSyncClientException e) {
+                    fail("Error in clearing the cache." + e);
                 }
             }
         }
@@ -438,10 +440,17 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             assertNull(getPostQueryResponse.data().getPost().ups()); // Protected by AMAZON_COGNITO_USER_POOLS
             assertNull(getPostQueryResponse.data().getPost().downs()); // Protected by AMAZON_COGNITO_USER_POOLS
 
-            // Now, Query the post mutated through IAM Client
+            // Now, Query the post mutated through IAM Client with CACHE_ONLY and checks if it returns null.
             Log.d(TAG, "AWSAppSyncClient for AWS_IAM: " + iamClientForPosts);
             assertNotNull(iamClientForPosts);
 
+            getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostQueryResponse = getPostResponses.get("CACHE");
+
+            assertNotNull(getPostQueryResponse);
+            assertNull(getPostQueryResponse.data());
+
+            // Now, Query the post mutated through IAM Client with NETWORK_* and checks if it returns valid post object.
             getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, appSyncResponseFetcher, postID);
             getPostQueryResponse = getPostResponses.get("NETWORK");
 
@@ -462,6 +471,12 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             Log.d(TAG, "AWSAppSyncClient for AMAZON_COGNITO_USER_POOLS: " + amazonCognitoUserPoolsClientForPosts);
             assertNotNull(amazonCognitoUserPoolsClientForPosts);
 
+            getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostQueryResponse = getPostResponses.get("CACHE");
+
+            assertNotNull(getPostQueryResponse);
+            assertNull(getPostQueryResponse.data());
+
             getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, appSyncResponseFetcher, postID);
             getPostQueryResponse = getPostResponses.get("NETWORK");
 
@@ -478,9 +493,13 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             assertNotNull(getPostQueryResponse.data().getPost().ups());
             assertNotNull(getPostQueryResponse.data().getPost().downs());
 
-            apiKeyClientForPosts.clearCache();
-            iamClientForPosts.clearCache();
-            amazonCognitoUserPoolsClientForPosts.clearCache();
+            try {
+                apiKeyClientForPosts.clearCache();
+                iamClientForPosts.clearCache();
+                amazonCognitoUserPoolsClientForPosts.clearCache();
+            } catch (AWSAppSyncClientException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -855,7 +874,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         try {
             awsAppSyncClient.clearCache();
         } catch (Exception ex) {
-            assertTrue("Error in clearing cache.", false);
+            fail("Error in clearing cache.");
         }
 
         // Check Mutation Queue
@@ -882,7 +901,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                             .clearSubscriptions()
                             .build());
         } catch (Exception ex) {
-            assertTrue("Error in clearing cache.", false);
+            fail("Error in clearing cache.");
         }
 
         // Check Mutation Queue
@@ -915,7 +934,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                             .clearMutations()
                             .build());
         } catch (Exception ex) {
-            assertTrue("Error in clearing cache.", false);
+            fail("Error in clearing cache.");
         }
 
         // Check Mutation Queue
@@ -1092,20 +1111,15 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
         }
 
-        try {
-            AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(false)
-                    .clientDatabasePrefix(clientDatabasePrefix)
-                    .build();
-        } catch (Exception ex) {
-            assertNotNull(ex);
-            assertEquals("A ClientDatabasePrefix is passed in however useClientDatabasePrefix is false.",
-                    ex.getLocalizedMessage());
-        }
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+                .context(InstrumentationRegistry.getTargetContext())
+                .apiKey(new BasicAPIKeyAuthProvider(apiKey))
+                .serverUrl(serverUrl)
+                .region(region)
+                .useClientDatabasePrefix(false)
+                .clientDatabasePrefix(clientDatabasePrefix)
+                .build();
+        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(awsAppSyncClient, null, null);
     }
 
     @Test

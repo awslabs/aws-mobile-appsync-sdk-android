@@ -26,6 +26,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.util.BinaryUtils;
+import com.amazonaws.util.StringUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.GraphQLCall;
@@ -506,28 +507,18 @@ public class AWSAppSyncClient {
                     mServerUrl = appSyncJsonObject.getString("ApiUrl");
                     mRegion = Regions.fromName(appSyncJsonObject.getString("Region"));
 
-                    // Populate the ClientDatabasePrefix from awsconfiguration.json
-                    String clientDatabasePrefixFromConfigJson = null;
-                    try {
-                        clientDatabasePrefixFromConfigJson = appSyncJsonObject.getString("ClientDatabasePrefix");
-                    } catch (Exception ex) {
-                        Log.e(TAG, "Error is reading the ClientDatabasePrefix from AppSync configuration in awsconfiguration.json.");
-                        // Not throwing an exception for backwards compatibility reasons
-                        // where the awsconfiguration.json doesn't have ClientDatabasePrefix.
-                    }
-
-                    // ClientDatabasePrefix passed via code takes precedence over the one present in awsconfiguration.json
-                    mClientDatabasePrefix = mClientDatabasePrefix != null ? mClientDatabasePrefix : clientDatabasePrefixFromConfigJson;
-
-                    // If mUseClientDatabasePrefix is true, a valid prefix is required
-                    // Else do not use a prefix and use the default database names without a prefix
                     if (mUseClientDatabasePrefix) {
-                        if (clientDatabasePrefixFromConfigJson == null) {
+                        // Populate the ClientDatabasePrefix from awsconfiguration.json
+                        String clientDatabasePrefixFromConfigJson = null;
+                        try {
+                            clientDatabasePrefixFromConfigJson = appSyncJsonObject.getString("ClientDatabasePrefix");
+                        } catch (Exception ex) {
+                            Log.e(TAG, "Error is reading the ClientDatabasePrefix from AppSync configuration in awsconfiguration.json.");
                             throw new RuntimeException("ClientDatabasePrefix is not present in AppSync configuration in awsconfiguration.json " +
                                     "however .useClientDatabasePrefix(true) is passed in.");
                         }
-                    } else {
-                        mClientDatabasePrefix = null;
+
+                        mClientDatabasePrefix = clientDatabasePrefixFromConfigJson;
                     }
 
                     Map<Object, AuthMode> authModeObjects = new HashMap<>();
@@ -573,15 +564,14 @@ public class AWSAppSyncClient {
                 }
             }
 
-            // Handle case where the prefix is passed via code instead of awsconfiguration.json
-            // If mUseClientDatabasePrefix is true, a valid prefix is required
-            // Else do not use a prefix and use the default database names without a prefix
-            if (mUseClientDatabasePrefix) {
-                if (mClientDatabasePrefix == null) {
-                    throw new RuntimeException("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.");
-                }
-            } else if (mClientDatabasePrefix != null) {
-                throw new RuntimeException("A ClientDatabasePrefix is passed in however useClientDatabasePrefix is false.");
+            if (mUseClientDatabasePrefix && (mClientDatabasePrefix == null || StringUtils.isBlank(mClientDatabasePrefix))) {
+                throw new RuntimeException("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.");
+            }
+
+            if (!mUseClientDatabasePrefix && mClientDatabasePrefix != null && !StringUtils.isBlank(mClientDatabasePrefix)) {
+                Log.w(TAG, "A ClientDatabasePrefix is passed in however useClientDatabasePrefix is false.");
+                // Don't use the client database prefix when mUseClientDatabasePrefix flag is not set or set to false.
+                mClientDatabasePrefix = null;
             }
 
             if (mResolver == null) {
@@ -812,6 +802,9 @@ public class AWSAppSyncClient {
     /**
      * Clear the store created for Delta Sync. This method deletes all the records
      * that stores the lastSyncTime of the sync queries.
+     *
+     * If there are only on-going delta sync operations, it is recommended to cancel those
+     * operations before calling clearCache.
      */
     private void clearDeltaSyncStore() {
         Log.d(TAG, "Clearing the delta sync store.");
@@ -831,8 +824,10 @@ public class AWSAppSyncClient {
      * 1) Query Cache - query responses
      * 2) Mutation Queue - offline persistent mutations
      * 3) Delta Sync Metadata Cache - Subscriptions Metadata
+     *      If there are only on-going delta sync operations, it is recommended to cancel those
+     *      operations before calling clearCache.
      */
-    public void clearCache() {
+    public void clearCache() throws AWSAppSyncClientException {
         clearCache(ClearCacheOptions.builder()
                 .clearQueries()
                 .clearMutations()
@@ -847,8 +842,10 @@ public class AWSAppSyncClient {
      * 1) ClearCacheOptions#clearQueries - Query Cache - query responses
      * 2) ClearCacheOptions#clearMutations - Mutation Queue - offline persistent mutations
      * 3) ClearCacheOptions#clearSubscriptions - Delta Sync Metadata Cache - Subscriptions Metadata
+     *      If there are only on-going delta sync operations, it is recommended to cancel those
+     *      operations before calling clearCache.
      */
-    public void clearCache(ClearCacheOptions clearCacheOptions) {
+    public void clearCache(ClearCacheOptions clearCacheOptions) throws AWSAppSyncClientException {
         try {
             if (clearCacheOptions.isQueries()) {
                 Log.d(TAG, "Clearing the query cache.");
@@ -865,7 +862,7 @@ public class AWSAppSyncClient {
                 clearDeltaSyncStore();
             }
         } catch (Exception ex) {
-            throw new RuntimeException("Error in clearing the cache.", ex);
+            throw new AWSAppSyncClientException("Error in clearing the cache.", ex);
         }
     }
 }
