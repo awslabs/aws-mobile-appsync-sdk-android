@@ -65,3 +65,7 @@ fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
+
+# idea folder for tests
+aws-android-sdk-appsync-tests/.idea/
+.idea/

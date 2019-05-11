@@ -6,6 +6,8 @@ query GetPost($id:ID!) {
      content
      url
      version
+     ups
+     downs
  }
 }
 
@@ -216,3 +218,13 @@ mutation DeleteArticle($input: DeleteArticleInput!) {
   }
 }
 
+query AllArticles {
+   listArticles {
+    items {
+       id
+       title
+       author
+       version
+      }
+   }
+}
