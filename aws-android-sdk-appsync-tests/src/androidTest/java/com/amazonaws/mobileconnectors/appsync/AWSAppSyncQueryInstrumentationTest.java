@@ -672,8 +672,8 @@ public class AWSAppSyncQueryInstrumentationTest {
                         userPoolsAppSyncClientForPosts,
                         AppSyncResponseFetchers.CACHE_AND_NETWORK,
                         postID);
-                appSyncTestSetupHelper.assertQueryPostResponse(responses.get("CACHE"), postID);
-                appSyncTestSetupHelper.assertQueryPostResponse(responses.get("NETWORK"), postID);
+                appSyncTestSetupHelper.assertQueryPostResponse(responses.get("CACHE"), postID, "AMAZON_COGNITO_USER_POOLS");
+                appSyncTestSetupHelper.assertQueryPostResponse(responses.get("NETWORK"), postID, "AMAZON_COGNITO_USER_POOLS");
             }
         }
     }

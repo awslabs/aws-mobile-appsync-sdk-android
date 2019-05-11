@@ -9,6 +9,7 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
+import android.os.Looper;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.Suppress;
 import android.support.test.runner.AndroidJUnit4;
@@ -61,6 +62,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
+import static android.net.wifi.WifiManager.WIFI_STATE_ENABLED;
 import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
 import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_MUTATION_SQL_STORE_NAME;
 import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_QUERY_SQL_STORE_NAME;
@@ -85,6 +87,21 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @BeforeClass
     public static void setupOnce() {
         appSyncTestSetupHelper = new AppSyncTestSetupHelper();
+    }
+
+    @Before
+    @After
+    public void checkNetworkIsOnline() {
+        WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
+        if (WIFI_STATE_ENABLED != wifiManager.getWifiState()) {
+            assertTrue(wifiManager.setWifiEnabled(true));
+            try {
+                Thread.sleep(3 * 1000);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+        assert(wifiManager.setWifiEnabled(true));
     }
 
     @Test
@@ -353,7 +370,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             final AWSAppSyncClient amazonCognitoUserPoolsClientForPosts = appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration();
 
             //Mutate and Query Posts through API Key Client
-            Log.d(TAG, "AWSAppSyncClient for AWS_IAM: " + apiKeyClientForPosts);
+            Log.d(TAG, "AWSAppSyncClient for API_KEY: " + apiKeyClientForPosts);
             final String title = "testQueryAndMutationCacheIsolationWithDifferentAuthModesForPosts: Learning to Live ";
             final String author = "Dream Theater @ ";
             final String url = "Dream Theater Station";
@@ -425,20 +442,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
             Map<String, Response<GetPostQuery.Data>> getPostResponses = appSyncTestSetupHelper.queryPost(apiKeyClientForPosts, appSyncResponseFetcher, postID);
             Response<GetPostQuery.Data> getPostQueryResponse = getPostResponses.get("NETWORK");
-
-            assertNotNull(getPostQueryResponse);
-            assertNotNull(getPostQueryResponse.data());
-            assertNotNull(getPostQueryResponse.data().getPost());
-            assertNotNull(getPostQueryResponse.data().getPost().author());
-            assertEquals(updatedAuthor, getPostQueryResponse.data().getPost().author());
-
-            assertNotNull(getPostQueryResponse.data().getPost().author());
-            assertNotNull(getPostQueryResponse.data().getPost().content());
-            assertNotNull(getPostQueryResponse.data().getPost().title());
-            assertNotNull(getPostQueryResponse.data().getPost().version());
-            assertNull(getPostQueryResponse.data().getPost().url()); // Protected by AMAZON_COGNITO_USER_POOLS
-            assertNull(getPostQueryResponse.data().getPost().ups()); // Protected by AMAZON_COGNITO_USER_POOLS
-            assertNull(getPostQueryResponse.data().getPost().downs()); // Protected by AMAZON_COGNITO_USER_POOLS
+            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "API_KEY");
 
             // Now, Query the post mutated through IAM Client with CACHE_ONLY and checks if it returns null.
             Log.d(TAG, "AWSAppSyncClient for AWS_IAM: " + iamClientForPosts);
@@ -453,21 +457,16 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             // Now, Query the post mutated through IAM Client with NETWORK_* and checks if it returns valid post object.
             getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, appSyncResponseFetcher, postID);
             getPostQueryResponse = getPostResponses.get("NETWORK");
+            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AWS_IAM");
 
-            assertNotNull(getPostQueryResponse);
-            assertNotNull(getPostQueryResponse.data());
-            assertNotNull(getPostQueryResponse.data().getPost());
-            assertNotNull(getPostQueryResponse.data().getPost().id());
-            assertEquals(postID, getPostQueryResponse.data().getPost().id());
-            assertNotNull(getPostQueryResponse.data().getPost().author());
-            assertNotNull(getPostQueryResponse.data().getPost().content());
-            assertNotNull(getPostQueryResponse.data().getPost().title());
-            assertNotNull(getPostQueryResponse.data().getPost().version());
-            assertNull(getPostQueryResponse.data().getPost().url()); // Protected by AMAZON_COGNITO_USER_POOLS
-            assertNull(getPostQueryResponse.data().getPost().ups()); // Protected by AMAZON_COGNITO_USER_POOLS
-            assertNull(getPostQueryResponse.data().getPost().downs()); // Protected by AMAZON_COGNITO_USER_POOLS
 
-            // Now, Query the post mutated through Amazon Cognito User Pools Client
+            // Now, Query the post mutated through IAM Client with CACHE_ONLY and checks if it returns valid post object.
+            getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostQueryResponse = getPostResponses.get("CACHE");
+            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AWS_IAM");
+
+
+            // Now, Query the post mutated through Amazon Cognito User Pools Client with CACHE_ONLY
             Log.d(TAG, "AWSAppSyncClient for AMAZON_COGNITO_USER_POOLS: " + amazonCognitoUserPoolsClientForPosts);
             assertNotNull(amazonCognitoUserPoolsClientForPosts);
 
@@ -477,21 +476,15 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             assertNotNull(getPostQueryResponse);
             assertNull(getPostQueryResponse.data());
 
+            // Now, Query the post mutated through Amazon Cognito User Pools Client with NETWORK_*
             getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, appSyncResponseFetcher, postID);
             getPostQueryResponse = getPostResponses.get("NETWORK");
+            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
 
-            assertNotNull(getPostQueryResponse);
-            assertNotNull(getPostQueryResponse.data());
-            assertNotNull(getPostQueryResponse.data().getPost());
-            assertNotNull(getPostQueryResponse.data().getPost().id());
-            assertEquals(postID, getPostQueryResponse.data().getPost().id());
-            assertNotNull(getPostQueryResponse.data().getPost().author());
-            assertNotNull(getPostQueryResponse.data().getPost().content());
-            assertNotNull(getPostQueryResponse.data().getPost().title());
-            assertNotNull(getPostQueryResponse.data().getPost().url());
-            assertNotNull(getPostQueryResponse.data().getPost().version());
-            assertNotNull(getPostQueryResponse.data().getPost().ups());
-            assertNotNull(getPostQueryResponse.data().getPost().downs());
+            // Now, Query the post mutated through Amazon Cognito User Pools Client with CACHE_ONLY
+            getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostQueryResponse = getPostResponses.get("CACHE");
+            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
 
             try {
                 apiKeyClientForPosts.clearCache();
@@ -513,20 +506,44 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     }
 
     @Test
-    public void testCRUDWithSingleClient() {
-        List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        appSyncTestSetupHelper.testCRUD(clients);
-        clients.clear();
-    }
+    public void testCRUDWithMultipleClientsAtTheSameTime() {
+        final CountDownLatch countDownLatch = new CountDownLatch(3);
 
-    @Test
-    public void testCRUDWithMultipleClients() {
-        List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
-        appSyncTestSetupHelper.testCRUD(clients);
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<AWSAppSyncClient> clients = new ArrayList<>();
+                clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
+                appSyncTestSetupHelper.testCRUD(clients);
+                countDownLatch.countDown();
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<AWSAppSyncClient> clients = new ArrayList<>();
+                clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
+                appSyncTestSetupHelper.testCRUD(clients);
+                countDownLatch.countDown();
+            }
+        }).start();
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<AWSAppSyncClient> clients = new ArrayList<>();
+                clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
+                appSyncTestSetupHelper.testCRUD(clients);
+                countDownLatch.countDown();
+            }
+        }).start();
+
+        try {
+            countDownLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -653,7 +670,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
         clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
 
-        for (AWSAppSyncClient awsAppSyncClient : clients) {
+        for (AWSAppSyncClient awsAppSyncClient: clients) {
 
             assertNotNull(awsAppSyncClient);
 
@@ -746,13 +763,23 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     }
 
     @Test
-    public void testMutationQueueEmpty() {
-        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(true,2*1000);
-        assertNotNull(awsAppSyncClient);
-        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
+    public void testClearCache() {
+        List<AWSAppSyncClient> clients = new ArrayList<>();
+        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        clients.add(awsAppSyncClient);
 
-        final CountDownLatch addCountdownlatch = new CountDownLatch(1);
+        final String title = "Learning to Live ";
+        final String author = "Dream Theater @ ";
+        final String url = "Dream Theater Station";
+        final String content = "No energy for anger @" + System.currentTimeMillis();
 
+        //Set Wifi Network offline
+        WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
+        assertTrue(wifiManager.setWifiEnabled(false));
+        appSyncTestSetupHelper.sleep(3000);
+
+        //Add a post
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
         AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
                 "Post",
                 "",
@@ -766,110 +793,36 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         ));
 
         CreatePostInput createPostInput = CreatePostInput.builder()
-                .title("Lonely Day")
-                .author("SOAD" + System.currentTimeMillis())
-                .url("SOAD.com")
-                .content("Such a lonely day")
+                .title(title)
+                .author(author)
+                .url(url)
+                .content(content)
                 .ups(new Integer(1))
                 .downs(new Integer(0))
                 .build();
 
         AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
-        final AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
-
+        AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
         call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
             @Override
             public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
-                call.cancel();
-                addCountdownlatch.countDown();
+                if (Looper.myLooper() != null) {
+                    Looper.myLooper().quit();
+                }
+                countDownLatch.countDown();
             }
 
             @Override
             public void onFailure(@Nonnull final ApolloException e) {
                 e.printStackTrace();
-                assertTrue("OnError received for Second mutation. Unexpected", false);
-                addCountdownlatch.countDown();
+                if (Looper.myLooper() != null) {
+                    Looper.myLooper().quit();
+                }
+                countDownLatch.countDown();
             }
         });
+
         assertFalse(awsAppSyncClient.isMutationQueueEmpty());
-        try {
-            addCountdownlatch.await(60, TimeUnit.SECONDS);
-        } catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
-        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
-
-    }
-
-    @Test
-    public void testMutationQueueClear() {
-        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(true,2*1000);
-        assertNotNull(awsAppSyncClient);
-        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
-
-        final int lastMutation = 10;
-        final CountDownLatch addCountdownlatch = new CountDownLatch(1);
-
-        for (int i = 0; i < lastMutation; i++ ) {
-            final int currentIteration = i;
-            AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
-                    "Post",
-                    "",
-                    "",
-                    "",
-                    "",
-                    "",
-                    null,
-                    null,
-                    0
-            ));
-
-            CreatePostInput createPostInput = CreatePostInput.builder()
-                    .title("Lonely Day")
-                    .author("SOAD" + System.currentTimeMillis())
-                    .url("SOAD.com")
-                    .content("Such a lonely day")
-                    .ups(new Integer(1))
-                    .downs(new Integer(0))
-                    .build();
-
-            AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
-            AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
-
-            call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
-                @Override
-                public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
-                    if (currentIteration == lastMutation) {
-                        addCountdownlatch.countDown();
-                    }
-                }
-
-                @Override
-                public void onFailure(@Nonnull final ApolloException e) {
-                    if (currentIteration == lastMutation) {
-                        addCountdownlatch.countDown();
-                    }
-                }
-            });
-        }
-        assertFalse(awsAppSyncClient.isMutationQueueEmpty());
-        awsAppSyncClient.clearMutationQueue();
-        assertTrue(awsAppSyncClient.isMutationQueueEmpty());
-
-        try {
-            assertFalse(addCountdownlatch.await(60, TimeUnit.SECONDS));
-        } catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
-
-    }
-
-    @Test
-    public void testClearCache() {
-        List<AWSAppSyncClient> clients = new ArrayList<>();
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
-        clients.add(awsAppSyncClient);
-        appSyncTestSetupHelper.testCRUD(clients);
 
         try {
             awsAppSyncClient.clearCache();
@@ -884,6 +837,10 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         Response<AllPostsQuery.Data> listPostsResponse = appSyncTestSetupHelper.listPosts(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
         assertNotNull(listPostsResponse);
         assertNull(listPostsResponse.data());
+
+        //Set Wifi Network online
+        assertTrue(wifiManager.setWifiEnabled(true));
+        appSyncTestSetupHelper.sleep(3000);
     }
 
     @Test
@@ -918,7 +875,6 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         List<AWSAppSyncClient> clients = new ArrayList<>();
         final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         clients.add(awsAppSyncClient);
-        appSyncTestSetupHelper.testCRUD(clients);
 
         // Query from cache and check no data is available
         Response<AllPostsQuery.Data> listPostsResponse = appSyncTestSetupHelper.listPosts(
@@ -928,11 +884,65 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertNotNull(listPostsResponse);
         assertNotNull(listPostsResponse.data());
 
+
+        final String title = "Learning to Live ";
+        final String author = "Dream Theater @ ";
+        final String url = "Dream Theater Station";
+        final String content = "No energy for anger @" + System.currentTimeMillis();
+
+        //Set Wifi Network offline
+        WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
+        assertTrue(wifiManager.setWifiEnabled(false));
+        appSyncTestSetupHelper.sleep(3000);
+
+        //Add a post
+        final CountDownLatch countDownLatch = new CountDownLatch(1);
+        AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
+                "Post",
+                "",
+                "",
+                "",
+                "",
+                "",
+                null,
+                null,
+                0
+        ));
+
+        CreatePostInput createPostInput = CreatePostInput.builder()
+                .title(title)
+                .author(author)
+                .url(url)
+                .content(content)
+                .ups(new Integer(1))
+                .downs(new Integer(0))
+                .build();
+
+        AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
+        AppSyncMutationCall call = awsAppSyncClient.mutate(addPostMutation, expected);
+        call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
+                if (Looper.myLooper() != null) {
+                    Looper.myLooper().quit();
+                }
+                countDownLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull final ApolloException e) {
+                e.printStackTrace();
+                if (Looper.myLooper() != null) {
+                    Looper.myLooper().quit();
+                }
+                countDownLatch.countDown();
+            }
+        });
+
+        assertFalse(awsAppSyncClient.isMutationQueueEmpty());
+
         try {
-            awsAppSyncClient.clearCache(
-                    ClearCacheOptions.builder()
-                            .clearMutations()
-                            .build());
+            awsAppSyncClient.clearCache(ClearCacheOptions.builder().clearMutations().build());
         } catch (Exception ex) {
             fail("Error in clearing cache.");
         }
@@ -940,13 +950,17 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         // Check Mutation Queue
         assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
-        // Query from cache and check no data is available
+        // Query from cache and check data is available since only mutations queue is cleared.
         listPostsResponse = appSyncTestSetupHelper.listPosts(
                 awsAppSyncClient,
                 AppSyncResponseFetchers.CACHE_ONLY)
                 .get("CACHE");
         assertNotNull(listPostsResponse);
         assertNotNull(listPostsResponse.data());
+
+        //Set Wifi Network online
+        assertTrue(wifiManager.setWifiEnabled(true));
+        appSyncTestSetupHelper.sleep(3000);
     }
 
     @Test

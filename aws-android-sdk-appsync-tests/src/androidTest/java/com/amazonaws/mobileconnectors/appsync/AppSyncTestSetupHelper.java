@@ -1194,12 +1194,11 @@ public class AppSyncTestSetupHelper {
         return responses.get(0);
     }
 
-    void assertQueryPostResponse(Response<GetPostQuery.Data> response, String postID) {
+    void assertQueryPostResponse(Response<GetPostQuery.Data> response, String postID, String authMode) {
         assertNotNull(response);
         assertNotNull(response.data());
         assertNotNull(response.data().getPost());
 
-        Log.d(TAG, "Response Fetcher: " + AppSyncResponseFetchers.CACHE_AND_NETWORK.toString() + "; Auth Mode: API_KEY; postID: " + postID);
         Log.d(TAG, "isFromCache: " + response.fromCache());
         Log.d(TAG, "Post Details: " + response.data().getPost().toString());
 
@@ -1209,9 +1208,16 @@ public class AppSyncTestSetupHelper {
         assertNotNull(response.data().getPost().content());
         assertNotNull(response.data().getPost().title());
         assertNotNull(response.data().getPost().version());
-        assertNotNull(response.data().getPost().url());
-        assertNotNull(response.data().getPost().ups());
-        assertNotNull(response.data().getPost().downs());
+
+        if ("AMAZON_COGNITO_USER_POOLS".equals(authMode)) {
+            assertNotNull(response.data().getPost().url());
+            assertNotNull(response.data().getPost().ups());
+            assertNotNull(response.data().getPost().downs());
+        } else {
+            assertNull(response.data().getPost().url());
+            assertNull(response.data().getPost().ups());
+            assertNull(response.data().getPost().downs());
+        }
     }
 
     void sleep(int time) {
