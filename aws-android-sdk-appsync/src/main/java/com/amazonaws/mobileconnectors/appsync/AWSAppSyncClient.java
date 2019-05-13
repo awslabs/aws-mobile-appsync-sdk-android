@@ -55,7 +55,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 
@@ -74,6 +77,12 @@ public class AWSAppSyncClient {
 
     /** Delimiter that is used in the client database (cache) names. */
     static final String DATABASE_NAME_DELIMITER = "_";
+
+    /** Pattern to validate the ClientDatabasePrefix. */
+    static final String CLIENT_DATABAE_PREFIX_PATTERN = "^[_a-zA-Z0-9]+$";
+
+    /** A map of ClientDatabasePrefix -> AuthMode_GraphQLEndpoint */
+    static Map<String, String> prefixMap = new ConcurrentHashMap<String, String>();
 
     private static final String TAG = AWSAppSyncClient.class.getSimpleName();
 
@@ -495,10 +504,36 @@ public class AWSAppSyncClient {
          * @return AWSAppSyncClient object built from AWSAppSyncClient.Builder
          */
         public AWSAppSyncClient build() {
+            // Validate AuthMode
+            Map<Object, AuthMode> authModeObjects = new HashMap<>();
+            authModeObjects.put(mApiKey, AuthMode.API_KEY);
+            authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
+            authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
+            authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
+            authModeObjects.remove(null);
+
+            // Validate if only one Auth object is passed in to the builder
+            if (authModeObjects.size() > 1) {
+                throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
+                        authModeObjects.values().toString() +
+                        ". Please pass in exactly one AuthMode into the builder.");
+            }
+
+            // Store references to the authMode object passed in to the builder and the
+            // corresponding AuthMode
+            Object selectedAuthModeObject = null;
+            AuthMode selectedAuthMode = null;
+            Iterator<Object> iterator = authModeObjects.keySet().iterator();
+            if (iterator.hasNext()) {
+                selectedAuthModeObject = iterator.next();
+                selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
+            }
+
             // Read serverUrl, region and AuthMode from awsconfiguration.json if present
             if (mAwsConfiguration != null) {
                 try {
                     // Populate the serverUrl and region from awsconfiguration.json
+                    AuthMode authModeFromConfigJson = null;
                     JSONObject appSyncJsonObject = mAwsConfiguration.optJsonObject("AppSync");
                     if (appSyncJsonObject == null) {
                         throw new RuntimeException("AppSync configuration is missing from awsconfiguration.json");
@@ -521,33 +556,12 @@ public class AWSAppSyncClient {
                         mClientDatabasePrefix = clientDatabasePrefixFromConfigJson;
                     }
 
-                    Map<Object, AuthMode> authModeObjects = new HashMap<>();
-                    authModeObjects.put(mApiKey, AuthMode.API_KEY);
-                    authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
-                    authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
-                    authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
-                    authModeObjects.remove(null);
+                    authModeFromConfigJson = AuthMode.fromName(appSyncJsonObject.getString("AuthMode"));
 
-                    // Validate if only one Auth object is passed in to the builder
-                    if (authModeObjects.size() > 1) {
-                        throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
-                                authModeObjects.values().toString() +
-                                ". Please pass in exactly one AuthMode into the builder.");
-                    }
-
-                    // Store references to the authMode object passed in to the builder and the
-                    // corresponding AuthMode
-                    Object selectedAuthModeObject = null;
-                    AuthMode selectedAuthMode = null;
-                    Iterator<Object> iterator = authModeObjects.keySet().iterator();
-                    if (iterator.hasNext()) {
-                        selectedAuthModeObject = iterator.next();
-                        selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
-                    }
-
+                    // This validation is only for input passed via the awsconfiguration.json.
                     // Read the AuthMode and validate if the corresponding Auth object is passed in
                     // to the builder
-                    final AuthMode authMode = AuthMode.fromName(appSyncJsonObject.getString("AuthMode"));
+                    final AuthMode authMode = authModeFromConfigJson;
                     if (selectedAuthModeObject == null && authMode.equals(AuthMode.API_KEY)) {
                         mApiKey = new BasicAPIKeyAuthProvider(appSyncJsonObject.getString("ApiKey"));
                         selectedAuthMode = authMode;
@@ -572,6 +586,33 @@ public class AWSAppSyncClient {
                 Log.w(TAG, "A ClientDatabasePrefix is passed in however useClientDatabasePrefix is false.");
                 // Don't use the client database prefix when mUseClientDatabasePrefix flag is not set or set to false.
                 mClientDatabasePrefix = null;
+            }
+
+            // Validate ClientDatabasePrefix only when mUseClientDatabasePrefix is true
+            if (mUseClientDatabasePrefix) {
+                // Validate if the ClientDatabasePrefix passed in follows the pattern
+                if (mClientDatabasePrefix != null) {
+                    final Pattern pattern = Pattern.compile(CLIENT_DATABAE_PREFIX_PATTERN);
+                    final Matcher matcher = pattern.matcher(mClientDatabasePrefix);
+                    if (!matcher.matches()) {
+                        throw new RuntimeException("ClientDatabasePrefix validation failed. " +
+                                "Please pass in characters that matches the pattern: " + CLIENT_DATABAE_PREFIX_PATTERN);
+                    }
+                }
+
+                // Validate if the ClientDatabasePrefix is not used by the same GraphQL endpoint
+                // but different AuthMode.
+                String endpointAndAuthMode = prefixMap.get(mClientDatabasePrefix);
+                if (endpointAndAuthMode != null) {
+                    if (!endpointAndAuthMode.equals(mServerUrl + "_" + selectedAuthMode)) {
+                        throw new RuntimeException("ClientDatabasePrefix validation failed. " +
+                                "The ClientDatabasePrefix " + mClientDatabasePrefix + " is already used by " +
+                                "an other AWSAppSyncClient object with API Server Url: " + mServerUrl +
+                                " with authMode: " + selectedAuthMode);
+                    }
+                } else {
+                    prefixMap.put(mClientDatabasePrefix, mServerUrl + "_" + selectedAuthMode);
+                }
             }
 
             if (mResolver == null) {
@@ -792,7 +833,7 @@ public class AWSAppSyncClient {
      * continue to execute until finished.
      *
      * @deprecated Please use
-     *     #clearCache(ClearCacheOptions.builder().clearMutations().build()) instead.
+     *     #clearCaches(ClearCacheOptions.builder().clearMutations().build()) instead.
      */
     @Deprecated
     public void clearMutationQueue() {
@@ -804,7 +845,7 @@ public class AWSAppSyncClient {
      * that stores the lastSyncTime of the sync queries.
      *
      * If there are only on-going delta sync operations, it is recommended to cancel those
-     * operations before calling clearCache.
+     * operations before calling clearCaches.
      */
     private void clearDeltaSyncStore() {
         Log.d(TAG, "Clearing the delta sync store.");
@@ -825,10 +866,10 @@ public class AWSAppSyncClient {
      * 2) Mutation Queue - offline persistent mutations
      * 3) Delta Sync Metadata Cache - Subscriptions Metadata
      *      If there are only on-going delta sync operations, it is recommended to cancel those
-     *      operations before calling clearCache.
+     *      operations before calling clearCaches.
      */
-    public void clearCache() throws AWSAppSyncClientException {
-        clearCache(ClearCacheOptions.builder()
+    public void clearCaches() throws AWSAppSyncClientException {
+        clearCaches(ClearCacheOptions.builder()
                 .clearQueries()
                 .clearMutations()
                 .clearSubscriptions()
@@ -843,9 +884,9 @@ public class AWSAppSyncClient {
      * 2) ClearCacheOptions#clearMutations - Mutation Queue - offline persistent mutations
      * 3) ClearCacheOptions#clearSubscriptions - Delta Sync Metadata Cache - Subscriptions Metadata
      *      If there are only on-going delta sync operations, it is recommended to cancel those
-     *      operations before calling clearCache.
+     *      operations before calling clearCaches.
      */
-    public void clearCache(ClearCacheOptions clearCacheOptions) throws AWSAppSyncClientException {
+    public void clearCaches(ClearCacheOptions clearCacheOptions) throws AWSAppSyncClientException {
         try {
             if (clearCacheOptions.isQueries()) {
                 Log.d(TAG, "Clearing the query cache.");
