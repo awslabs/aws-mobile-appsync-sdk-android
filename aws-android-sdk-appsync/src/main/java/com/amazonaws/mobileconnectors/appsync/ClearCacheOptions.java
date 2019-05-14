@@ -9,7 +9,7 @@ package com.amazonaws.mobileconnectors.appsync;
 
 /**
  * Options object that indicates what client databases (caches)
- * to clear when passed in to AWSAppSyncClient#clearCache(ClearCacheOptions).
+ * to clear when passed in to AWSAppSyncClient#clearCaches(ClearCacheOptions).
  */
 public class ClearCacheOptions {
     private boolean queries;

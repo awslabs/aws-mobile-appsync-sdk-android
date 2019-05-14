@@ -53,15 +53,18 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
     private String articleID = null;
 
     private static AppSyncTestSetupHelper appSyncTestSetupHelper;
+    private static AWSAppSyncClient awsAppSyncClient;
+    private static AWSAppSyncClient iamAWSAppSyncClient;
 
     @BeforeClass
     public static void setUpBeforeClass() {
         appSyncTestSetupHelper = new AppSyncTestSetupHelper();
+        awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        iamAWSAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
     }
 
     @Test
     public void testAddUpdateComplexObject() {
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
         final CountDownLatch addCountDownLatch = new CountDownLatch(1);
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
@@ -193,8 +196,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
     @Test
     public void testAddUpdateComplexObjectWithWrongAuthMode() {
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
-        assertNotNull(awsAppSyncClient);
+        assertNotNull(iamAWSAppSyncClient);
         final CountDownLatch addCountDownLatch = new CountDownLatch(1);
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
 
@@ -231,7 +233,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
         CreateArticleMutation createArticleMutation = CreateArticleMutation.builder().input(createArticleInput).build();
 
-        awsAppSyncClient
+        iamAWSAppSyncClient
                 .mutate(createArticleMutation, expected)
                 .enqueue(new GraphQLCall.Callback<CreateArticleMutation.Data>() {
                     @Override
@@ -286,7 +288,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         ));
         UpdateArticleMutation updateArticleMutation = UpdateArticleMutation.builder().input(updateArticleInput).build();
 
-        awsAppSyncClient
+        iamAWSAppSyncClient
                 .mutate(updateArticleMutation, expectedData)
                 .enqueue(new GraphQLCall.Callback<UpdateArticleMutation.Data>() {
                     @Override
@@ -317,8 +319,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
     @Test
     public void testAddComplexObjectBadBucket( ) {
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
-        assertNotNull(awsAppSyncClient);
+        assertNotNull(iamAWSAppSyncClient);
         final CountDownLatch countDownLatch = new CountDownLatch(1);
 
         String title = "Thick as a brick";
@@ -352,7 +353,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
         CreateArticleMutation createArticleMutation = CreateArticleMutation.builder().input(createArticleInput).build();
 
-        awsAppSyncClient
+        iamAWSAppSyncClient
                 .mutate(createArticleMutation, expected)
                 .enqueue(new GraphQLCall.Callback<CreateArticleMutation.Data>() {
                     @Override
@@ -379,7 +380,6 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
     @Test
     public void testAddUpdateTwoComplexObjects( ) {
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
         final CountDownLatch addCountDownLatch = new CountDownLatch(1);
         final CountDownLatch updateCountDownLatch = new CountDownLatch(1);
@@ -528,7 +528,6 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
     @Test
     public void testAddComplexObjectWithCreateArticle2() {
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
         final CountDownLatch countDownLatch = new CountDownLatch(1);
 
@@ -640,7 +639,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
 
     @Test
     public void testListArticlesWithWrongAuthMode() {
-        final AWSAppSyncClient iamClientForArticles = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        final AWSAppSyncClient iamClientForArticles = iamAWSAppSyncClient;
         assertNotNull(iamClientForArticles);
 
         Response<AllArticlesQuery.Data> allArticlesResponse;

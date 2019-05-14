@@ -35,6 +35,7 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
@@ -49,6 +50,7 @@ import org.json.JSONException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -205,6 +207,149 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         }
     }
 
+    /**
+     * Call sync and get a Base query callback
+     * Call sync and get a Delta query callback
+     * Call clearCaches to clear the delta sync store
+     * Call sync and get a Base query callback
+     */
+    @Test
+    public void testClearDeltaSyncStore() {
+        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        assertNotNull(awsAppSyncClient);
+
+        final CountDownLatch baseQueryLatch = new CountDownLatch(1);
+        Query baseQuery = AllPostsQuery.builder().build();
+        GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                baseQueryLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                fail("BaseQuery failed with an exception");
+                baseQueryLatch.countDown();
+            }
+        };
+
+        final Query deltaQuery = AllPostsQuery.builder().build();
+        GraphQLCall.Callback deltaQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                fail("DeltaQuery failed with an exception");
+            }
+        };
+
+        Cancelable firstSyncHandle = awsAppSyncClient.sync(baseQuery,
+                baseQueryCallback,
+                deltaQuery,
+                deltaQueryCallback,
+                5);
+
+        assertFalse(firstSyncHandle.isCanceled());
+        try {
+            baseQueryLatch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+        final CountDownLatch deltaQueryLatch = new CountDownLatch(1);
+        baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                fail("BaseQuery failed with an exception");
+            }
+        };
+
+        deltaQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                deltaQueryLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                deltaQueryLatch.countDown();
+                fail("DeltaQuery failed with an exception");
+            }
+        };
+
+        Cancelable secondSyncHandle = awsAppSyncClient.sync(baseQuery,
+                baseQueryCallback,
+                deltaQuery,
+                deltaQueryCallback,
+                5);
+
+        assertFalse(secondSyncHandle.isCanceled());
+        try {
+            deltaQueryLatch.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+        secondSyncHandle.cancel();
+        assertTrue(secondSyncHandle.isCanceled());
+
+        firstSyncHandle.cancel();
+        assertTrue(firstSyncHandle.isCanceled());
+
+        try {
+            awsAppSyncClient.clearCaches();
+        } catch (AWSAppSyncClientException e) {
+            e.printStackTrace();
+        }
+
+        final CountDownLatch baseQueryLatchAfterClearCaches = new CountDownLatch(1);
+        baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+                baseQueryLatchAfterClearCaches.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                fail("BaseQuery failed with an exception");
+                baseQueryLatchAfterClearCaches.countDown();
+            }
+        };
+
+        deltaQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                fail("DeltaQuery failed with an exception");
+            }
+        };
+
+        Cancelable baseQueryHandleAfterClearCaches = awsAppSyncClient.sync(baseQuery,
+                baseQueryCallback,
+                deltaQuery,
+                deltaQueryCallback,
+                5);
+
+        assertFalse(baseQueryHandleAfterClearCaches.isCanceled());
+        try {
+            baseQueryLatchAfterClearCaches.await(10, TimeUnit.SECONDS);
+        } catch (InterruptedException iex) {
+            iex.printStackTrace();
+        }
+
+        baseQueryHandleAfterClearCaches.cancel();
+        assertTrue(baseQueryHandleAfterClearCaches.isCanceled());
+    }
+
     @Test
     public void testCache() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
@@ -299,7 +444,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 final AWSAppSyncClient awsAppSyncClient = appSyncClientMap.get(clientName);
                 assertNotNull(awsAppSyncClient);
                 try {
-                    awsAppSyncClient.clearCache();
+                    awsAppSyncClient.clearCaches();
                 } catch (AWSAppSyncClientException e) {
                     fail("Error in clearing the cache." + e);
                 }
@@ -487,15 +632,16 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
 
             try {
-                apiKeyClientForPosts.clearCache();
-                iamClientForPosts.clearCache();
-                amazonCognitoUserPoolsClientForPosts.clearCache();
+                apiKeyClientForPosts.clearCaches();
+                iamClientForPosts.clearCaches();
+                amazonCognitoUserPoolsClientForPosts.clearCaches();
             } catch (AWSAppSyncClientException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    @Suppress
     @Test
     public void testCRUDWithMultipleClientsOfSingleAuthMode() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
@@ -825,7 +971,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertFalse(awsAppSyncClient.isMutationQueueEmpty());
 
         try {
-            awsAppSyncClient.clearCache();
+            awsAppSyncClient.clearCaches();
         } catch (Exception ex) {
             fail("Error in clearing cache.");
         }
@@ -851,7 +997,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         appSyncTestSetupHelper.testCRUD(clients);
 
         try {
-            awsAppSyncClient.clearCache(
+            awsAppSyncClient.clearCaches(
                     ClearCacheOptions.builder()
                             .clearQueries()
                             .clearMutations()
@@ -884,7 +1030,6 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertNotNull(listPostsResponse);
         assertNotNull(listPostsResponse.data());
 
-
         final String title = "Learning to Live ";
         final String author = "Dream Theater @ ";
         final String url = "Dream Theater Station";
@@ -892,7 +1037,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
         //Set Wifi Network offline
         WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
-        assertTrue(wifiManager.setWifiEnabled(false));
+        wifiManager.setWifiEnabled(false);
         appSyncTestSetupHelper.sleep(3000);
 
         //Add a post
@@ -942,7 +1087,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertFalse(awsAppSyncClient.isMutationQueueEmpty());
 
         try {
-            awsAppSyncClient.clearCache(ClearCacheOptions.builder().clearMutations().build());
+            awsAppSyncClient.clearCaches(ClearCacheOptions.builder().clearMutations().build());
         } catch (Exception ex) {
             fail("Error in clearing cache.");
         }
@@ -959,7 +1104,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertNotNull(listPostsResponse.data());
 
         //Set Wifi Network online
-        assertTrue(wifiManager.setWifiEnabled(true));
+        wifiManager.setWifiEnabled(true);
         appSyncTestSetupHelper.sleep(3000);
     }
 
@@ -1196,5 +1341,250 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 awsAppSyncClient,
                 null,
                 clientName);
+    }
+
+    @Test
+    public void testConfigHasInvalidClientDatabasePrefix() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_InvalidClientDatabasePrefix");
+
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .awsConfiguration(awsConfiguration)
+                    .useClientDatabasePrefix(true)
+                    .build();
+        } catch (RuntimeException re) {
+            assertTrue(re.getLocalizedMessage()
+                    .startsWith("ClientDatabasePrefix validation failed. Please pass in characters " +
+                            "that matches the pattern: ^[_a-zA-Z0-9]+$"));
+        }
+    }
+
+    @Test
+    public void testCodeHasInvalidClientDatabasePrefix() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        String apiKey = null;
+        String serverUrl  = null;
+        Regions region = null;
+
+        try {
+            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
+            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
+        } catch (JSONException e) {
+            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
+        }
+
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
+                    .serverUrl(serverUrl)
+                    .region(region)
+                    .useClientDatabasePrefix(true)
+                    .clientDatabasePrefix("MultiAuthAndroidIntegTestApp_!@#$%^&*()")
+                    .build();
+        } catch (RuntimeException re) {
+            assertTrue(re.getLocalizedMessage()
+                    .startsWith("ClientDatabasePrefix validation failed. Please pass in characters " +
+                            "that matches the pattern: ^[_a-zA-Z0-9]+$"));
+        }
+    }
+
+    @Test
+    public void testCodeHasNullClientDatabasePrefix() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        String apiKey = null;
+        String serverUrl  = null;
+        Regions region = null;
+
+        try {
+            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
+            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
+        } catch (JSONException e) {
+            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
+        }
+
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
+                    .serverUrl(serverUrl)
+                    .region(region)
+                    .useClientDatabasePrefix(true)
+                    .clientDatabasePrefix(null)
+                    .build();
+        } catch (RuntimeException re) {
+            assertTrue(re.getLocalizedMessage()
+                    .startsWith("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true."));
+        }
+    }
+
+    @Test
+    public void testCodeHasEmptyClientDatabasePrefix() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        String apiKey = null;
+        String serverUrl  = null;
+        Regions region = null;
+
+        try {
+            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
+            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
+        } catch (JSONException e) {
+            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
+        }
+
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
+                    .serverUrl(serverUrl)
+                    .region(region)
+                    .useClientDatabasePrefix(true)
+                    .clientDatabasePrefix("")
+                    .build();
+        } catch (RuntimeException re) {
+            assertTrue(re.getLocalizedMessage()
+                    .startsWith("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true."));
+        }
+    }
+
+    @Test
+    public void testUseSameClientDatabasePrefixForDifferentAuthModes() {
+        // Construct client-1 with API_KEY AuthMode and MultiAuthAndroidIntegTestApp_API_KEY prefix
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        String apiKey = null;
+        String serverUrl  = null;
+        Regions region = null;
+        String clientDatabasePrefix = null;
+
+        try {
+            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
+            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
+            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
+        } catch (JSONException e) {
+            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
+        }
+
+        AWSAppSyncClient.builder()
+                .context(InstrumentationRegistry.getTargetContext())
+                .apiKey(new BasicAPIKeyAuthProvider(apiKey))
+                .serverUrl(serverUrl)
+                .region(region)
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix(clientDatabasePrefix)
+                .build();
+
+        // Construct client-2 with AWS_IAM AuthMode and same prefix ("MultiAuthAndroidIntegTestApp_API_KEY")
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .cognitoUserPoolsAuthProvider(new CognitoUserPoolsAuthProvider() {
+                        @Override
+                        public String getLatestAuthToken() {
+                            try {
+                                return AWSMobileClient.getInstance().getTokens().getIdToken().toString();
+                            } catch (Exception ex) {
+                                return null;
+                            }
+                        }
+                    })
+                    .useClientDatabasePrefix(true)
+                    .clientDatabasePrefix(clientDatabasePrefix)
+                    .build();
+        } catch (RuntimeException ex) {
+            assertTrue(ex.getLocalizedMessage()
+                    .startsWith("ClientDatabasePrefix validation failed. " +
+                            "The ClientDatabasePrefix "));
+        }
+    }
+
+    /**
+     * Mutation through IAM client has a delay of 15 seconds in fetching the credentials
+     * Mutation through API_KEY client has no delay
+     * Assert that Mutation through API_KEY should have finished first
+     */
+    @Test
+    public void testMultiClientMutation() {
+        AWSAppSyncClient iamClientWithDelay = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(false, 15 * 1000);
+        AWSAppSyncClient apiKeyClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+
+        final Map<String, Long> resultMap = new HashMap<>();
+
+        //Add a post
+        final String title = "Learning to Live ";
+        final String author = "Dream Theater @ ";
+        final String url = "Dream Theater Station";
+        final String content = "No energy for anger @" + System.currentTimeMillis();
+
+        final CountDownLatch mCountDownLatch = new CountDownLatch(2);
+        AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
+                "Post",
+                "",
+                "",
+                "",
+                "",
+                "",
+                null,
+                null,
+                0
+        ));
+
+        CreatePostInput createPostInput = CreatePostInput.builder()
+                .title(title)
+                .author(author)
+                .url(url)
+                .content(content)
+                .ups(new Integer(1))
+                .downs(new Integer(0))
+                .build();
+
+        AddPostMutation addPostMutation = AddPostMutation.builder().input(createPostInput).build();
+        AppSyncMutationCall call = iamClientWithDelay.mutate(addPostMutation, expected);
+        call.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
+                resultMap.put("AWS_IAM", System.currentTimeMillis());
+                mCountDownLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull final ApolloException e) {
+                mCountDownLatch.countDown();
+            }
+        });
+
+        AppSyncMutationCall callWithAPiKeyClient = apiKeyClient.mutate(addPostMutation, expected);
+        callWithAPiKeyClient.enqueue(new GraphQLCall.Callback<AddPostMutation.Data>() {
+            @Override
+            public void onResponse(@Nonnull final Response<AddPostMutation.Data> response) {
+                resultMap.put("API_KEY", System.currentTimeMillis());
+                mCountDownLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(@Nonnull final ApolloException e) {
+                mCountDownLatch.countDown();
+            }
+        });
+
+        try {
+            mCountDownLatch.await(60, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        assertTrue(resultMap.size() >= 2);
+        assertNotNull(resultMap.get("AWS_IAM"));
+        assertNotNull(resultMap.get("API_KEY"));
+        assertTrue(resultMap.get("AWS_IAM") > resultMap.get("API_KEY"));
     }
 }
