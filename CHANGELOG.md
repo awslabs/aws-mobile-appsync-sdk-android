@@ -44,6 +44,9 @@ Subscriptions metadata for Delta Sync | `appsync_deltasync_db` | `<ClientDatabas
 	                    .build();
       ```
 
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.13.4` instead of `2.13.2`.
+
 ## [Release 2.8.3](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.3)
 
 ### Bug Fixes
