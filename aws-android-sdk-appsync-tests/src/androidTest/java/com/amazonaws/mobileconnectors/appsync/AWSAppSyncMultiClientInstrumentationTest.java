@@ -1587,4 +1587,81 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertNotNull(resultMap.get("API_KEY"));
         assertTrue(resultMap.get("AWS_IAM") > resultMap.get("API_KEY"));
     }
+
+    @Test
+    public void testNoContextThrowsException() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        String apiKey = null;
+        String serverUrl  = null;
+        Regions region = null;
+        String clientDatabasePrefix = null;
+
+        try {
+            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
+            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
+            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
+        } catch (JSONException e) {
+            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
+        }
+
+        try {
+            AWSAppSyncClient.builder()
+                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
+                    .serverUrl(serverUrl)
+                    .region(region)
+                    .useClientDatabasePrefix(true)
+                    .clientDatabasePrefix(clientDatabasePrefix)
+                    .build();
+        } catch (Exception ex) {
+            assertTrue(ex.getLocalizedMessage().startsWith("A valid Android Context is required."));
+        }
+    }
+
+    @Test
+    public void testNoAuthModeObjectThrowsExceptionViaCode() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        String apiKey = null;
+        String serverUrl  = null;
+        Regions region = null;
+        String clientDatabasePrefix = null;
+
+        try {
+            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
+            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
+            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
+        } catch (JSONException e) {
+            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
+        }
+
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .serverUrl(serverUrl)
+                    .region(region)
+                    .useClientDatabasePrefix(true)
+                    .clientDatabasePrefix(clientDatabasePrefix)
+                    .build();
+        } catch (Exception ex) {
+            assertTrue(ex.getLocalizedMessage().startsWith("No valid AuthMode object is passed in to the builder."));
+        }
+    }
+
+    @Test
+    public void testNoAuthModeObjectThrowsExceptionViaAWSConfiguration() {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+
+        try {
+            AWSAppSyncClient.builder()
+                    .context(InstrumentationRegistry.getTargetContext())
+                    .awsConfiguration(awsConfiguration)
+                    .useClientDatabasePrefix(true)
+                    .build();
+        } catch (Exception ex) {
+            assertTrue(ex.getLocalizedMessage().startsWith("No valid AuthMode object is passed in to the builder."));
+        }
+    }
 }
