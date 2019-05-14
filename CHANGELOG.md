@@ -1,6 +1,6 @@
 # Change Log - AWS AppSync SDK for Android
 
-## [Release 2.8.4](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.4)
+## [Release 2.9.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.9.0)
 
 ## New Features
 * Support multiple authorization modes for a single AWS AppSync GraphQL endpoint.

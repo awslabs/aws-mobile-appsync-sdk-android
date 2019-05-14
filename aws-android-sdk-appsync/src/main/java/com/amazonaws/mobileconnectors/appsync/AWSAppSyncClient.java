@@ -832,8 +832,9 @@ public class AWSAppSyncClient {
      * Clear the mutation queue. A Mutation that is currently in progress will
      * continue to execute until finished.
      *
-     * @deprecated Please use
-     *     #clearCaches(ClearCacheOptions.builder().clearMutations().build()) instead.
+     * @deprecated Since 2.9.0. This method will be removed in the next minor version.
+     *     Please use #clearCaches(ClearCacheOptions.builder()
+     *          .clearMutations().build()) instead.
      */
     @Deprecated
     public void clearMutationQueue() {
@@ -844,8 +845,7 @@ public class AWSAppSyncClient {
      * Clear the store created for Delta Sync. This method deletes all the records
      * that stores the lastSyncTime of the sync queries.
      *
-     * If there are only on-going delta sync operations, it is recommended to cancel those
-     * operations before calling clearCaches.
+     * If there are only on-going delta sync operations, they won't be impacted.
      */
     private void clearDeltaSyncStore() {
         Log.d(TAG, "Clearing the delta sync store.");
@@ -865,10 +865,9 @@ public class AWSAppSyncClient {
      * 1) Query Cache - query responses
      * 2) Mutation Queue - offline persistent mutations
      * 3) Delta Sync Metadata Cache - Subscriptions Metadata
-     *      If there are only on-going delta sync operations, it is recommended to cancel those
-     *      operations before calling clearCaches.
+     *      If there are only on-going delta sync operations, they won't be impacted.
      */
-    public void clearCaches() throws AWSAppSyncClientException {
+    public void clearCaches() throws ClearCacheException {
         clearCaches(ClearCacheOptions.builder()
                 .clearQueries()
                 .clearMutations()
@@ -886,24 +885,38 @@ public class AWSAppSyncClient {
      *      If there are only on-going delta sync operations, it is recommended to cancel those
      *      operations before calling clearCaches.
      */
-    public void clearCaches(ClearCacheOptions clearCacheOptions) throws AWSAppSyncClientException {
+    public void clearCaches(ClearCacheOptions clearCacheOptions) throws ClearCacheException {
+        ClearCacheException clearCacheException = new ClearCacheException("Error in clearing the cache(s).");
+
         try {
             if (clearCacheOptions.isQueries()) {
                 Log.d(TAG, "Clearing the query cache.");
                 mSyncStore.clearAll().execute();
             }
+        } catch (Exception ex) {
+            clearCacheException.addException(ex);
+        }
 
+        try {
             if (clearCacheOptions.isMutations()) {
                 Log.d(TAG, "Clearing the mutations queue.");
                 clearMutationQueue();
             }
+        } catch (Exception ex) {
+            clearCacheException.addException(ex);
+        }
 
+        try {
             if (clearCacheOptions.isSubscriptions()) {
                 Log.d(TAG, "Clearing the delta sync subscriptions metadata cache.");
                 clearDeltaSyncStore();
             }
         } catch (Exception ex) {
-            throw new AWSAppSyncClientException("Error in clearing the cache.", ex);
+            clearCacheException.addException(ex);
+        }
+
+        if (clearCacheException.getExceptions() != null) {
+            throw clearCacheException;
         }
     }
 }
