@@ -5,13 +5,15 @@
 ## New Features
 * Support multiple authorization modes for a single AWS AppSync GraphQL endpoint.
 * Introduced `clientDatabasePrefix(String)` that accepts a prefix that will be used in the construction of database name for caching query responses, offline mutations and subscriptions metadata. The usage of the prefix can be enabled by the flag `useClientDatabasePrefix(true)`. When the prefix is used, the name of the database would look as follows:
+
 Purpose of cache | No prefix | Valid prefix
 --- | --- | ---
 Query responses | `appsyncstore` | `<ClientDatabasePrefix>_appsyncstore`
 Offline Mutations | `appsyncstore_mutation` | `<ClientDatabasePrefix>_appsyncstore_mutation`
 Subscriptions metadata for Delta Sync | `appsync_deltasync_db` | `<ClientDatabasePrefix>_appsync_deltasync_db`
 
-    * The `ClientDatabasePrefix` can be passed via `awsconfiguration.json` that is generated from the AWS AppSync Console and Amplify CLI.
+  * The `ClientDatabasePrefix` can be passed via `awsconfiguration.json` that is generated from the AWS AppSync Console and Amplify CLI.
+
       ```
 	     "AppSync": {
 		    "Default": {
@@ -32,7 +34,7 @@ Subscriptions metadata for Delta Sync | `appsync_deltasync_db` | `<ClientDatabas
 	                .build();
      ```
     
-    * Alternatively, the `ClientDatabasePrefix` can be passed via the `AWSAppSyncClient.Builder`.
+  * Alternatively, the `ClientDatabasePrefix` can be passed via the `AWSAppSyncClient.Builder`.
       ```java
 	     AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
 	                    .context(getApplicationContext())
