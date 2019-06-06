@@ -33,6 +33,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import okio.Buffer;
@@ -111,19 +112,9 @@ class AppSyncOfflineMutationManager {
         inMemoryOfflineMutationManager.addMutationObjectInQueue(mutationObject);
         Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]:  Added mutation[" + mutationObject.recordIdentifier + "] to inMemory Queue"  );
 
-        S3InputObjectInterface s3InputObjectInterface = S3ObjectManagerImplementation.getS3ComplexObject(mutationObject.request.operation.variables().valueMap());
-        if (s3InputObjectInterface == null) {
-            persistentOfflineMutationManager.addPersistentMutationObject(
-                    new PersistentOfflineMutationObject(
-                            mutationObject.recordIdentifier,
-                            httpRequestBody(mutationObject.request.operation),
-                            mutationObject.request.operation.getClass().getSimpleName(),
-                            getClientStateFromMutation((Mutation) mutationObject.request.operation))
-            );
-            Log.v(TAG,"Thread:[" + Thread.currentThread().getId() +"]: Added mutation[" + mutationObject.recordIdentifier + "] to Persistent Queue. No S3 Objects found"  );
-
-        }
-        else {
+        List<S3InputObjectInterface> s3InputObjectInterfaces = S3ObjectManagerImplementation.getS3ComplexObjects(mutationObject.request.operation.variables().valueMap());
+        for (S3InputObjectInterface s3InputObjectInterface :
+                s3InputObjectInterfaces) {
             persistentOfflineMutationManager.addPersistentMutationObject(
                     new PersistentOfflineMutationObject(
                             mutationObject.recordIdentifier,
