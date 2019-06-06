@@ -7,6 +7,7 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.amazonaws.AmazonClientException;
@@ -20,6 +21,8 @@ import com.apollographql.apollo.api.S3ObjectManager;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,8 +58,10 @@ public class S3ObjectManagerImplementation implements S3ObjectManager {
     }
 
     //Look for S3InputObjects in the input
-    static final S3InputObjectInterface getS3ComplexObject(Map<String, Object> variablesMap ) {
-        for(String key: variablesMap.keySet()) {
+    @NonNull
+    static List<S3InputObjectInterface> getS3ComplexObjects(Map<String, Object> variablesMap) {
+        List<S3InputObjectInterface> s3Objects = new ArrayList<>();
+        for (String key : variablesMap.keySet()) {
             Object obj = variablesMap.get(key);
             if (obj == null) {
                 continue;
@@ -65,24 +70,29 @@ public class S3ObjectManagerImplementation implements S3ObjectManager {
                     obj.getClass().getSimpleName() + "]");
             //Check if the object is itself a S3ObjectInterface
             if (implementsS3InputObjectInterface(obj.getClass()) ) {
-                return (S3InputObjectInterface) variablesMap.get(key);
+                s3Objects.add((S3InputObjectInterface) variablesMap.get(key));
             }
             //If it is a map, recurse into it
-            else if (obj instanceof Map ) {
-                return getS3ComplexObject((Map<String, Object>) variablesMap.get(key));
-            }
-            else {
-                for (Method method: obj.getClass().getMethods()) {
+            else if (obj instanceof Map) {
+                try {
+                    Map<String, Object> variablesHashMap = (Map<String, Object>) obj;
+                    List<S3InputObjectInterface> s3ObjectList = getS3ComplexObjects(variablesHashMap);
+                    s3Objects.addAll(s3ObjectList);
+                } catch (ClassCastException e) {
+                    Log.e(TAG, "Class cast exception " + e.getLocalizedMessage());
+                }
+            } else {
+                for (Method method : obj.getClass().getMethods()) {
                     if (implementsS3InputObjectInterface(method.getReturnType())) {
                         Log.v(TAG, "Method [" + method.getName() + " implements S3InputObjectInterface");
                         try {
                             S3InputObjectInterface s3Object = (S3InputObjectInterface) method.invoke(obj);
                             if (s3Object != null ) {
-                                return s3Object;
+                                s3Objects.add(s3Object);
                             }
                         }
                         catch (Exception e ) {
-                            continue;
+                            Log.e(TAG, "There was an exception " + e.getLocalizedMessage());
                         }
                     }
 
@@ -90,7 +100,7 @@ public class S3ObjectManagerImplementation implements S3ObjectManager {
 
             }
         }
-        return null;
+        return s3Objects;
     }
 
 
