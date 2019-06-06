@@ -19,6 +19,7 @@ import com.apollographql.apollo.interceptor.ApolloInterceptor;
 import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
@@ -40,43 +41,41 @@ public class AppSyncComplexObjectsInterceptor implements ApolloInterceptor {
     @Override
     public void interceptAsync(@Nonnull final InterceptorRequest request, @Nonnull final ApolloInterceptorChain chain, @Nonnull final Executor dispatcher, @Nonnull final CallBack callBack) {
 
-        if (! (request.operation instanceof Mutation)) {
+        if (!(request.operation instanceof Mutation)) {
             chain.proceedAsync(request, dispatcher, callBack);
             return;
         }
 
-        S3InputObjectInterface s3Object = S3ObjectManagerImplementation.getS3ComplexObject(request.operation.variables().valueMap());
-        if (s3Object == null ) {
-            Log.v(TAG, "Thread:[" + Thread.currentThread().getId() +"]: No s3 Objects found. Proceeding with the chain");
-            chain.proceedAsync(request, dispatcher, callBack);
-            return;
-        }
+        List<S3InputObjectInterface> s3Objects = S3ObjectManagerImplementation.getS3ComplexObjects(request.operation.variables().valueMap());
 
-        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() +"]: Found S3Object. Performing upload");
-        if (s3ObjectManager == null ) {
+        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Found S3Objects. Performing upload");
+        if (s3ObjectManager == null) {
             callBack.onFailure(new ApolloException("S3 Object Manager not setup"));
             return;
         }
 
         try {
-            s3ObjectManager.upload(s3Object);
-        }
-        catch(AmazonClientException e ) {
-            if (e.getCause() instanceof IOException ) {
+            for (S3InputObjectInterface s3Object :
+                    s3Objects) {
+                Log.d(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Uploading " + s3Object.localUri());
+                s3ObjectManager.upload(s3Object);
+            }
+        } catch (AmazonClientException e) {
+            if (e.getCause() instanceof IOException) {
                 Log.v(TAG, "Exception " + e);
                 callBack.onFailure(new ApolloNetworkException("S3 upload failed.", e.getCause()));
                 return;
             }
             callBack.onFailure(new ApolloException("S3 upload failed.", e.getCause()));
             return;
-        }
-        catch (Exception e ) {
+        } catch (Exception e) {
             callBack.onFailure(new ApolloException("S3 upload failed.", e.getCause()));
             return;
         }
 
         chain.proceedAsync(request, dispatcher, callBack);
     }
+
 
     @Override
     public void dispose() {
