@@ -360,7 +360,7 @@ public class AWSAppSyncClient {
             return this;
         }
 
-        public Builder context(Context context) {
+        public Builder context(@Nonnull Context context) {
             mContext = context;
             return this;
         }
@@ -504,6 +504,11 @@ public class AWSAppSyncClient {
          * @return AWSAppSyncClient object built from AWSAppSyncClient.Builder
          */
         public AWSAppSyncClient build() {
+            // Validate context
+            if (mContext == null) {
+                throw new RuntimeException("A valid Android Context is required.");
+            }
+
             // Validate AuthMode
             Map<Object, AuthMode> authModeObjects = new HashMap<>();
             authModeObjects.put(mApiKey, AuthMode.API_KEY);
@@ -564,6 +569,7 @@ public class AWSAppSyncClient {
                     final AuthMode authMode = authModeFromConfigJson;
                     if (selectedAuthModeObject == null && authMode.equals(AuthMode.API_KEY)) {
                         mApiKey = new BasicAPIKeyAuthProvider(appSyncJsonObject.getString("ApiKey"));
+                        authModeObjects.put(mApiKey, AuthMode.API_KEY);
                         selectedAuthMode = authMode;
                     }
 
@@ -576,6 +582,11 @@ public class AWSAppSyncClient {
                     throw new RuntimeException("Please check the AppSync configuration in " +
                             "awsconfiguration.json.", exception);
                 }
+            }
+
+            // Validate for the presence of one AuthMode object
+            if (authModeObjects.size() == 0) {
+                throw new RuntimeException("No valid AuthMode object is passed in to the builder.");
             }
 
             if (mUseClientDatabasePrefix && (mClientDatabasePrefix == null || StringUtils.isBlank(mClientDatabasePrefix))) {
