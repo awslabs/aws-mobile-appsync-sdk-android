@@ -1,6 +1,6 @@
 # Change Log - AWS AppSync SDK for Android
 
-## [Release 2.9.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.9.1)
+## [Release 2.10.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.10.0)
 
 ## Enhancements
 * Add new validations in `AWSAppSyncClient.Builder`.
