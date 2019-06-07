@@ -7,6 +7,9 @@
   * Throw `RuntimeException` when Android context passed in is null.
   * Throw `RuntimException` when there is no valid `AuthMode` object passed in.
 
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.13.5` instead of `2.13.4`.
+
 ## [Release 2.9.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.9.0)
 
 ## New Features
