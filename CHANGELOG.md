@@ -1,5 +1,70 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.10.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.10.0)
+
+## Enhancements
+* Add new validations in `AWSAppSyncClient.Builder`.
+  * Throw `RuntimeException` when Android context passed in is null.
+  * Throw `RuntimException` when there is no valid `AuthMode` object passed in.
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.13.5` instead of `2.13.4`.
+
+## [Release 2.9.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.9.0)
+
+## New Features
+* Support multiple authorization modes for a single AWS AppSync GraphQL endpoint.
+* Introduced `clientDatabasePrefix(String)` that accepts a prefix that will be used in the construction of database name for caching query responses, offline mutations and subscriptions metadata. The usage of the prefix can be enabled by the flag `useClientDatabasePrefix(true)`. When the prefix is used, the name of the database would look as follows:
+
+Purpose of cache | No prefix | Valid prefix
+--- | --- | ---
+Query responses | `appsyncstore` | `<ClientDatabasePrefix>_appsyncstore`
+Offline Mutations | `appsyncstore_mutation` | `<ClientDatabasePrefix>_appsyncstore_mutation`
+Subscriptions metadata for Delta Sync | `appsync_deltasync_db` | `<ClientDatabasePrefix>_appsync_deltasync_db`
+
+  * The `ClientDatabasePrefix` can be passed via `awsconfiguration.json` that is generated from the AWS AppSync Console and Amplify CLI.
+
+      ```
+	     "AppSync": {
+		    "Default": {
+		      "ApiUrl": "https://xyz.appsync-api.us-east-2.amazonaws.com/graphql",
+		      "Region": "us-east-2",
+		      "AuthMode": "API_KEY",
+		      "ApiKey": "da2-xyz",
+		      "ClientDatabasePrefix": "MyAppSyncAPIName_API_KEY"
+		    }
+		  }
+	   ```
+	  
+	  The `AWSAppSyncClient` object can be constructed as follows:
+	  ```java
+		  AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+	                .awsConfiguration(awsConfiguration)
+	                .useClientDatabasePrefix(true)
+	                .build();
+     ```
+    
+  * Alternatively, the `ClientDatabasePrefix` can be passed via the `AWSAppSyncClient.Builder`.
+      ```java
+	     AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+	                    .context(getApplicationContext())
+	                    .apiKey(new BasicAPIKeyAuthProvider("da2-apiKey"))
+	                    .serverUrl(serverUrl)
+	                    .region(region)
+	                    .useClientDatabasePrefix(true)
+	                    .clientDatabasePrefix("MyAppSyncAPIName_API_KEY")
+	                    .build();
+      ```
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.13.4` instead of `2.13.2`.
+
+## [Release 2.8.3](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.3)
+
+### Bug Fixes
+* Fixed a bug with inconsistent capitalization of class names in generated code that represent GraphQL input types. See [PR #150](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/150) for details.
+* Fixed a bug with inconsistent capitalization of variables in generated code that represent fields for GraphQL types. See [PR #172](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/172) for details.
+
 ## [Release 2.8.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.8.2)
 
 ### Enhancements

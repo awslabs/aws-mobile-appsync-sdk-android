@@ -112,18 +112,19 @@ class AWSAppSyncDeltaSync {
     private void initializeIfRequired() {
         synchronized(initializationLock) {
             Log.d(TAG, "In initialize method");
-            if (awsAppSyncDeltaSyncSqlHelper == null ) {
+            if (awsAppSyncDeltaSyncSqlHelper == null) {
                 //Setup up the local store
                 Log.d(TAG, "Initializing the database");
-                awsAppSyncDeltaSyncSqlHelper = AWSAppSyncDeltaSyncSqlHelper.create(mContext);
+
+                awsAppSyncDeltaSyncSqlHelper = new AWSAppSyncDeltaSyncSqlHelper(mContext,
+                        awsAppSyncClient.deltaSyncSqlStoreName);
             }
 
-            if( dbHelper == null ) {
+            if (dbHelper == null ) {
                 dbHelper = new AWSAppSyncDeltaSyncDBOperations(awsAppSyncDeltaSyncSqlHelper);
             }
 
             if (!recordCreatedOrFound) {
-
                 AWSAppSyncDeltaSyncDBOperations.DeltaSyncRecord record;
                 if ((record = dbHelper.getRecordByKey(getKey())) == null ) {
                     this.id = dbHelper.createRecord(getKey(), lastRunTimeInMilliSeconds);
@@ -207,7 +208,7 @@ class AWSAppSyncDeltaSync {
 
                 //Check if we need to execute the DeltaQuery or BaseQuery from the network.
                 boolean executeBaseQuery = true;
-                if ( !forceFetch && deltaQuery != null) {
+                if (!forceFetch && deltaQuery != null) {
                     //Check if
                     long deltaInSeconds = (System.currentTimeMillis() - (lastRunTimeInMilliSeconds - 2000)) / 1000;
                     Log.v(TAG, "Delta Sync: Time since last sync [" + deltaInSeconds + "] seconds");
@@ -218,15 +219,13 @@ class AWSAppSyncDeltaSync {
                     else {
                         Log.v(TAG, "The last baseQuery from NETWORK run was before [" + baseRefreshIntervalInSeconds + "] seconds. Will run BaseQuery from network");
                     }
-                }
-                else {
+                } else {
                     Log.v(TAG, "Will run BaseQuery from network");
                 }
 
                 if (executeBaseQuery) {
                     runBaseQuery(AppSyncResponseFetchers.NETWORK_ONLY);
-                }
-                else {
+                } else {
                     runDeltaQuery();
                 }
 
@@ -352,7 +351,7 @@ class AWSAppSyncDeltaSync {
        it will cancel any previously scheduled run and will setup a new one to be executed
        after periodicRefreshIntervalInSeconds
      */
-    private void scheduleFutureSync( long offset) {
+    private void scheduleFutureSync(long offset) {
         //Calculate the offset
         if (baseRefreshIntervalInSeconds <= 0 ) {
             Log.i(TAG, "Delta Sync: baseRefreshIntervalInSeconds value is [" + baseRefreshIntervalInSeconds + "]. Will not schedule future Deltasync");
@@ -376,8 +375,7 @@ class AWSAppSyncDeltaSync {
         }, runAtTime, TimeUnit.SECONDS);
     }
 
-    private void scheduleRetry( )
-    {
+    private void scheduleRetry() {
         long runAtTime = RetryInterceptor.calculateBackoff(retryAttempt);
         Log.v(TAG, "Delta Sync: Scheduling retry of the DeltaSync [" + runAtTime + "] milliseconds from now");
 
@@ -489,7 +487,7 @@ class AWSAppSyncDeltaSync {
 
     }
 
-    void subscribe( ) {
+    void subscribe() {
         Log.v(TAG, "Delta Sync: Subscription was passed in. Setting it up");
         //Setup an internal callback for the handoff
         Log.v(TAG, "Delta Sync: Setting mode to QUEUING");

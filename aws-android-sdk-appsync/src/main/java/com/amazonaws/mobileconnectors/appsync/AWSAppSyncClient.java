@@ -9,6 +9,7 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
@@ -25,6 +26,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.util.BinaryUtils;
+import com.amazonaws.util.StringUtils;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.CustomTypeAdapter;
 import com.apollographql.apollo.GraphQLCall;
@@ -53,7 +55,10 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 
@@ -61,7 +66,23 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 
 public class AWSAppSyncClient {
-    private static final String defaultSqlStoreName = "appsyncstore";
+    /** Name of the default client database (Query Cache) that stores the query responses. */
+    static final String DEFAULT_QUERY_SQL_STORE_NAME = "appsyncstore";
+
+    /** Name of the default client database (Mutation Queue) that stores the persistent mutations. */
+    static final String DEFAULT_MUTATION_SQL_STORE_NAME = "appsyncstore_mutation";
+
+    /** Name of the client database (Subscriptions Metadata) that stores the LastSyncTime used by Delta Sync. */
+    static final String DEFAULT_DELTA_SYNC_SQL_STORE_NAME = "appsync_deltasync_db";
+
+    /** Delimiter that is used in the client database (cache) names. */
+    static final String DATABASE_NAME_DELIMITER = "_";
+
+    /** Pattern to validate the ClientDatabasePrefix. */
+    static final String CLIENT_DATABAE_PREFIX_PATTERN = "^[_a-zA-Z0-9]+$";
+
+    /** A map of ClientDatabasePrefix -> AuthMode_GraphQLEndpoint */
+    static Map<String, String> prefixMap = new ConcurrentHashMap<String, String>();
 
     private static final String TAG = AWSAppSyncClient.class.getSimpleName();
 
@@ -73,6 +94,11 @@ public class AWSAppSyncClient {
     //Map that houses retried mutations.
     private Map<Mutation, MutationInformation> mutationsToRetryAfterConflictResolution;
     private AppSyncOfflineMutationManager mAppSyncOfflineMutationManager = null;
+
+    String querySqlStoreName = DEFAULT_QUERY_SQL_STORE_NAME;
+    String mutationSqlStoreName = DEFAULT_MUTATION_SQL_STORE_NAME;
+    String deltaSyncSqlStoreName = DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
+    String clientDatabasePrefix;
 
     private enum AuthMode {
         API_KEY("API_KEY"),
@@ -116,6 +142,12 @@ public class AWSAppSyncClient {
 
     private AWSAppSyncClient(AWSAppSyncClient.Builder builder) {
         applicationContext = builder.mContext.getApplicationContext();
+        if (builder.mClientDatabasePrefix != null) {
+            clientDatabasePrefix = builder.mClientDatabasePrefix;
+            querySqlStoreName = clientDatabasePrefix + DATABASE_NAME_DELIMITER + DEFAULT_QUERY_SQL_STORE_NAME;
+            mutationSqlStoreName = clientDatabasePrefix + DATABASE_NAME_DELIMITER + DEFAULT_MUTATION_SQL_STORE_NAME;
+            deltaSyncSqlStoreName = clientDatabasePrefix + DATABASE_NAME_DELIMITER + DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
+        }
 
         //Create the Signer interceptor. The notion of "Signer" is overloaded here as apart
         //from the SigV4 signer, the other signers add request headers and don't sign the request per se
@@ -147,7 +179,14 @@ public class AWSAppSyncClient {
                 .build();
 
         //Setup up the local store
-        AppSyncMutationsSqlHelper mutationsSqlHelper = AppSyncMutationsSqlHelper.create(builder.mContext);
+        if (builder.mNormalizedCacheFactory == null) {
+            AppSyncSqlHelper appSyncSqlHelper = AppSyncSqlHelper.create(applicationContext, querySqlStoreName);
+
+            //Create NormalizedCacheFactory
+            builder.mNormalizedCacheFactory = new SqlNormalizedCacheFactory(appSyncSqlHelper);
+        }
+
+        AppSyncMutationsSqlHelper mutationsSqlHelper = new AppSyncMutationsSqlHelper(builder.mContext, mutationSqlStoreName);
         AppSyncMutationSqlCacheOperations sqlCacheOperations = new AppSyncMutationSqlCacheOperations(mutationsSqlHelper);
         mutationsToRetryAfterConflictResolution = new HashMap<>();
 
@@ -167,7 +206,7 @@ public class AWSAppSyncClient {
                 sqlCacheOperations,
                 networkInvoker);
 
-                //Create the Apollo Client and setup the interceptor chain.
+        //Create the Apollo Client and setup the interceptor chain.
         ApolloClient.Builder clientBuilder = ApolloClient.builder()
                 .serverUrl(builder.mServerUrl)
                 .normalizedCache(builder.mNormalizedCacheFactory, builder.mResolver)
@@ -201,7 +240,9 @@ public class AWSAppSyncClient {
         }
 
         //Add Subscription manager
-        RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(builder.mContext.getApplicationContext(), builder.mSubscriptionsAutoReconnect);
+        RealSubscriptionManager subscriptionManager = new RealSubscriptionManager(
+                builder.mContext.getApplicationContext(),
+                builder.mSubscriptionsAutoReconnect);
         clientBuilder.subscriptionManager(subscriptionManager);
 
         //Build the Apollo Client
@@ -219,7 +260,7 @@ public class AWSAppSyncClient {
     }
 
     /**
-     * Returns the Client Subscription UUID associated with the APIKEY. Creates a new UUID if required.
+     * Returns the Client Subscription UUID associated with the API_KEY. Creates a new UUID if required.
      *
      * @param apiKey The apiKey
      * @return The client subscription UUID.
@@ -275,8 +316,17 @@ public class AWSAppSyncClient {
         PersistentMutationsCallback mPersistentMutationsCallback;
 
         // Android
+        // Android application context
         Context mContext;
+
+        // Used for complex objects - upload and download
         S3ObjectManager mS3ObjectManager;
+
+        // This will be the prefix of the client databases (caches) - Query, Mutations and Subscriptions
+        String mClientDatabasePrefix;
+
+        // Flag when true uses the prefix passed through the .clientDatabasePrefix(String) builder
+        boolean mUseClientDatabasePrefix;
 
         private Builder() { }
 
@@ -310,7 +360,7 @@ public class AWSAppSyncClient {
             return this;
         }
 
-        public Builder context(Context context) {
+        public Builder context(@Nonnull Context context) {
             mContext = context;
             return this;
         }
@@ -416,25 +466,79 @@ public class AWSAppSyncClient {
          * Default value is 5 minutes. Note that this limit is for execution time - the mutation can wait in the queue for its turn to
          * be processed independent of this limit.
          * @param mutationQueueExecutionTimeout the max execution time allowed.
-         * @return
+         *
+         * @return the builder object
          */
         public Builder mutationQueueExecutionTimeout(long mutationQueueExecutionTimeout) {
             mMutationQueueExecutionTimeout = mutationQueueExecutionTimeout;
             return this;
         }
 
-        public AWSAppSyncClient build() {
-            if (mNormalizedCacheFactory == null) {
-                AppSyncSqlHelper appSyncSqlHelper = AppSyncSqlHelper.create(mContext, defaultSqlStoreName);
+        /**
+         * Flag if true will use the ClientDatabasePrefix passed in through the
+         * awsconfiguration.json or from the #clientDatabasePrefix builder.
+         *
+         * @param useClientDatabasePrefix use a prefix for the client databases.
+         * @return the builder object.
+         */
+        public Builder useClientDatabasePrefix(@NonNull boolean useClientDatabasePrefix) {
+            mUseClientDatabasePrefix = useClientDatabasePrefix;
+            return this;
+        }
 
-                //Create NormalizedCacheFactory
-                mNormalizedCacheFactory = new SqlNormalizedCacheFactory(appSyncSqlHelper);
+        /**
+         * Specify a name that uniquely identifies the AWSAppSyncClient object.
+         *
+         * @param clientDatabasePrefix prefix used for the database names.
+         * @return the builder object.
+         */
+        public Builder clientDatabasePrefix(@NonNull String clientDatabasePrefix) {
+            mClientDatabasePrefix = clientDatabasePrefix;
+            return this;
+        }
+
+        /**
+         * Extract the parameters from the AWSAppSyncClient.Builder object and create
+         * the AWSAppSyncClient object.
+         *
+         * @return AWSAppSyncClient object built from AWSAppSyncClient.Builder
+         */
+        public AWSAppSyncClient build() {
+            // Validate context
+            if (mContext == null) {
+                throw new RuntimeException("A valid Android Context is required.");
+            }
+
+            // Validate AuthMode
+            Map<Object, AuthMode> authModeObjects = new HashMap<>();
+            authModeObjects.put(mApiKey, AuthMode.API_KEY);
+            authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
+            authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
+            authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
+            authModeObjects.remove(null);
+
+            // Validate if only one Auth object is passed in to the builder
+            if (authModeObjects.size() > 1) {
+                throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
+                        authModeObjects.values().toString() +
+                        ". Please pass in exactly one AuthMode into the builder.");
+            }
+
+            // Store references to the authMode object passed in to the builder and the
+            // corresponding AuthMode
+            Object selectedAuthModeObject = null;
+            AuthMode selectedAuthMode = null;
+            Iterator<Object> iterator = authModeObjects.keySet().iterator();
+            if (iterator.hasNext()) {
+                selectedAuthModeObject = iterator.next();
+                selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
             }
 
             // Read serverUrl, region and AuthMode from awsconfiguration.json if present
             if (mAwsConfiguration != null) {
                 try {
                     // Populate the serverUrl and region from awsconfiguration.json
+                    AuthMode authModeFromConfigJson = null;
                     JSONObject appSyncJsonObject = mAwsConfiguration.optJsonObject("AppSync");
                     if (appSyncJsonObject == null) {
                         throw new RuntimeException("AppSync configuration is missing from awsconfiguration.json");
@@ -443,35 +547,29 @@ public class AWSAppSyncClient {
                     mServerUrl = appSyncJsonObject.getString("ApiUrl");
                     mRegion = Regions.fromName(appSyncJsonObject.getString("Region"));
 
-                    Map<Object, AuthMode> authModeObjects = new HashMap<>();
-                    authModeObjects.put(mApiKey, AuthMode.API_KEY);
-                    authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
-                    authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
-                    authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
-                    authModeObjects.remove(null);
+                    if (mUseClientDatabasePrefix) {
+                        // Populate the ClientDatabasePrefix from awsconfiguration.json
+                        String clientDatabasePrefixFromConfigJson = null;
+                        try {
+                            clientDatabasePrefixFromConfigJson = appSyncJsonObject.getString("ClientDatabasePrefix");
+                        } catch (Exception ex) {
+                            Log.e(TAG, "Error is reading the ClientDatabasePrefix from AppSync configuration in awsconfiguration.json.");
+                            throw new RuntimeException("ClientDatabasePrefix is not present in AppSync configuration in awsconfiguration.json " +
+                                    "however .useClientDatabasePrefix(true) is passed in.");
+                        }
 
-                    // Validate if only one Auth object is passed in to the builder
-                    if (authModeObjects.size() > 1) {
-                        throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
-                                authModeObjects.values().toString() +
-                                ". Please pass in exactly one AuthMode into the builder.");
+                        mClientDatabasePrefix = clientDatabasePrefixFromConfigJson;
                     }
 
-                    // Store references to the authMode object passed in to the builder and the
-                    // corresponding AuthMode
-                    Object selectedAuthModeObject = null;
-                    AuthMode selectedAuthMode = null;
-                    Iterator<Object> iterator = authModeObjects.keySet().iterator();
-                    if (iterator.hasNext()) {
-                        selectedAuthModeObject = iterator.next();
-                        selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
-                    }
+                    authModeFromConfigJson = AuthMode.fromName(appSyncJsonObject.getString("AuthMode"));
 
+                    // This validation is only for input passed via the awsconfiguration.json.
                     // Read the AuthMode and validate if the corresponding Auth object is passed in
                     // to the builder
-                    final AuthMode authMode = AuthMode.fromName(appSyncJsonObject.getString("AuthMode"));
+                    final AuthMode authMode = authModeFromConfigJson;
                     if (selectedAuthModeObject == null && authMode.equals(AuthMode.API_KEY)) {
                         mApiKey = new BasicAPIKeyAuthProvider(appSyncJsonObject.getString("ApiKey"));
+                        authModeObjects.put(mApiKey, AuthMode.API_KEY);
                         selectedAuthMode = authMode;
                     }
 
@@ -481,7 +579,50 @@ public class AWSAppSyncClient {
                                 authMode.toString() + " but you selected " + selectedAuthMode.toString());
                     }
                 } catch (Exception exception) {
-                    throw new RuntimeException("Please check the AppSync configuration in awsconfiguration.json.", exception);
+                    throw new RuntimeException("Please check the AppSync configuration in " +
+                            "awsconfiguration.json.", exception);
+                }
+            }
+
+            // Validate for the presence of one AuthMode object
+            if (authModeObjects.size() == 0) {
+                throw new RuntimeException("No valid AuthMode object is passed in to the builder.");
+            }
+
+            if (mUseClientDatabasePrefix && (mClientDatabasePrefix == null || StringUtils.isBlank(mClientDatabasePrefix))) {
+                throw new RuntimeException("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.");
+            }
+
+            if (!mUseClientDatabasePrefix && mClientDatabasePrefix != null && !StringUtils.isBlank(mClientDatabasePrefix)) {
+                Log.w(TAG, "A ClientDatabasePrefix is passed in however useClientDatabasePrefix is false.");
+                // Don't use the client database prefix when mUseClientDatabasePrefix flag is not set or set to false.
+                mClientDatabasePrefix = null;
+            }
+
+            // Validate ClientDatabasePrefix only when mUseClientDatabasePrefix is true
+            if (mUseClientDatabasePrefix) {
+                // Validate if the ClientDatabasePrefix passed in follows the pattern
+                if (mClientDatabasePrefix != null) {
+                    final Pattern pattern = Pattern.compile(CLIENT_DATABAE_PREFIX_PATTERN);
+                    final Matcher matcher = pattern.matcher(mClientDatabasePrefix);
+                    if (!matcher.matches()) {
+                        throw new RuntimeException("ClientDatabasePrefix validation failed. " +
+                                "Please pass in characters that matches the pattern: " + CLIENT_DATABAE_PREFIX_PATTERN);
+                    }
+                }
+
+                // Validate if the ClientDatabasePrefix is not used by the same GraphQL endpoint
+                // but different AuthMode.
+                String endpointAndAuthMode = prefixMap.get(mClientDatabasePrefix);
+                if (endpointAndAuthMode != null) {
+                    if (!endpointAndAuthMode.equals(mServerUrl + "_" + selectedAuthMode)) {
+                        throw new RuntimeException("ClientDatabasePrefix validation failed. " +
+                                "The ClientDatabasePrefix " + mClientDatabasePrefix + " is already used by " +
+                                "an other AWSAppSyncClient object with API Server Url: " + mServerUrl +
+                                " with authMode: " + selectedAuthMode);
+                    }
+                } else {
+                    prefixMap.put(mClientDatabasePrefix, mServerUrl + "_" + selectedAuthMode);
                 }
             }
 
@@ -515,8 +656,7 @@ public class AWSAppSyncClient {
     }
 
     /**
-     *
-     * @return
+     * @return builder object
      */
     public static Builder builder() {
         return new Builder();
@@ -610,14 +750,13 @@ public class AWSAppSyncClient {
         helper.setBaseQueryCallback(baseQueryCallback);
 
         helper.setSubscription(subscription);
-        helper.setSubscriptionCallback( subscriptionCallback);
+        helper.setSubscriptionCallback(subscriptionCallback);
 
-        if ( deltaQuery == null ||deltaQueryCallback == null ) {
+        if (deltaQuery == null || deltaQueryCallback == null) {
             Log.d(TAG, "One of the following is null - Delta Query or Delta Query callback. Will switch to using the base query & callback");
             helper.setDeltaQuery(baseQuery);
             helper.setDeltaQueryCallback(baseQueryCallback);
-        }
-        else {
+        } else {
             helper.setDeltaQuery(deltaQuery);
             helper.setDeltaQueryCallback(deltaQueryCallback);
         }
@@ -638,7 +777,6 @@ public class AWSAppSyncClient {
      * @param <V>
      * @return a Cancelable object that can be used later to cancel the sync operation by calling the cancel() method
      */
-
     public <D extends Query.Data, T, V extends Query.Variables> Cancelable sync(
             @Nonnull Query<D, T, V> baseQuery,
             GraphQLCall.Callback<Query.Data> baseQueryCallback,
@@ -702,10 +840,94 @@ public class AWSAppSyncClient {
     }
 
     /**
-     * Clear the mutation queue. A Mutation that is currently in progress will continue to execute until finished.
+     * Clear the mutation queue. A Mutation that is currently in progress will
+     * continue to execute until finished.
      *
+     * @deprecated Since 2.9.0. This method will be removed in the next minor version.
+     *     Please use #clearCaches(ClearCacheOptions.builder()
+     *          .clearMutations().build()) instead.
      */
+    @Deprecated
     public void clearMutationQueue() {
         mAppSyncOfflineMutationManager.clearMutationQueue();
+    }
+
+    /**
+     * Clear the store created for Delta Sync. This method deletes all the records
+     * that stores the lastSyncTime of the sync queries.
+     *
+     * If there are only on-going delta sync operations, they won't be impacted.
+     */
+    private void clearDeltaSyncStore() {
+        Log.d(TAG, "Clearing the delta sync store.");
+
+        AWSAppSyncDeltaSyncSqlHelper awsAppSyncDeltaSyncSqlHelper =
+                new AWSAppSyncDeltaSyncSqlHelper(
+                    applicationContext,
+                    deltaSyncSqlStoreName);
+        new AWSAppSyncDeltaSyncDBOperations(awsAppSyncDeltaSyncSqlHelper)
+                .clearDeltaSyncStore();
+    }
+
+    /**
+     * Clears the different client databases on the local device
+     * which stores the following:
+     *
+     * 1) Query Cache - query responses
+     * 2) Mutation Queue - offline persistent mutations
+     * 3) Delta Sync Metadata Cache - Subscriptions Metadata
+     *      If there are only on-going delta sync operations, they won't be impacted.
+     */
+    public void clearCaches() throws ClearCacheException {
+        clearCaches(ClearCacheOptions.builder()
+                .clearQueries()
+                .clearMutations()
+                .clearSubscriptions()
+                .build());
+    }
+
+    /**
+     * Clears the different client databases on the local device
+     * based on the ClearCacheOptions object passed in.
+     *
+     * 1) ClearCacheOptions#clearQueries - Query Cache - query responses
+     * 2) ClearCacheOptions#clearMutations - Mutation Queue - offline persistent mutations
+     * 3) ClearCacheOptions#clearSubscriptions - Delta Sync Metadata Cache - Subscriptions Metadata
+     *      If there are only on-going delta sync operations, it is recommended to cancel those
+     *      operations before calling clearCaches.
+     */
+    public void clearCaches(ClearCacheOptions clearCacheOptions) throws ClearCacheException {
+        ClearCacheException clearCacheException = new ClearCacheException("Error in clearing the cache(s).");
+
+        try {
+            if (clearCacheOptions.isQueries()) {
+                Log.d(TAG, "Clearing the query cache.");
+                mSyncStore.clearAll().execute();
+            }
+        } catch (Exception ex) {
+            clearCacheException.addException(ex);
+        }
+
+        try {
+            if (clearCacheOptions.isMutations()) {
+                Log.d(TAG, "Clearing the mutations queue.");
+                clearMutationQueue();
+            }
+        } catch (Exception ex) {
+            clearCacheException.addException(ex);
+        }
+
+        try {
+            if (clearCacheOptions.isSubscriptions()) {
+                Log.d(TAG, "Clearing the delta sync subscriptions metadata cache.");
+                clearDeltaSyncStore();
+            }
+        } catch (Exception ex) {
+            clearCacheException.addException(ex);
+        }
+
+        if (clearCacheException.getExceptions() != null) {
+            throw clearCacheException;
+        }
     }
 }

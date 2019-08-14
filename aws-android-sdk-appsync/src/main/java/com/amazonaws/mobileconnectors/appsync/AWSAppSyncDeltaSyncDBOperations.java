@@ -38,6 +38,10 @@ final class AWSAppSyncDeltaSyncDBOperations {
                     AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
                     AWSAppSyncDeltaSyncSqlHelper.COLUMN_ID);
 
+    private static final String DELETE_ALL_RECORD_STATEMENT =
+            String.format("DELETE FROM %s",
+                    AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC);
+
     private static final String UPDATE_LAST_RUN_TIME =
             String.format("UPDATE %s set %s = ? WHERE %s = ?",
                     AWSAppSyncDeltaSyncSqlHelper.TABLE_DELTA_SYNC,
@@ -61,15 +65,21 @@ final class AWSAppSyncDeltaSyncDBOperations {
     private final SQLiteStatement updateLastRunTimeStatement;
     private final SQLiteStatement getRecordByID;
     private final SQLiteStatement getRecordByKey;
+    private final SQLiteStatement deleteAllRecordsStatement;
 
     AWSAppSyncDeltaSyncDBOperations(SQLiteOpenHelper dbHelper) {
         this.dbHelper = dbHelper;
         database = dbHelper.getWritableDatabase();
         insertStatement = database.compileStatement(INSERT_STATEMENT);
         deleteStatement = database.compileStatement(DELETE_STATEMENT);
+        deleteAllRecordsStatement = database.compileStatement(DELETE_ALL_RECORD_STATEMENT);
         updateLastRunTimeStatement = database.compileStatement(UPDATE_LAST_RUN_TIME);
         getRecordByID = database.compileStatement(GET_RECORD_BY_ID);
         getRecordByKey = database.compileStatement(GET_RECORD_BY_KEY);
+    }
+
+    public void close() {
+        dbHelper.close();
     }
 
     /*
@@ -82,7 +92,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
         long recordId = insertStatement.executeInsert();
         return recordId;
     }
-
 
     /*
         Update the last Run Time in the database
@@ -104,7 +113,6 @@ final class AWSAppSyncDeltaSyncDBOperations {
     /*
         Get a DeltaSync record using id.
         Will return a AWSAppSyncDeltaSyncDBOperations.DeltaSyncRecord object
-
      */
     DeltaSyncRecord getRecordByID(long id) {
         DeltaSyncRecord record = null;
@@ -137,10 +145,9 @@ final class AWSAppSyncDeltaSyncDBOperations {
     /*
       Get a DeltaSync record using key.
       Will return a AWSAppSyncDeltaSyncDBOperations.DeltaSyncRecord object
-   */
+     */
     DeltaSyncRecord getRecordByKey(String key) {
         DeltaSyncRecord record = null;
-
         Cursor cursor = null;
 
         try {
@@ -164,6 +171,15 @@ final class AWSAppSyncDeltaSyncDBOperations {
         }
 
         return record;
+    }
+
+    /**
+     * Clear the Delta Sync Store by removing
+     * all the records from the table.
+     */
+    void clearDeltaSyncStore() {
+        // Execute "DELETE FROM TABLE_NAME"
+        deleteAllRecordsStatement.execute();
     }
 
 }

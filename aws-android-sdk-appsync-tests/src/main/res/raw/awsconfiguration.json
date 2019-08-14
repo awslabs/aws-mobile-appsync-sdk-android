@@ -1,0 +1,68 @@
+{
+  "UserAgent": "aws-amplify-cli/0.1.0",
+  "Version": "1.0",
+  "IdentityManager": {
+    "Default": {}
+  },
+  "AppSync": {
+    "Default": {
+      "ApiUrl": "https://xyz.appsync-api.us-east-2.amazonaws.com/graphql",
+      "Region": "us-east-2",
+      "AuthMode": "API_KEY",
+      "ApiKey": "da2-api-key",
+      "ClientDatabasePrefix": "MultiAuthAndroidIntegTestApp_API_KEY"
+    },
+    "MultiAuthAndroidIntegTestApp_AWS_IAM": {
+      "ApiUrl": "https://xyz.appsync-api.us-east-2.amazonaws.com/graphql",
+      "Region": "us-east-2",
+      "AuthMode": "AWS_IAM",
+      "ClientDatabasePrefix": "MultiAuthAndroidIntegTestApp_AWS_IAM"
+    },
+    "MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS": {
+      "ApiUrl": "https://xyz.appsync-api.us-east-2.amazonaws.com/graphql",
+      "Region": "us-east-2",
+      "AuthMode": "AMAZON_COGNITO_USER_POOLS",
+      "ClientDatabasePrefix": "MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS"
+    },
+    "MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS_2": {
+      "ApiUrl": "https://xyz.appsync-api.us-east-2.amazonaws.com/graphql",
+      "Region": "us-east-2",
+      "AuthMode": "AMAZON_COGNITO_USER_POOLS",
+      "ClientDatabasePrefix": "MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS_2"
+    },
+    "MultiAuthAndroidIntegTestApp_NoClientDatabasePrefix": {
+      "ApiUrl": "https://xyz.appsync-api.us-east-2.amazonaws.com/graphql",
+      "Region": "us-east-2",
+      "AuthMode": "API_KEY",
+      "ApiKey": "da2-api-key"
+    }
+  },
+  "CredentialsProvider": {
+    "CognitoIdentity": {
+      "Default": {
+        "PoolId": "<POOL-ID>",
+        "Region": "us-east-1"
+      }
+    }
+  },
+  "CognitoUserPool": {
+    "Default": {
+      "PoolId": "<POOl-ID>",
+      "AppClientId": "<APP-CLIENT-ID>",
+      "AppClientSecret": "<APP-CLIENT-SECRET>",
+      "Region": "us-east-1"
+    },
+    "Custom": {
+      "PoolId": "<POOl-ID>",
+      "AppClientId": "<APP-CLIENT-ID>",
+      "AppClientSecret": "<APP-CLIENT-SECRET>",
+      "Region": "us-east-1"
+    }
+  },
+  "S3TransferUtility": {
+    "Default": {
+      "Bucket": "<BUCKET-NAME>",
+      "Region": "us-east-1"
+    }
+  }
+}
