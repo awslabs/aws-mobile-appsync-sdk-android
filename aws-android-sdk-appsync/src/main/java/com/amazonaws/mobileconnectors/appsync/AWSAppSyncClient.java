@@ -547,7 +547,7 @@ public class AWSAppSyncClient {
                     mServerUrl = appSyncJsonObject.getString("ApiUrl");
                     mRegion = Regions.fromName(appSyncJsonObject.getString("Region"));
 
-                    if (mUseClientDatabasePrefix) {
+                    if (mUseClientDatabasePrefix && (mClientDatabasePrefix == null || StringUtils.isBlank(mClientDatabasePrefix))) {
                         // Populate the ClientDatabasePrefix from awsconfiguration.json
                         String clientDatabasePrefixFromConfigJson = null;
                         try {
