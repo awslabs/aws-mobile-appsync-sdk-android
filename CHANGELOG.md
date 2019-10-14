@@ -1,5 +1,13 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 2.10.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.10.1)
+
+## Enhancements
+* Make `GraphQLStoreOperation.Callback` a public interface, so the `AWSAppSyncStore` asyncrhonous operations can be passed with a callback. Thanks @cjami for the contribution. See [PR #193](https://github.com/awslabs/aws-mobile-appsync-sdk-android/pull/193) for details.
+
+### Misc. Updates
+* `AWSAppSync` now depends on `AWSCore` version `2.16.1` instead of `2.13.5`.
+
 ## [Release 2.10.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.10.0)
 
 ## Enhancements
