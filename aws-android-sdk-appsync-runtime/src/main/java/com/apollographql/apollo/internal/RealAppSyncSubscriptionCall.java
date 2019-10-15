@@ -57,7 +57,7 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
     }
 
     @Override
-    public void execute(@Nonnull final Callback<T> callback) {
+    public synchronized void execute(@Nonnull final Callback<T> callback) {
         if ( callback == null ) {
             logger.w("Subscription Infrastructure: Callback passed into subscription [" + subscription +"] was null. Will not subscribe.");
             return;
@@ -68,23 +68,22 @@ public class RealAppSyncSubscriptionCall<T> implements AppSyncSubscriptionCall<T
                 userCallback = callback;
                 subscriptionManager.addListener(subscription, callback);
 
-                //Ensure that the call is only made once.
-                synchronized (this) {
-                    switch (state.get()) {
-                        case IDLE: {
-                            state.set(ACTIVE);
-                            break;
-                        }
-
-                        case CANCELED:
-                            throw new RuntimeException("Cancelled", new ApolloCanceledException("Call is cancelled."));
-
-                        case ACTIVE:
-                            throw new IllegalStateException("Already Executed");
-
-                        default:
-                            throw new IllegalStateException("Unknown state");
+                switch (state.get()) {
+                    case IDLE: {
+                        state.set(ACTIVE);
+                        break;
                     }
+
+                    case CANCELED:
+                        callback.onFailure(new ApolloCanceledException("Call is cancelled."));
+                        break;
+
+                    case ACTIVE:
+                        callback.onFailure(new ApolloException("Already Executed"));
+                        break;
+
+                    default:
+                        callback.onFailure(new ApolloException("Unknown state"));
                 }
 
                 try {

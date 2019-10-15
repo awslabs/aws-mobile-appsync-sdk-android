@@ -8,6 +8,9 @@
 ### Misc. Updates
 * `AWSAppSync` now depends on `AWSCore` version `2.16.1` instead of `2.13.5`.
 
+### Bug Fixes
+* If an App Sync subscription attempts to be executed while in a non-Idle state, it will now pass the error back through the callback vs. crashing the app with a runtime exception. See [issue#202](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/202)
+
 ## [Release 2.10.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v2.10.0)
 
 ## Enhancements

@@ -2,7 +2,6 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
 import android.content.res.Resources;
-import android.util.Log;
 
 import com.amazonaws.auth.CognitoCredentialsProvider;
 import com.amazonaws.mobile.config.AWSConfiguration;
@@ -11,7 +10,15 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
-import com.google.android.apps.common.testing.accessibility.framework.proto.FrameworkProtos;
+import com.apollographql.apollo.ApolloClient;
+import com.apollographql.apollo.api.Response;
+import com.apollographql.apollo.api.Subscription;
+import com.apollographql.apollo.exception.ApolloCanceledException;
+import com.apollographql.apollo.exception.ApolloException;
+import com.apollographql.apollo.internal.ApolloLogger;
+import com.apollographql.apollo.internal.RealAppSyncCall;
+import com.apollographql.apollo.internal.RealAppSyncSubscriptionCall;
+import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -22,9 +29,15 @@ import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowApplication;
 
 import java.io.ByteArrayInputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nonnull;
+
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -38,6 +51,11 @@ public class AppSyncClientUnitTest {
     Resources res;
     Context mockContext;
     Context shadowContext;
+    ApolloLogger mockLogger;
+    Subscription<?, ?, ?> mockSubscription;
+    SubscriptionManager mockSubscriptionManager;
+    ApolloClient mockApolloClient;
+    RealAppSyncCall<?> mockSubscriptionMetadataRequest;
 
     private static final String TAG = AppSyncClientUnitTest.class.getSimpleName();
 
@@ -48,6 +66,11 @@ public class AppSyncClientUnitTest {
     public void setup() {
         shadowContext = ShadowApplication.getInstance().getApplicationContext();
         mockContext = Mockito.mock(Context.class);
+        mockLogger = Mockito.mock(ApolloLogger.class);
+        mockSubscription = Mockito.mock(Subscription.class);
+        mockSubscriptionManager = Mockito.mock(SubscriptionManager.class);
+        mockApolloClient = Mockito.mock(ApolloClient.class);
+        mockSubscriptionMetadataRequest  = Mockito.mock(RealAppSyncCall.class);
         res = Mockito.mock(Resources.class);
         Mockito.when(mockContext.getResources()).thenReturn(res);
         jsonConfig = "{\n" +
@@ -161,6 +184,34 @@ public class AppSyncClientUnitTest {
                 })
                 .build();
         assertNotNull(awsAppSyncClient);
+    }
+
+    @Test
+    public void testRealAppSyncSubscriptionCallErrorHandling() throws InterruptedException {
+        RealAppSyncSubscriptionCall<Object> call = new RealAppSyncSubscriptionCall(mockSubscription, mockSubscriptionManager, mockApolloClient, mockLogger, mockSubscriptionMetadataRequest);
+        call.cancel();
+        Mockito.timeout(500);
+        final CountDownLatch waitForCall = new CountDownLatch(1);
+        call.execute(new AppSyncSubscriptionCall.Callback<Object>() {
+
+            @Override
+            public void onResponse(@Nonnull Response<Object> response) {
+                fail("Execute should not succeed in canceled state");
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                assertEquals(ApolloCanceledException.class, e.getClass());
+                waitForCall.countDown();
+            }
+
+            @Override
+            public void onCompleted() {
+                fail("Execute should not complete in canceled state");
+            }
+        });
+
+        assertTrue(waitForCall.await(100, TimeUnit.MILLISECONDS));
     }
 
     @Test(expected = RuntimeException.class)
