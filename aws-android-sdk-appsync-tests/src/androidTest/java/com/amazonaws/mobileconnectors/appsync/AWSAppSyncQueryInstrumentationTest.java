@@ -15,7 +15,9 @@ import android.util.Log;
 
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
+import com.amazonaws.mobileconnectors.appsync.demo.CommentOnEventMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
+import com.amazonaws.mobileconnectors.appsync.demo.NewCommentOnEventSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnCreateArticleSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnCreatePostSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnDeleteArticleSubscription;
@@ -36,7 +38,6 @@ import com.apollographql.apollo.internal.util.Cancelable;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -55,11 +56,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Instrumented test, which will execute on an Android device.
- *
- * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
- */
 public class AWSAppSyncQueryInstrumentationTest {
     private static final String TAG = AWSAppSyncQueryInstrumentationTest.class.getSimpleName();
 
@@ -83,6 +79,62 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         }
         assert(wifiManager.setWifiEnabled(true));
+    }
+
+    @Test
+    public void testSubscriptionWithApiKeyForNewEndpoints() throws InterruptedException {
+
+        final CountDownLatch mutationLatch = new CountDownLatch(1);
+        final CountDownLatch subscriptionCompletionLatch = new CountDownLatch(1);
+        final AppSyncSubscriptionCall.Callback<NewCommentOnEventSubscription.Data> subscriptionCallback = new AppSyncSubscriptionCall.Callback<NewCommentOnEventSubscription.Data>() {
+            @Override
+            public void onResponse(final @Nonnull Response<NewCommentOnEventSubscription.Data> response) {
+                assertNotNull(response.data().subscribeToEventComments());
+                mutationLatch.countDown();
+            }
+
+            @Override
+            public void onFailure(final @Nonnull ApolloException e) {
+                Log.e(TAG, "Subscription failure", e);
+            }
+
+            @Override
+            public void onCompleted() {
+                Log.d(TAG, "Subscription completed");
+                subscriptionCompletionLatch.countDown();
+            }
+        };
+
+        final GraphQLCall.Callback<CommentOnEventMutation.Data> mutationCallback = new GraphQLCall.Callback<CommentOnEventMutation.Data>() {
+            @Override
+            public void onResponse(@Nonnull Response<CommentOnEventMutation.Data> response) {
+                Log.i("Results from Mutation", "Added Todo");
+            }
+
+            @Override
+            public void onFailure(@Nonnull ApolloException e) {
+                Log.e("Error in Mutation ", e.toString());
+            }
+        };
+
+        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithApiKey();
+        NewCommentOnEventSubscription subscription = NewCommentOnEventSubscription.builder().eventId("9a95ab20-cd3e-43ea-a04e-93769a531a00").build();
+        AppSyncSubscriptionCall<NewCommentOnEventSubscription.Data> subscriptionWatcher = awsAppSyncClient.subscribe(subscription);
+        subscriptionWatcher.execute(subscriptionCallback);
+
+        //Sleep for a while to make sure the subscription goes through
+        appSyncTestSetupHelper.sleep(10 * 1000);
+
+        // Execute the mutation
+        awsAppSyncClient.mutate(CommentOnEventMutation.builder()
+                .eventId("9a95ab20-cd3e-43ea-a04e-93769a531a00")
+                .content("Comments from test" + System.currentTimeMillis())
+                .createdAt("fromTest").build())
+                .enqueue(mutationCallback);
+
+        assertTrue(mutationLatch.await(60, TimeUnit.SECONDS));
+        subscriptionWatcher.cancel();
+        assertTrue(subscriptionCompletionLatch.await(60, TimeUnit.SECONDS));
     }
 
     @Test
@@ -280,7 +332,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             AppSyncSubscriptionCall deleteArticleSubWatcher = awsAppSyncClient.subscribe(onDeleteArticleSubscription);
             deleteArticleSubWatcher.execute(onDeleteArticleCallback);
 
-            appSyncTestSetupHelper.sleep(60 * 1000);
+            appSyncTestSetupHelper.sleep(10 * 1000);
             Log.d(TAG, "Subscribed and setup callback handlers.");
 
             Response<AddPostMutation.Data> addPostMutationResponse = appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
@@ -420,14 +472,17 @@ public class AWSAppSyncQueryInstrumentationTest {
             @Override
             public void onResponse(@Nonnull final Response<OnCreatePostSubscription.Data> response) {
                 Log.d(TAG,"Response " + response.data().toString());
-                message1ReceivedLatch.countDown();
+                if (response.errors().size() == 0) {
+                    message1ReceivedLatch.countDown();
+                } else {
+                    message2ExceptionReceivedLatch.countDown();
+                }
             }
 
             @Override
             public void onFailure(@Nonnull ApolloException e) {
                 Log.e(TAG, "Error " + e.getLocalizedMessage());
                 assertEquals("Failed to parse http response", e.getLocalizedMessage());
-                message2ExceptionReceivedLatch.countDown();
             }
 
             @Override
