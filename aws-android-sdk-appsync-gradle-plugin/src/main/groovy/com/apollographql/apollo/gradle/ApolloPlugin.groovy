@@ -8,17 +8,15 @@
 package com.apollographql.apollo.gradle
 
 import com.android.build.gradle.AppPlugin
+import com.android.build.gradle.DynamicFeaturePlugin
+import com.android.build.gradle.InstantAppPlugin
 import com.android.build.gradle.LibraryPlugin
 import com.android.build.gradle.api.BaseVariant
 import com.apollographql.android.VersionKt
 import com.google.common.collect.ImmutableList
 import com.moowork.gradle.node.NodeExtension
 import com.moowork.gradle.node.NodePlugin
-import org.gradle.api.DomainObjectCollection
-import org.gradle.api.GradleException
-import org.gradle.api.Plugin
-import org.gradle.api.Project
-import org.gradle.api.Task
+import org.gradle.api.*
 import org.gradle.api.artifacts.DependencyResolutionListener
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.artifacts.ResolvableDependencies
@@ -47,7 +45,9 @@ class ApolloPlugin implements Plugin<Project> {
     void apply(Project project) {
         this.project = project
         if (project.plugins.hasPlugin(AppPlugin) || project.plugins.hasPlugin(LibraryPlugin) || project.plugins.hasPlugin(
-                JavaPlugin)) {
+                JavaPlugin) || project.plugins.hasPlugin(
+                DynamicFeaturePlugin) project.plugins.hasPlugin(
+                InstantAppPlugin)) {
             applyApolloPlugin()
         } else {
             throw new IllegalArgumentException(
