@@ -1,230 +1,254 @@
 query GetPost($id:ID!) {
- getPost(id:$id) {
-     id
-     title
-     author
-     content
-     url
-     version
-     ups
-     downs
- }
+    getPost(id:$id) {
+        id
+        title
+        author
+        content
+        url
+        version
+        ups
+        downs
+    }
 }
 
 query GetPostInputType($input: GetPostInput!) {
- getPostInputType(input: $input) {
-     id
-     title
-     author
-     content
-     url
-     version
- }
+    getPostInputType(input: $input) {
+        id
+        title
+        author
+        content
+        url
+        version
+    }
 }
 
 query AllPosts {
-   listPosts {
-    items {
-       id
-       title
-       author
-       content
-       url
-       version
-       ups
-       downs
-      }
-   }
+    listPosts {
+        items {
+            id
+            title
+            author
+            content
+            url
+            version
+            ups
+            downs
+        }
+    }
 }
 
 mutation AddPost($input: CreatePostInput!) {
-  createPost(input: $input) {
-    id
-    title
-    author
-    content
-    url
-    ups
-    downs
-    version
-  }
+    createPost(input: $input) {
+        id
+        title
+        author
+        content
+        url
+        ups
+        downs
+        version
+    }
 }
 
 mutation AddPostRequiredFieldsOnly($input: CreatePostInput!) {
-  createPost(input: $input) {
-    id
-    author
-    version
-  }
+    createPost(input: $input) {
+        id
+        author
+        version
+    }
 }
 
 mutation AddPostMissingRequiredFields($input: CreatePostInput!) {
     createPost(input: $input) {
-      id
+        id
     }
 }
 
 mutation UpdatePost($input: UpdatePostInput!) {
-  updatePost(input: $input) {
-      id
-      author
-      title
-      content
-      url
-      version
-  }
+    updatePost(input: $input) {
+        id
+        author
+        title
+        content
+        url
+        version
+    }
 }
 
 mutation DeletePost($input: deletePostInput!) {
-  deletePost(input: $input) {
-      id
-      title
-      author
-      url
-      content
-  }
+    deletePost(input: $input) {
+        id
+        title
+        author
+        url
+        content
+    }
+}
+
+mutation CommentOnEvent(
+    $eventId: ID!
+    $content: String!
+    $createdAt: String!
+) {
+    commentOnEvent(
+        eventId: $eventId
+        content: $content
+        createdAt: $createdAt
+    ) {
+        eventId
+        commentId
+        content
+        createdAt
+    }
 }
 
 subscription OnCreatePost {
-  onCreatePost {
-    id
-    author
-    title
-    content
-    url
-  }
+    onCreatePost {
+        id
+        author
+        title
+        content
+        url
+    }
 }
 
 subscription OnUpdatePost {
-  onUpdatePost {
-    id
-    content
-    url
-  }
+    onUpdatePost {
+        id
+        content
+        url
+    }
 }
 
 subscription OnDeletePost {
-  onDeletePost {
-    id
-  }
+    onDeletePost {
+        id
+    }
 }
 
 subscription OnCreateArticle {
-  onCreateArticle {
-    id
-    author
-    title
-  }
+    onCreateArticle {
+        id
+        author
+        title
+    }
 }
 
 subscription OnUpdateArticle {
-  onUpdateArticle {
-    id
-    author
-  }
+    onUpdateArticle {
+        id
+        author
+    }
 }
 
 subscription OnDeleteArticle {
-  onDeleteArticle {
-    id
-  }
+    onDeleteArticle {
+        id
+    }
 }
 
+subscription NewCommentOnEvent($eventId: String!) {
+    subscribeToEventComments(eventId: $eventId) {
+        eventId
+    }
+}
+
+
 mutation CreateArticle($input: CreateArticleInput!) {
-  createArticle(input: $input) {
-    id
-    author
-    title
-    version
-    pdf {
-      bucket
-      key
-      region
+    createArticle(input: $input) {
+        id
+        author
+        title
+        version
+        pdf {
+            bucket
+            key
+            region
+        }
+        image {
+            bucket
+            key
+            region
+        }
     }
-    image {
-      bucket
-      key
-      region
-    }
-  }
 }
 
 mutation CreateArticle2(
-  $author: String!
-  $title: String
-  $version: Int!
-  $pdf: S3ObjectInput
-  $image: S3ObjectInput
+    $author: String!
+    $title: String
+    $version: Int!
+    $pdf: S3ObjectInput
+    $image: S3ObjectInput
 ) {
-  createArticle2(
-    author: $author
-    title: $title
-    version: $version
-    pdf: $pdf
-    image: $image
-  ) {
-    id
-    author
-    title
-    version
-    pdf {
-      bucket
-      key
-      region
+    createArticle2(
+        author: $author
+        title: $title
+        version: $version
+        pdf: $pdf
+        image: $image
+    ) {
+        id
+        author
+        title
+        version
+        pdf {
+            bucket
+            key
+            region
+        }
+        image {
+            bucket
+            key
+            region
+        }
     }
-    image {
-      bucket
-      key
-      region
-    }
-  }
 }
 
 
 mutation UpdateArticle($input: UpdateArticleInput!) {
-  updateArticle(input: $input) {
-    id
-    author
-    title
-    version
-    pdf {
-      bucket
-      key
-      region
+    updateArticle(input: $input) {
+        id
+        author
+        title
+        version
+        pdf {
+            bucket
+            key
+            region
+        }
+        image {
+            bucket
+            key
+            region
+        }
     }
-    image {
-       bucket
-       key
-       region
-     }
-  }
 }
 mutation DeleteArticle($input: DeleteArticleInput!) {
-  deleteArticle(input: $input) {
-    id
-    author
-    title
-    version
-    pdf {
-      bucket
-      key
-      region
+    deleteArticle(input: $input) {
+        id
+        author
+        title
+        version
+        pdf {
+            bucket
+            key
+            region
+        }
+        image {
+            bucket
+            key
+            region
+        }
     }
-    image {
-      bucket
-      key
-      region
-    }
-  }
 }
 
 query AllArticles {
-   listArticles {
-    items {
-       id
-       title
-       author
-       version
-      }
-   }
+    listArticles {
+        items {
+            id
+            title
+            author
+            version
+        }
+    }
 }

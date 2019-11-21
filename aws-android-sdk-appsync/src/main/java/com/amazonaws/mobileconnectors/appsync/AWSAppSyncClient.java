@@ -99,6 +99,7 @@ public class AWSAppSyncClient {
     String mutationSqlStoreName = DEFAULT_MUTATION_SQL_STORE_NAME;
     String deltaSyncSqlStoreName = DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
     String clientDatabasePrefix;
+    private final WebSocketConnectionManager webSocketConnectionManager;
 
     private enum AuthMode {
         API_KEY("API_KEY"),
@@ -257,6 +258,14 @@ public class AWSAppSyncClient {
         subscriptionManager.setStore(mApolloClient.apolloStore());
         subscriptionManager.setScalarTypeAdapters(new ScalarTypeAdapters(builder.customTypeAdapters));
         mS3ObjectManager = builder.mS3ObjectManager;
+
+        SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(builder.mAwsConfiguration,
+            builder.mOidcAuthProvider,
+            applicationContext);
+
+        webSocketConnectionManager = new WebSocketConnectionManager(builder.mServerUrl,
+            subscriptionAuthorizer,
+            new ApolloResponseBuilder(builder.customTypeAdapters, mApolloClient.apolloStore().networkResponseNormalizer()));
     }
 
     /**
@@ -684,9 +693,17 @@ public class AWSAppSyncClient {
         return mApolloClient.mutate(mutation, withOptimisticUpdates);
     }
 
-
+    /**
+     * Subscribes to updates from a GraphQL endpoint.
+     *
+     * @param subscription GraphQL Subscription
+     * @param <D>  Response data class for the GraphQL Operation
+     * @param <T>  callback data type. This is usually same as {@link D}, the response data type
+     * @param <V>  Variables associated with the GraphQL Operations
+     * @return Returns an appsync subscription call {@link AppSyncSubscriptionCall}
+     */
     public <D extends Subscription.Data, T, V extends Subscription.Variables> AppSyncSubscriptionCall<T> subscribe(@Nonnull Subscription<D, T, V> subscription) {
-        return mApolloClient.subscribe(subscription);
+        return new AppSyncWebSocketSubscriptionCall<>(subscription, webSocketConnectionManager);
     }
 
     public <D extends Mutation.Data, T, V extends Mutation.Variables> AppSyncMutationCall<T> mutate(@Nonnull Mutation<D, T, V> mutation, @Nonnull D withOptimisticUpdates) {

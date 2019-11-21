@@ -22,8 +22,15 @@ public class AppSyncV4Signer extends AWS4Signer {
 
     private static final String RESOURCE_PATH = "/graphql";
 
+    private ResourcePath resourcePath;
+
     public AppSyncV4Signer(String region) {
+        this(region, ResourcePath.DEFAULT_RESOURCE_PATH);
+    }
+
+    public AppSyncV4Signer(String region, ResourcePath resourcePath) {
         super(true);
+        this.resourcePath = resourcePath;
         setRegionName(region);
     }
 
@@ -34,12 +41,14 @@ public class AppSyncV4Signer extends AWS4Signer {
 
     @Override
     protected String getCanonicalizedResourcePath(String resourcePath) {
-        return RESOURCE_PATH;
+        return (this.resourcePath != null && this.resourcePath.equals(ResourcePath.IAM_CONNECTION_RESOURCE_PATH)) ?
+                RESOURCE_PATH + "/connect" : RESOURCE_PATH;
     }
 
     @Override
     protected String getCanonicalizedResourcePath(String resourcePath, boolean urlEncode) {
-        return RESOURCE_PATH;
+        return (this.resourcePath != null && this.resourcePath.equals(ResourcePath.IAM_CONNECTION_RESOURCE_PATH)) ?
+                RESOURCE_PATH + "/connect" : RESOURCE_PATH;
     }
 
     @Override
@@ -50,4 +59,15 @@ public class AppSyncV4Signer extends AWS4Signer {
         // We will not reset this as ok http does not allow reset of stream.
         return contentSha256;
     }
+
+    /**
+     * URL in the canonical request for connecting to subscription WebSocket
+     * via AWS_IAM requires "/connect" appended to it. This is flag to let us
+     * know when we're in that situation.
+     */
+    public enum ResourcePath {
+        IAM_CONNECTION_RESOURCE_PATH,
+        DEFAULT_RESOURCE_PATH;
+    }
 }
+
