@@ -117,7 +117,7 @@ public class AWSAppSyncQueryInstrumentationTest {
             }
         };
 
-        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithApiKey();
+        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithApiKeyForGogiTest();
         NewCommentOnEventSubscription subscription = NewCommentOnEventSubscription.builder().eventId("9a95ab20-cd3e-43ea-a04e-93769a531a00").build();
         AppSyncSubscriptionCall<NewCommentOnEventSubscription.Data> subscriptionWatcher = awsAppSyncClient.subscribe(subscription);
         subscriptionWatcher.execute(subscriptionCallback);

@@ -94,7 +94,7 @@ public class AppSyncTestSetupHelper {
         return s3Region;
     }
 
-    public AWSAppSyncClient createAppSyncClientWithApiKey() {
+    public AWSAppSyncClient createAppSyncClientWithApiKeyForGogiTest() {
         AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
         awsConfiguration.setConfiguration("SubscriptionIntegrationTestGogi");
 

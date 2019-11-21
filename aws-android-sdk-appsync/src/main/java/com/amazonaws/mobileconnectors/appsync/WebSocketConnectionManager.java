@@ -262,7 +262,7 @@ final class WebSocketConnectionManager {
             // throwing in a second ...
         }
         if (appSyncEndpoint == null) {
-            throw new RuntimeException("Malformed Api Url" + serverUrl);
+            throw new RuntimeException("Malformed Api Url: " + serverUrl);
         }
 
         return new Uri.Builder()
