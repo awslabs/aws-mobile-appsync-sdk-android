@@ -1,5 +1,10 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 3.0.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.0.1)
+
+### Bug Fixes
+* Added fix to preserve null list items when parsing the response. See [issue #156](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/156) for details.
+
 ## [Release 3.0.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.0.0)
 
 ### Enhancements
