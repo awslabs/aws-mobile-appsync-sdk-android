@@ -43,8 +43,8 @@ dependencies {
     implementation project(':aws-android-sdk-appsync-api')
     implementation project(':aws-android-sdk-appsync')
 
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.+'
-    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.+'
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.2'
+    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
     implementation "com.amazonaws:aws-android-sdk-core:$aws_version"
     implementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
 
