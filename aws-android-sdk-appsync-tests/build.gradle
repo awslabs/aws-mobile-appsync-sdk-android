@@ -4,11 +4,13 @@ apply plugin: 'com.amazonaws.appsync'
 buildscript {
     ext.version = VERSION_NAME
     ext.aws_version = AWS_CORE_SDK_VERSION
+
     repositories {
         mavenLocal()
         google()
         jcenter()
     }
+
     dependencies {
         classpath "com.amazonaws:aws-android-sdk-appsync-gradle-plugin:$VERSION_NAME"
         classpath 'com.android.tools.build:gradle:3.5.3'
@@ -23,9 +25,7 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
 
     buildTypes {
@@ -34,7 +34,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
 }
 
 repositories {
@@ -44,20 +43,10 @@ repositories {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-
-    implementation 'com.android.support:appcompat-v7:28.0.0-rc02'
-    implementation "com.amazonaws:aws-android-sdk-appsync:$VERSION_NAME"
-    implementation "com.amazonaws:aws-android-sdk-appsync-runtime:$VERSION_NAME"
-    implementation "com.amazonaws:aws-android-sdk-appsync-api:$VERSION_NAME"
-    testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-
-    implementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
-    implementation ("com.amazonaws:aws-android-sdk-mobile-client:$aws_version@aar") { transitive = true }
-    implementation ("com.amazonaws:aws-android-sdk-auth-userpools:$aws_version@aar") { transitive = true }
-
-    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.2'
-    implementation 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
+    androidTestImplementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
+    androidTestImplementation "com.amazonaws:aws-android-sdk-appsync:$VERSION_NAME"
+    androidTestImplementation ("com.amazonaws:aws-android-sdk-mobile-client:$aws_version@aar") { transitive = true }
+    androidTestImplementation ("com.amazonaws:aws-android-sdk-auth-userpools:$aws_version@aar") { transitive = true }
 }
+
