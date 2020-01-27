@@ -15,7 +15,7 @@ dependencies {
     implementation 'com.squareup:javapoet:1.8.0' // impl
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version" // impl
     implementation 'com.squareup.moshi:moshi:1.5.0' // impl
-    implementation 'com.google.code.findbugs:jsr305:3.0.1' // compileOnly
+    implementation 'com.google.code.findbugs:jsr305:3.0.2' // compileOnly
 
     implementation project(':aws-android-sdk-appsync-api') // impl
 }
