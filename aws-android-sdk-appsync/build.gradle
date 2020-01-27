@@ -33,7 +33,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.google.code.findbugs:jsr305:3.0.1' // api
-    implementation "com.squareup.okhttp3:okhttp:3.8.1" // impl
+    implementation 'com.squareup.okhttp3:okhttp:4.3.1' // impl
 
     implementation "com.amazonaws:aws-android-sdk-core:$aws_version" // api
     compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
