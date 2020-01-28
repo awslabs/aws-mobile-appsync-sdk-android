@@ -1,5 +1,5 @@
-/**
- * Copyright 2018-2019 Amazon.com,
+/*
+ * Copyright 2018-2020 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  * <p>
  * SPDX-License-Identifier: Apache-2.0
@@ -9,15 +9,13 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
-import com.amazonaws.mobile.client.AWSMobileClient;
-import com.amazonaws.mobile.client.Callback;
-import com.amazonaws.mobile.client.UserStateDetails;
 import com.amazonaws.mobile.client.results.SignInResult;
 import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMissingRequiredFieldsMutation;
@@ -76,25 +74,34 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class AppSyncTestSetupHelper {
+final class AppSyncTestSetupHelper {
+    private static final String TAG = AppSyncTestSetupHelper.class.getSimpleName();
+    private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
 
-    public AppSyncTestSetupHelper() {
-        setupBeforeClass();
-    }
-
-    private final static String TAG = AppSyncTestSetupHelper.class.getSimpleName();
     private String bucketName = null;
     private String s3Region = null;
+    private String idTokenStringForCustomCognitoUserPool;
+    private Context context;
+    private Response<AddPostMutation.Data> addPostMutationResponse;
 
-    public String getBucketName() {
+    AppSyncTestSetupHelper() {
+        try {
+            setupBeforeClass();
+        } catch (Exception setupFailure) {
+            throw new RuntimeException(setupFailure);
+        }
+    }
+
+    String getBucketName() {
         return bucketName;
     }
 
-    public String getS3Region() {
+    String getS3Region() {
         return s3Region;
     }
 
-    public AWSAppSyncClient createAppSyncClientWithApiKeyForGogiTest() {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithApiKeyForGogiTest() {
         AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
         awsConfiguration.setConfiguration("SubscriptionIntegrationTestGogi");
 
@@ -104,11 +111,13 @@ public class AppSyncTestSetupHelper {
                 .build();
     }
 
-    public AWSAppSyncClient createAppSyncClientWithIAMFromAWSConfiguration() {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithIAMFromAWSConfiguration() {
         return createAppSyncClientWithIAMFromAWSConfiguration(true, 0);
     }
 
-    public AWSAppSyncClient createAppSyncClientWithIAMFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithIAMFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
         try {
             AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
             awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AWS_IAM");
@@ -160,19 +169,18 @@ public class AppSyncTestSetupHelper {
                     })
                     .useClientDatabasePrefix(true)
                     .build();
-        } catch (JSONException je) {
-            Log.e(TAG, je.getLocalizedMessage());
-            je.printStackTrace();
+        } catch (JSONException jsonException) {
+            throw new RuntimeException(jsonException);
         }
-
-        return null;
     }
 
-    public AWSAppSyncClient createAppSyncClientWithAPIKEYFromAWSConfiguration() {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithAPIKEYFromAWSConfiguration() {
         return createAppSyncClientWithAPIKEYFromAWSConfiguration(true, 0);
     }
 
-    public AWSAppSyncClient createAppSyncClientWithAPIKEYFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithAPIKEYFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
         try {
             AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
 
@@ -220,15 +228,13 @@ public class AppSyncTestSetupHelper {
                     })
                     .useClientDatabasePrefix(true)
                     .build();
-        } catch (JSONException je) {
-            Log.e(TAG, je.getLocalizedMessage());
-            je.printStackTrace();
+        } catch (JSONException jsonException) {
+            throw new RuntimeException(jsonException);
         }
-
-        return null;
     }
 
-    public AWSAppSyncClient createAppSyncClientWithUserPoolsFromAWSConfiguration() {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithUserPoolsFromAWSConfiguration() {
         // Amazon Cognito User Pools
         AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS");
@@ -240,7 +246,10 @@ public class AppSyncTestSetupHelper {
                     @Override
                     public String getLatestAuthToken() {
                         try {
-                            String idToken = AWSMobileClient.getInstance().getTokens().getIdToken().getTokenString();
+                            String idToken = TestAWSMobileClient.instance(context)
+                                .getTokens()
+                                .getIdToken()
+                                .getTokenString();
                             Log.d(TAG, "idToken = " + idToken);
                             return idToken;
                         } catch (Exception e) {
@@ -253,7 +262,8 @@ public class AppSyncTestSetupHelper {
                 .build();
     }
 
-    public AWSAppSyncClient createAppSyncClientWithUserPools2FromAWSConfiguration() {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithUserPools2FromAWSConfiguration() {
         // Amazon Cognito User Pools - Custom CognitoUserPool
         String clientDatabasePrefix = null;
         String clientName = null;
@@ -283,7 +293,8 @@ public class AppSyncTestSetupHelper {
         return awsAppSyncClient4;
     }
 
-    public AWSAppSyncClient createAppSyncClientWithUserPoolsFromAWSConfiguration(ResponseFetcher responseFetcher) {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithUserPoolsFromAWSConfiguration(ResponseFetcher responseFetcher) {
         // Amazon Cognito User Pools
         AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS");
@@ -295,7 +306,10 @@ public class AppSyncTestSetupHelper {
                     @Override
                     public String getLatestAuthToken() {
                         try {
-                            String idToken = AWSMobileClient.getInstance().getTokens().getIdToken().getTokenString();
+                            String idToken = TestAWSMobileClient.instance(context)
+                                .getTokens()
+                                .getIdToken()
+                                .getTokenString();
                             Log.d(TAG, "idToken = " + idToken);
                             return idToken;
                         } catch (Exception e) {
@@ -309,7 +323,8 @@ public class AppSyncTestSetupHelper {
                 .build();
     }
 
-    public AWSAppSyncClient createAppSyncClientWithUserPools2FromAWSConfiguration(ResponseFetcher responseFetcher) {
+    @NonNull
+    AWSAppSyncClient createAppSyncClientWithUserPools2FromAWSConfiguration(ResponseFetcher responseFetcher) {
         // Amazon Cognito User Pools - Custom CognitoUserPool
         String clientDatabasePrefix = null;
         String clientName = null;
@@ -340,23 +355,20 @@ public class AppSyncTestSetupHelper {
         return awsAppSyncClient4;
     }
 
-    public String createDataFile(String fileName, String data) {
+    @NonNull
+    String createDataFile(String fileName, String data) {
         File f = new File(InstrumentationRegistry.getContext().getCacheDir() + fileName);
-        FileOutputStream fos = null;
+        FileOutputStream fos;
         try {
             fos = new FileOutputStream(f);
             fos.write(data.getBytes());
+        } catch (IOException ioException) {
+            throw new RuntimeException(ioException);
         }
-        catch (IOException e) {
-            return null;
-        }
-        finally {
-            try {
-                fos.close();
-            }
-            catch (IOException e) {
-
-            }
+        try {
+            fos.close();
+        } catch (IOException ioException) {
+            throw new RuntimeException(ioException);
         }
         return f.getAbsolutePath();
     }
@@ -466,102 +478,54 @@ public class AppSyncTestSetupHelper {
         }
     }
 
-    String idTokenStringForCustomCognitoUserPool;
-    AWSConfiguration awsConfiguration;
-
-    Context context;
-    Response<AddPostMutation.Data> addPostMutationResponse;
-
-    public void setupBeforeClass() {
+    private void setupBeforeClass() throws Exception {
         context = InstrumentationRegistry.getTargetContext();
-        awsConfiguration = new AWSConfiguration(context);
-        final CountDownLatch countDownLatchForInitialize = new CountDownLatch(1);
-        AWSMobileClient.getInstance().initialize(InstrumentationRegistry.getTargetContext(), new Callback<UserStateDetails>() {
-            @Override
-            public void onResult(UserStateDetails result) {
-                countDownLatchForInitialize.countDown();
-            }
 
+        // Pass the results of the callback into the provided consumers.
+        // The consumers in turn are wired to the Await utility, which will block until one of the
+        // consumers accepts a value.
+        Await.result(new Await.ResultErrorEmitter<SignInResult, Exception>() {
             @Override
-            public void onError(Exception e) {
-                countDownLatchForInitialize.countDown();
+            public void emitTo(@NonNull Consumer<SignInResult> onResult, @NonNull Consumer<Exception> onError) {
+                DelegatingCallback<SignInResult> callback = DelegatingCallback.to(onResult, onError);
+                TestAWSMobileClient.instance(context)
+                    .signIn("appsync-multi-auth-test-user", "P@ssw0rd!", null, callback);
             }
         });
-
-        try {
-            countDownLatchForInitialize.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        final CountDownLatch countDownLatch = new CountDownLatch(1);
-        AWSMobileClient.getInstance().signIn("appsync-multi-auth-test-user",
-                "P@ssw0rd!",
-                null,
-                new Callback<SignInResult>() {
-                    @Override
-                    public void onResult(SignInResult result) {
-                        countDownLatch.countDown();
-                    }
-
-                    @Override
-                    public void onError(Exception e) {
-                        countDownLatch.countDown();
-                    }
-                });
-
-        try {
-            countDownLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-        AWSConfiguration awsConfigurationForCognitoUserPool = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        AWSConfiguration awsConfigurationForCognitoUserPool = new AWSConfiguration(context);
         awsConfigurationForCognitoUserPool.setConfiguration("Custom");
-        CognitoUserPool cognitoUserPool = new CognitoUserPool(InstrumentationRegistry.getTargetContext(), awsConfigurationForCognitoUserPool);
+        CognitoUserPool cognitoUserPool = new CognitoUserPool(context, awsConfigurationForCognitoUserPool);
+
         final CountDownLatch countDownLatchForSignIn = new CountDownLatch(1);
+        cognitoUserPool.getUser("appsync-multi-auth-test-user").getSession(new AuthenticationHandler() {
+            @Override
+            public void onSuccess(CognitoUserSession userSession, CognitoDevice newDevice) {
+                idTokenStringForCustomCognitoUserPool = userSession.getIdToken().getJWTToken();
+                countDownLatchForSignIn.countDown();
+            }
 
-        try {
-            cognitoUserPool.getUser("appsync-multi-auth-test-user").getSession(new AuthenticationHandler() {
+            @Override
+            public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
+                Log.d(TAG, "Sending password.");
+                authenticationContinuation.setAuthenticationDetails(new AuthenticationDetails(
+                    "appsync-multi-auth-test-user", "P@ssw0rd!", null
+                ));
+                authenticationContinuation.continueTask();
+            }
 
-                @Override
-                public void onSuccess(CognitoUserSession userSession, CognitoDevice newDevice) {
-                    idTokenStringForCustomCognitoUserPool = userSession.getIdToken().getJWTToken();
-                    countDownLatchForSignIn.countDown();
-                }
+            @Override
+            public void getMFACode(MultiFactorAuthenticationContinuation continuation) {
+            }
 
-                @Override
-                public void getAuthenticationDetails(AuthenticationContinuation authenticationContinuation, String userId) {
-                    Log.d(TAG, "Sending password.");
-                    authenticationContinuation.setAuthenticationDetails(
-                            new AuthenticationDetails(
-                                    "appsync-multi-auth-test-user",
-                                    "P@ssw0rd!",
-                                    null));
-                    authenticationContinuation.continueTask();
-                }
+            @Override
+            public void authenticationChallenge(ChallengeContinuation continuation) {
+            }
 
-                @Override
-                public void getMFACode(MultiFactorAuthenticationContinuation continuation) {
-
-                }
-
-                @Override
-                public void authenticationChallenge(ChallengeContinuation continuation) {
-
-                }
-
-                @Override
-                public void onFailure(Exception exception) {
-
-                }
-            });
-
-            countDownLatchForSignIn.await();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
+            @Override
+            public void onFailure(Exception exception) {
+            }
+        });
+        Await.latch(countDownLatchForSignIn, TimeUnit.SECONDS.toMillis(REASONABLE_WAIT_TIME_MS));
         assertNotNull("ID Token String for Cognito User Pool cannot be null.", idTokenStringForCustomCognitoUserPool);
     }
 
@@ -669,8 +633,7 @@ public class AppSyncTestSetupHelper {
             assertEquals(false, content.equals(getPostQueryResponse.data().getPost().content()));
             assertEquals(true, updatedContent.equals(getPostQueryResponse.data().getPost().content()));
 
-
-            //Delete the Post
+            // Delete the Post
             Response<DeletePostMutation.Data> deletePostMutationResponse = deletePost(awsAppSyncClient, postID);
             assertNotNull(deletePostMutationResponse);
             assertNotNull(deletePostMutationResponse.data());
@@ -1079,129 +1042,63 @@ public class AppSyncTestSetupHelper {
     }
 
     Response<DeletePostMutation.Data> deletePost(final AWSAppSyncClient awsAppSyncClient, final String id) {
-        final CountDownLatch mCountDownLatch = new CountDownLatch(1);
-        final List<Response<DeletePostMutation.Data>> responses = new ArrayList<>();
-        new Thread(new Runnable() {
+        final DeletePostMutation mutation = DeletePostMutation.builder()
+            .input(DeletePostInput.builder()
+                .id(id)
+                .build())
+            .build();
+        final DeletePostMutation.Data data = new DeletePostMutation.Data(new DeletePostMutation.DeletePost(
+            "Post",
+            "",
+            "",
+            "",
+            "",
+            ""
+        ));
+        return Await.result(new Await.ResultErrorEmitter<Response<DeletePostMutation.Data>, RuntimeException>() {
             @Override
-            public void run() {
-                Looper.prepare();
-
-                DeletePostMutation.Data expected = new DeletePostMutation.Data(new DeletePostMutation.DeletePost(
-                        "Post",
-                        "",
-                        "",
-                        "",
-                        "",
-                        ""
-                ));
-
-                DeletePostInput deletePostInput = DeletePostInput.builder()
-                        .id(id)
-                        .build();
-
-                DeletePostMutation deletePostMutation = DeletePostMutation.builder().input(deletePostInput).build();
-
-                Log.d(TAG, "Calling Delete");
-
-                awsAppSyncClient
-                        .mutate(deletePostMutation, expected)
-                        .enqueue(new GraphQLCall.Callback<DeletePostMutation.Data>() {
-                            @Override
-                            public void onResponse(@Nonnull final Response<DeletePostMutation.Data> response) {
-                                responses.add(response);
-                                mCountDownLatch.countDown();
-                                if (Looper.myLooper() != null) {
-                                    Looper.myLooper().quit();
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(@Nonnull final ApolloException e) {
-                                e.printStackTrace();
-                                mCountDownLatch.countDown();
-                                if (Looper.myLooper() != null) {
-                                    Looper.myLooper().quit();
-                                }
-                            }
-                        });
-                Looper.loop();
-
+            public void emitTo(
+                    @NonNull final Consumer<Response<DeletePostMutation.Data>> onResult,
+                    @NonNull final Consumer<RuntimeException> onError) {
+                awsAppSyncClient.mutate(mutation, data).enqueue(DelegatingGraphQLCallback.to(onResult, new Consumer<ApolloException>() {
+                    @Override
+                    public void accept(ApolloException error) {
+                        onError.accept(new RuntimeException(error));
+                    }
+                }));
             }
-        }).start();
-
-        Log.d(TAG, "Waiting for latch to be counted down");
-        try {
-            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
-        } catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
-
-        return responses.get(0);
+        });
     }
 
     Response<UpdatePostMutation.Data> updatePost(final AWSAppSyncClient awsAppSyncClient, final String postID, final String content) {
-        final CountDownLatch mCountDownLatch = new CountDownLatch(1);
-        final List<Response<UpdatePostMutation.Data>> responses = new ArrayList<>();
-        new Thread(new Runnable() {
+        final UpdatePostMutation mutation = UpdatePostMutation.builder()
+            .input(UpdatePostInput.builder()
+                .id(postID)
+                .content(content)
+                .build())
+            .build();
+        final UpdatePostMutation.Data data = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
+            "Post",
+            postID,
+            "",
+            "",
+            content,
+            "",
+            0
+        ));
+        return Await.result(new Await.ResultErrorEmitter<Response<UpdatePostMutation.Data>, RuntimeException>() {
             @Override
-            public void run() {
-                Looper.prepare();
-
-                UpdatePostMutation.Data expected = new UpdatePostMutation.Data( new UpdatePostMutation.UpdatePost(
-                        "Post",
-                        postID,
-                        "",
-                        "",
-                        content,
-                        "",
-                        0
-                ));
-
-                UpdatePostInput updatePostInput = UpdatePostInput.builder()
-                        .id(postID)
-                        .content(content)
-                        .build();
-
-                UpdatePostMutation updatePostMutation = UpdatePostMutation.builder().input(updatePostInput).build();
-
-                Log.d(TAG, "Calling Update");
-
-                awsAppSyncClient
-                        .mutate(updatePostMutation, expected)
-                        .enqueue(new GraphQLCall.Callback<UpdatePostMutation.Data>() {
-                            @Override
-                            public void onResponse(@Nonnull final Response<UpdatePostMutation.Data> response) {
-                                responses.add(response);
-                                mCountDownLatch.countDown();
-                                if (Looper.myLooper() != null) {
-                                    Looper.myLooper().quit();
-                                }
-                            }
-
-                            @Override
-                            public void onFailure(@Nonnull final ApolloException e) {
-                                Log.d(TAG, "On error called");
-                                e.printStackTrace();
-                                mCountDownLatch.countDown();
-                                if (Looper.myLooper() != null) {
-                                    Looper.myLooper().quit();
-                                }
-                            }
-                        });
-                Looper.loop();
-
+            public void emitTo(
+                    @NonNull final Consumer<Response<UpdatePostMutation.Data>> onResult,
+                    @NonNull final Consumer<RuntimeException> onError) {
+                awsAppSyncClient.mutate(mutation, data).enqueue(DelegatingGraphQLCallback.to(onResult, new Consumer<ApolloException>() {
+                    @Override
+                    public void accept(ApolloException error) {
+                        onError.accept(new RuntimeException(error));
+                    }
+                }));
             }
-        }).start();
-
-        Log.d(TAG, "Waiting for latch to be counted down");
-        try {
-            assertTrue(mCountDownLatch.await(60, TimeUnit.SECONDS));
-        } catch (InterruptedException iex) {
-            iex.printStackTrace();
-        }
-
-        assertTrue("There should be a valid response for the mutation", responses.size() > 0);
-        return responses.get(0);
+        });
     }
 
     void assertQueryPostResponse(Response<GetPostQuery.Data> response, String postID, String authMode) {
