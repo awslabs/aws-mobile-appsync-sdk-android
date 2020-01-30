@@ -151,6 +151,11 @@ afterEvaluate { project ->
 
     task androidJavadocs(type: Javadoc) {
       source = android.sourceSets.main.java.source
+      android.libraryVariants.all { variant ->
+        if (variant.name == 'release') {
+          owner.classpath += variant.javaCompiler.classpath
+        }
+      }
       classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
     }
 

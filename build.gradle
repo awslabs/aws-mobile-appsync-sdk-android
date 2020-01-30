@@ -8,7 +8,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.3'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.3'
     }
 }
 

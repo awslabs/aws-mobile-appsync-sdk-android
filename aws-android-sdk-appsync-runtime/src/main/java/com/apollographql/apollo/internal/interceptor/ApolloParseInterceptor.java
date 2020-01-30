@@ -7,9 +7,6 @@
 
 package com.apollographql.apollo.internal.interceptor;
 
-import com.apollographql.apollo.api.Subscription;
-import com.apollographql.apollo.interceptor.ApolloInterceptor;
-import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.api.ResponseFieldMapper;
@@ -17,10 +14,12 @@ import com.apollographql.apollo.api.cache.http.HttpCache;
 import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.exception.ApolloHttpException;
 import com.apollographql.apollo.exception.ApolloParseException;
+import com.apollographql.apollo.interceptor.ApolloInterceptor;
+import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
+import com.apollographql.apollo.internal.ApolloLogger;
 import com.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
 import com.apollographql.apollo.internal.response.OperationResponseParser;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
-import com.apollographql.apollo.internal.ApolloLogger;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -33,8 +32,6 @@ import javax.annotation.Nonnull;
 import okhttp3.ResponseBody;
 import okio.Buffer;
 import okio.BufferedSource;
-
-import static okhttp3.internal.Util.UTF_8;
 
 /**
  * ApolloParseInterceptor is a concrete {@link ApolloInterceptor} responsible for inflating the http responses into
