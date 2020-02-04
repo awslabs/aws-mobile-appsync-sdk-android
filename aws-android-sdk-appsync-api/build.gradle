@@ -4,11 +4,9 @@ apply plugin: 'maven-publish'
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.google.code.findbugs:jsr305:3.0.2' // compileOnly
-    api 'javax.annotation:jsr250-api:1.0' // compileOnly
-
-    implementation 'com.squareup.okhttp3:okhttp:4.3.1' // compileOnly
+    api 'javax.annotation:jsr250-api:1.0'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.3.1'
 }
 
 publishing {

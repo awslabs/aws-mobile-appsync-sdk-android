@@ -11,9 +11,7 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
 
     buildTypes {
@@ -29,42 +27,27 @@ android {
 }
 
 dependencies {
-
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-
-    implementation 'com.google.code.findbugs:jsr305:3.0.2' // api
-    implementation 'com.squareup.okhttp3:okhttp:4.3.1' // impl
-
-    implementation "com.amazonaws:aws-android-sdk-core:$aws_version" // api
+    compileOnly project(':aws-android-sdk-appsync-runtime')
     compileOnly "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
     compileOnly "com.amazonaws:aws-android-sdk-s3:$aws_version"
-
     compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.2'
     compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 
-    compileOnly project(':aws-android-sdk-appsync-runtime')
+    implementation 'android.arch.lifecycle:runtime:1.1.1'
+    implementation 'com.google.code.findbugs:jsr305:3.0.2'
+    implementation ("com.amazonaws:aws-android-sdk-mobile-client:$aws_version@aar") { transitive = true }
+    implementation ("com.amazonaws:aws-android-sdk-auth-userpools:$aws_version@aar") { transitive = true }
+    implementation "com.amazonaws:aws-android-sdk-core:$aws_version"
+    implementation 'com.squareup.okhttp3:okhttp:4.3.1'
 
-    androidTestImplementation 'junit:junit:4.13'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    androidTestImplementation project(':aws-android-sdk-appsync-runtime')
-    androidTestImplementation project(':aws-android-sdk-appsync-api')
-
-    androidTestImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    androidTestImplementation project(':aws-android-sdk-appsync-runtime')
+    testImplementation project(':aws-android-sdk-appsync-runtime')
+    testImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
     testImplementation 'junit:junit:4.13'
     testImplementation ('org.robolectric:robolectric:4.3.1') {
         // https://github.com/robolectric/robolectric/issues/5245
         exclude group: 'com.google.auto.service', module: 'auto-service'
     }
     testImplementation 'org.mockito:mockito-core:3.2.4'
-    testImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    testImplementation project(':aws-android-sdk-appsync-runtime')
-    implementation ("com.amazonaws:aws-android-sdk-mobile-client:$aws_version@aar") { transitive = true }
-    implementation ("com.amazonaws:aws-android-sdk-auth-userpools:$aws_version@aar") { transitive = true }
-
-    def lifecycle_version = "1.1.1"
-    implementation("android.arch.lifecycle:runtime:$lifecycle_version")
 }
 
 project.afterEvaluate {

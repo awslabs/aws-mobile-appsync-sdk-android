@@ -3,13 +3,10 @@ apply plugin: 'maven-publish'
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-
+    api project(':aws-android-sdk-appsync-api')
+    api 'com.nytimes.android:cache:2.1.1'
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-    implementation 'com.squareup.okhttp3:okhttp:4.3.1' // impl
-    api 'com.nytimes.android:cache:2.1.1' // impl
-
-    api project(':aws-android-sdk-appsync-api') // api
+    implementation 'com.squareup.okhttp3:okhttp:4.3.1'
 }
 
 publishing {
@@ -25,4 +22,3 @@ publishing {
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
-

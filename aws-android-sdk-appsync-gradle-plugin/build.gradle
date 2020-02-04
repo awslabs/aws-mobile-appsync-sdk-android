@@ -9,15 +9,14 @@ sourceSets.main.java.srcDirs = []
 sourceSets.main.groovy.srcDirs = ["src/main/java", "src/main/groovy"]
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
-
     compileOnly gradleApi()
     compileOnly localGroovy()
-    implementation "com.moowork.gradle:gradle-node-plugin:1.0.0" // compileOnly
-    implementation 'com.android.tools.build:gradle:3.5.3' // compileOnly
-    implementation 'com.squareup.moshi:moshi:1.5.0' // impl
 
-    implementation project(':aws-android-sdk-appsync-compiler') // impl
+    implementation project(':aws-android-sdk-appsync-compiler')
+    implementation "com.moowork.gradle:gradle-node-plugin:1.0.0"
+    implementation 'com.android.tools.build:gradle:3.5.3'
+    implementation 'com.squareup.moshi:moshi:1.5.0'
+
 }
 
 publishing {
