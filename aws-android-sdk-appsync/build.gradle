@@ -11,9 +11,6 @@ android {
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
-
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
 
     buildTypes {
@@ -44,14 +41,6 @@ dependencies {
 
     compileOnly project(':aws-android-sdk-appsync-runtime')
 
-    androidTestImplementation 'junit:junit:4.13'
-    androidTestImplementation 'com.android.support.test:runner:1.0.2'
-    androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    androidTestImplementation project(':aws-android-sdk-appsync-runtime')
-    androidTestImplementation project(':aws-android-sdk-appsync-api')
-
-    androidTestImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    androidTestImplementation project(':aws-android-sdk-appsync-runtime')
     testImplementation 'junit:junit:4.13'
     testImplementation ('org.robolectric:robolectric:4.3.1') {
         // https://github.com/robolectric/robolectric/issues/5245
@@ -79,3 +68,4 @@ project.afterEvaluate {
         }
     }
 }
+
