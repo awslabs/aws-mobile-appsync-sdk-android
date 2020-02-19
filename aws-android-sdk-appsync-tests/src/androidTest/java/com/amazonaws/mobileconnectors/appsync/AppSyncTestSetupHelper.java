@@ -76,7 +76,7 @@ import static org.junit.Assert.assertTrue;
 
 final class AppSyncTestSetupHelper {
     private static final String TAG = AppSyncTestSetupHelper.class.getSimpleName();
-    private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(30);
 
     private String bucketName = null;
     private String s3Region = null;
@@ -525,7 +525,7 @@ final class AppSyncTestSetupHelper {
             public void onFailure(Exception exception) {
             }
         });
-        Await.latch(countDownLatchForSignIn, TimeUnit.SECONDS.toMillis(REASONABLE_WAIT_TIME_MS));
+        Await.latch(countDownLatchForSignIn, TimeUnit.SECONDS.toMillis(EXTENDED_WAIT_TIME_MS));
         assertNotNull("ID Token String for Cognito User Pool cannot be null.", idTokenStringForCustomCognitoUserPool);
     }
 

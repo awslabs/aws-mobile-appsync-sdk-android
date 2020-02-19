@@ -37,7 +37,8 @@ import static org.junit.Assert.assertTrue;
 
 public final class AWSAppSyncSubscriptionInstrumentationTest {
     private static final String TAG = AWSAppSyncSubscriptionInstrumentationTest.class.getSimpleName();
-    private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(5);
+    private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(5);
     private static AppSyncTestSetupHelper appSyncTestSetupHelper;
 
     @BeforeClass
@@ -52,7 +53,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         if (WifiManager.WIFI_STATE_ENABLED != wifiManager.getWifiState()) {
             wifiManager.setWifiEnabled(true);
-            Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
+            Sleep.milliseconds(EXTENDED_WAIT_TIME_MS);
         }
         assertEquals("Wifi is not enabled.", WifiManager.WIFI_STATE_ENABLED, wifiManager.getWifiState());
     }

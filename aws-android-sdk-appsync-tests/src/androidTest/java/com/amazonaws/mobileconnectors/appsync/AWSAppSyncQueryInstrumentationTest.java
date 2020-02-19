@@ -68,7 +68,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         if (WifiManager.WIFI_STATE_ENABLED != wifiManager.getWifiState()) {
             wifiManager.setWifiEnabled(true);
-            Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
+            Sleep.milliseconds(EXTENDED_WAIT_TIME_MS);
         }
         assertEquals("Wifi is not enabled.", WifiManager.WIFI_STATE_ENABLED, wifiManager.getWifiState());
     }
