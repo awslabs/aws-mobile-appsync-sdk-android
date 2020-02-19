@@ -52,6 +52,7 @@ import static org.junit.Assert.fail;
 public final class AWSAppSyncQueryInstrumentationTest {
     private static final String TAG = AWSAppSyncQueryInstrumentationTest.class.getSimpleName();
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
+    private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(30);
 
     private static AppSyncTestSetupHelper appSyncTestSetupHelper;
 
@@ -415,7 +416,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         // Note: when the test starts, we assume the mutation queue is going to be empty.
 
         // Act: Put something in the queue - this AddPostMutation.
-        LatchedGraphQLCallback<AddPostMutation.Data> addPostCallback = LatchedGraphQLCallback.instance();
+        LatchedGraphQLCallback<AddPostMutation.Data> addPostCallback = LatchedGraphQLCallback.instance(EXTENDED_WAIT_TIME_MS);
         awsAppSyncClient.mutate(
             AddPostMutation.builder()
                 .input(CreatePostInput.builder()
