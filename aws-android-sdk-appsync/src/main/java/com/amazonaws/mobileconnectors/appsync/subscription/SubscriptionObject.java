@@ -27,7 +27,9 @@ import okhttp3.MediaType;
 import okhttp3.ResponseBody;
 
 public class SubscriptionObject<D extends Operation.Data, T, V extends Operation.Variables> {
-    private final static String TAG = SubscriptionObject.class.getSimpleName();
+    private static final String TAG = SubscriptionObject.class.getSimpleName();
+    private static final String CONTENT_TYPE = "application/json";
+    private static final MediaType MEDIA_TYPE = MediaType.parse(CONTENT_TYPE);
 
     public Subscription<D, T, V> subscription;
     public Set<String> topics;
@@ -71,9 +73,12 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     public void onMessage(final String msg) {
         try {
             //TODO: Check why is this being converted to a Response Body
-            ResponseBody messageBody = ResponseBody.create(MediaType.parse("text/plain"), msg);
-            OperationResponseParser<D, T> parser = new OperationResponseParser(subscription,
-                    subscription.responseFieldMapper(), scalarTypeAdapters, normalizer);
+            ResponseBody messageBody = ResponseBody.create(msg, MEDIA_TYPE);
+            OperationResponseParser<D, T> parser = new OperationResponseParser<>(
+                    subscription,
+                    subscription.responseFieldMapper(),
+                    scalarTypeAdapters,
+                    normalizer);
             Response<T> parsedResponse = parser.parse(messageBody.source());
 
             if (parsedResponse.hasErrors()) {
