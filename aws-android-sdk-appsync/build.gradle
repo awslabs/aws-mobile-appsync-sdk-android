@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
 
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
@@ -54,18 +53,5 @@ dependencies {
 
     def lifecycle_version = "1.1.1"
     implementation("android.arch.lifecycle:runtime:$lifecycle_version")
-}
-
-project.afterEvaluate {
-    publishing {
-        publications {
-            library(MavenPublication) {
-                groupId 'com.amazonaws'
-                artifactId 'aws-android-sdk-appsync'
-                version VERSION_NAME + "-SNAPSHOT"
-                artifact(bundleReleaseAar)
-            }
-        }
-    }
 }
 

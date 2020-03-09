@@ -1,5 +1,4 @@
 apply plugin: 'java-library'
-apply plugin: 'maven-publish'
 
 apply from: rootProject.file('gradle-mvn-push.gradle')
 
@@ -9,17 +8,6 @@ dependencies {
     api 'javax.annotation:jsr250-api:1.0' // compileOnly
 
     implementation 'com.squareup.okhttp3:okhttp:4.3.1' // compileOnly
-}
-
-publishing {
-    publications {
-        pluginPublication(MavenPublication) {
-            from  components.java
-            groupId 'com.amazonaws'
-            artifactId 'aws-android-sdk-appsync-api'
-            version VERSION_NAME + "-SNAPSHOT"
-        }
-    }
 }
 
 sourceCompatibility = "1.7"
