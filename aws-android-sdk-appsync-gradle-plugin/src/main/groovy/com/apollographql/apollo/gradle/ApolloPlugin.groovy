@@ -46,18 +46,14 @@ class ApolloPlugin implements Plugin<Project> {
     @Override
     void apply(Project project) {
         this.project = project
-        if (project.plugins.withId("java-base")) {
+        if (project.plugins.hasPlugin(AppPlugin) || project.plugins.hasPlugin(LibraryPlugin) || project.plugins.hasPlugin(
+                JavaPlugin)) {
             applyApolloPlugin()
-        }
-
-        project.gradle.getTaskGraph().whenReady {
-            if (!project.plugins.hasPlugin("java-base")) {
-                throw new IllegalArgumentException(
-                        "Apollo plugin couldn't be applied without Android or Java or Kotlin plugin.")
-            }
+        } else {
+            throw new IllegalArgumentException(
+                    "Apollo plugin couldn't be applied. The Android or Java plugin must be configured first")
         }
     }
-
 
     private void applyApolloPlugin() {
         setupNode()
