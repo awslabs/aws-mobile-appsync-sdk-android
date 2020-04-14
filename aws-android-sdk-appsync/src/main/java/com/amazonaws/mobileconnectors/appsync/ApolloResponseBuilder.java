@@ -44,7 +44,7 @@ class ApolloResponseBuilder {
 
     <D extends Operation.Data, T, V extends Operation.Variables> Response<T> buildResponse(String message, Subscription<D, T, V> subscription) {
         // Parse the response using OperationResponseParser
-        ResponseBody messageBody = ResponseBody.create(message, MEDIA_TYPE);
+        ResponseBody messageBody = ResponseBody.create(MEDIA_TYPE, message);
         OperationResponseParser<D, T> parser = new OperationResponseParser<>(
             subscription,
             subscription.responseFieldMapper(),

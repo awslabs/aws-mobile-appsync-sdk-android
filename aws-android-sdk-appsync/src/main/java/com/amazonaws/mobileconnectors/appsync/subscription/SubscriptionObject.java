@@ -73,7 +73,7 @@ public class SubscriptionObject<D extends Operation.Data, T, V extends Operation
     public void onMessage(final String msg) {
         try {
             //TODO: Check why is this being converted to a Response Body
-            ResponseBody messageBody = ResponseBody.create(msg, MEDIA_TYPE);
+            ResponseBody messageBody = ResponseBody.create(MEDIA_TYPE, msg);
             OperationResponseParser<D, T> parser = new OperationResponseParser<>(
                     subscription,
                     subscription.responseFieldMapper(),
