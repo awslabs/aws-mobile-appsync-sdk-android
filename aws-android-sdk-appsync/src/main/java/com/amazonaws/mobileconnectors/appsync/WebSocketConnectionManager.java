@@ -8,9 +8,10 @@
 package com.amazonaws.mobileconnectors.appsync;
 
 import android.net.Uri;
-import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Subscription;

@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven-publish'
 
-apply from: rootProject.file('gradle-mvn-push.gradle')
+//apply from: rootProject.file('gradle-mvn-push.gradle')
 
 android {
     compileSdkVersion 28
@@ -26,7 +26,7 @@ android {
 }
 
 dependencies {
-
+    def aws_version = "2.16.8"
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation 'com.google.code.findbugs:jsr305:3.0.2' // api
@@ -39,7 +39,7 @@ dependencies {
     compileOnly 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.2'
     compileOnly 'org.eclipse.paho:org.eclipse.paho.android.service:1.1.1'
 
-    compileOnly project(':aws-android-sdk-appsync-runtime')
+    compileOnly ('com.amazonaws:aws-android-sdk-appsync-runtime:3.0.1')
 
     testImplementation 'junit:junit:4.13'
     testImplementation ('org.robolectric:robolectric:4.3.1') {
@@ -48,7 +48,7 @@ dependencies {
     }
     testImplementation 'org.mockito:mockito-core:3.2.4'
     testImplementation "com.amazonaws:aws-android-sdk-cognitoidentityprovider:$aws_version"
-    testImplementation project(':aws-android-sdk-appsync-runtime')
+    testImplementation 'com.amazonaws:aws-android-sdk-appsync-runtime:3.0.1'
     implementation ("com.amazonaws:aws-android-sdk-mobile-client:$aws_version@aar") { transitive = true }
     implementation ("com.amazonaws:aws-android-sdk-auth-userpools:$aws_version@aar") { transitive = true }
 
@@ -56,16 +56,16 @@ dependencies {
     implementation("android.arch.lifecycle:runtime:$lifecycle_version")
 }
 
-project.afterEvaluate {
-    publishing {
-        publications {
-            library(MavenPublication) {
-                groupId 'com.amazonaws'
-                artifactId 'aws-android-sdk-appsync'
-                version VERSION_NAME + "-SNAPSHOT"
-                artifact(bundleReleaseAar)
-            }
-        }
-    }
-}
+//project.afterEvaluate {
+//    publishing {
+//        publications {
+//            library(MavenPublication) {
+//                groupId 'com.amazonaws'
+//                artifactId 'aws-android-sdk-appsync'
+//                version VERSION_NAME + "-SNAPSHOT"
+//                artifact(bundleReleaseAar)
+//            }
+//        }
+//    }
+//}
 
