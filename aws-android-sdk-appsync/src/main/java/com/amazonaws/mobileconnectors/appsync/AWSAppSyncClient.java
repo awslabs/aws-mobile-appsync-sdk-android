@@ -261,7 +261,8 @@ public class AWSAppSyncClient {
 
         SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(builder.mAwsConfiguration,
             builder.mOidcAuthProvider,
-            applicationContext);
+            applicationContext,
+            builder.mCredentialsProvider);
 
         webSocketConnectionManager = new WebSocketConnectionManager(builder.mServerUrl,
             subscriptionAuthorizer,
