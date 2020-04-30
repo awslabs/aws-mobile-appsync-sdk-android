@@ -260,7 +260,8 @@ public class AWSAppSyncClient {
         subscriptionManager.setScalarTypeAdapters(new ScalarTypeAdapters(builder.customTypeAdapters));
         mS3ObjectManager = builder.mS3ObjectManager;
 
-        SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(builder.mAwsConfiguration,
+        SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(
+            builder.mAwsConfiguration,
             builder.mOidcAuthProvider,
             applicationContext,
             builder.mCredentialsProvider);
