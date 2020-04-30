@@ -7,11 +7,10 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import android.arch.lifecycle.Lifecycle;
+import android.arch.lifecycle.LifecycleObserver;
+import android.arch.lifecycle.OnLifecycleEvent;
 import android.util.Log;
-
-import androidx.lifecycle.Lifecycle;
-import androidx.lifecycle.LifecycleObserver;
-import androidx.lifecycle.OnLifecycleEvent;
 
 public class AWSAppSyncAppLifecycleObserver implements LifecycleObserver {
     //Constant for Logging

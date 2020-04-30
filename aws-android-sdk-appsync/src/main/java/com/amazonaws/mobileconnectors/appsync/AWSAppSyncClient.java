@@ -9,9 +9,8 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.support.annotation.NonNull;
 import android.util.Log;
-
-import androidx.annotation.NonNull;
 
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.mobile.config.AWSConfiguration;
