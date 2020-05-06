@@ -92,7 +92,7 @@ class SubscriptionAuthorizer {
     private JSONObject getAuthorizationDetailsForApiKey() {
         try {
             return new JSONObject()
-                .put("host", getHost(getApiUrl()))
+                .put("host", getHost(mServerUrl))
                 .put("x-amz-date", ISO8601Timestamp.now())
                 .put("x-api-key", getApiKey());
         } catch (JSONException | MalformedURLException e) {
@@ -107,7 +107,7 @@ class SubscriptionAuthorizer {
 
         URI apiUrl;
         try {
-            final String baseUrl = getApiUrl();
+            final String baseUrl = mServerUrl;
             final String connectionUrl = connectionFlag ? baseUrl + "/connect" : baseUrl;
             apiUrl = new URI(connectionUrl);
         } catch (URISyntaxException e) {
@@ -142,7 +142,7 @@ class SubscriptionAuthorizer {
                 if (!headerEntry.getKey().equals("host")) {
                     authorizationMessage.put((String) headerEntry.getKey(), headerEntry.getValue());
                 } else {
-                    authorizationMessage.put("host", getHost(getApiUrl()));
+                    authorizationMessage.put("host", getHost(mServerUrl));
                 }
             }
         } catch (JSONException | MalformedURLException e) {
@@ -156,7 +156,7 @@ class SubscriptionAuthorizer {
         BasicCognitoUserPoolsAuthProvider basicCognitoUserPoolsAuthProvider = new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
         try {
             return new JSONObject()
-                .put("host", getHost(getApiUrl()))
+                .put("host", getHost(mServerUrl))
                 .put("Authorization", basicCognitoUserPoolsAuthProvider.getLatestAuthToken());
         } catch (JSONException | MalformedURLException exception) {
             throw new RuntimeException("Error constructing authorization message JSON.", exception);
@@ -183,7 +183,7 @@ class SubscriptionAuthorizer {
     private JSONObject getAuthorizationDetailsForOidc() {
         try {
             return new JSONObject()
-                .put("host", getHost(getApiUrl()))
+                .put("host", getHost(mServerUrl))
                 .put("Authorization", mOidcAuthProvider.getLatestAuthToken());
         } catch (JSONException | MalformedURLException e) {
             throw new RuntimeException("Error constructing authorization message json", e);
@@ -221,12 +221,6 @@ class SubscriptionAuthorizer {
                  .getJSONObject("CognitoIdentity")
                  .getJSONObject(mAwsConfiguration.getConfiguration())
                  .getString("PoolId");
-    }
-
-    private String getApiUrl() throws JSONException {
-        return mServerUrl != null
-                ? mServerUrl
-                : mAwsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
     }
 
     private String getApiKey() throws JSONException {
