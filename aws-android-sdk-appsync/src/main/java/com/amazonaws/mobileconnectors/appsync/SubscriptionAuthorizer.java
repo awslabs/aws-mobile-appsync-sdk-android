@@ -43,7 +43,6 @@ class SubscriptionAuthorizer {
     private final Context mApplicationContext;
     private final OidcAuthProvider mOidcAuthProvider;
     private final AWSCredentialsProvider mCredentialsProvider;
-    private final String mRegionStr;
     private final String mServerUrl;
     private final APIKeyAuthProvider mApiKeyProvider;
 
@@ -52,7 +51,6 @@ class SubscriptionAuthorizer {
         this.mApplicationContext = builder.mContext;
         this.mOidcAuthProvider = builder.mOidcAuthProvider;
         this.mCredentialsProvider = builder.mCredentialsProvider;
-        this.mRegionStr = builder.mRegion.getName();
         this.mServerUrl = builder.mServerUrl;
         this.mApiKeyProvider = builder.mApiKey;
     }
@@ -206,13 +204,11 @@ class SubscriptionAuthorizer {
     }
 
     private String getRegion() throws JSONException {
-         return mRegionStr != null
-                 ? mRegionStr
-                 : mAwsConfiguration
-                     .optJsonObject("CredentialsProvider")
-                     .getJSONObject("CognitoIdentity")
-                     .getJSONObject(mAwsConfiguration.getConfiguration())
-                     .getString("Region");
+         return mAwsConfiguration
+                 .optJsonObject("CredentialsProvider")
+                 .getJSONObject("CognitoIdentity")
+                 .getJSONObject(mAwsConfiguration.getConfiguration())
+                 .getString("Region");
     }
 
     private String getIdentityPoolId() throws JSONException {
