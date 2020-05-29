@@ -385,13 +385,7 @@ final class AppSyncTestSetupHelper {
         @Override
         public AWSCredentials getCredentials() {
             if (credentialsDelay > 0) {
-                try {
-                    //Inject a delay so that we can mimic the behavior of mutations/subscription requests being
-                    //cancelled during execution. See "testCrud" for an example.
-                    Thread.sleep(credentialsDelay);
-                } catch (Exception e) {
-                    Log.v(TAG, "Thread sleep was interrupted [" + e +"]");
-                }
+                Sleep.milliseconds(credentialsDelay);
             }
             return credentialsProvider.getCredentials();
         }
@@ -909,12 +903,7 @@ final class AppSyncTestSetupHelper {
                     }
                 });
 
-                try {
-                    Thread.sleep(1);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-
+                Sleep.seconds(1);
                 call.cancel();
                 Looper.loop();
 
@@ -1125,15 +1114,5 @@ final class AppSyncTestSetupHelper {
             assertNull(response.data().getPost().ups());
             assertNull(response.data().getPost().downs());
         }
-    }
-
-    void sleep(int time) {
-        try {
-            Thread.sleep(time);
-        }
-        catch (InterruptedException ie) {
-            Log.d(TAG, "Sleep was interrupted");
-        }
-
     }
 }

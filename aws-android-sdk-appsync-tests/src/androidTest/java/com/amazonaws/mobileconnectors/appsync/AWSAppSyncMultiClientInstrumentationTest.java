@@ -97,11 +97,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
         if (WIFI_STATE_ENABLED != wifiManager.getWifiState()) {
             assertTrue(wifiManager.setWifiEnabled(true));
-            try {
-                Thread.sleep(3 * 1000);
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            Sleep.seconds(3);
         }
         assert(wifiManager.setWifiEnabled(true));
     }
@@ -732,9 +728,9 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                     WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
                     for (int i = 0; i < 3; i++) {
                         assertTrue(wifiManager.setWifiEnabled(false));
-                        appSyncTestSetupHelper.sleep((int) (3 * 1000));
+                        Sleep.seconds(3);
                         assertTrue(wifiManager.setWifiEnabled(true));
-                        appSyncTestSetupHelper.sleep((int) (7 * 1000));
+                        Sleep.seconds(7);
                     }
                 }
             }).start();
@@ -844,7 +840,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                     //Set Wifi Network offline
                     WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
                     assertTrue(wifiManager.setWifiEnabled(false));
-                    appSyncTestSetupHelper.sleep(1000);
+                    Sleep.seconds(1);
                     wifiManager.setWifiEnabled(true);
                 }
             }).start();
@@ -922,7 +918,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         //Set Wifi Network offline
         WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
         assertTrue(wifiManager.setWifiEnabled(false));
-        appSyncTestSetupHelper.sleep(3000);
+        Sleep.seconds(3);
 
         //Add a post
         final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -986,7 +982,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
         //Set Wifi Network online
         assertTrue(wifiManager.setWifiEnabled(true));
-        appSyncTestSetupHelper.sleep(3000);
+        Sleep.seconds(3);
     }
 
     @Test
@@ -1038,7 +1034,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         //Set Wifi Network offline
         WifiManager wifiManager = (WifiManager) InstrumentationRegistry.getContext().getSystemService(Context.WIFI_SERVICE);
         wifiManager.setWifiEnabled(false);
-        appSyncTestSetupHelper.sleep(3000);
+        Sleep.seconds(3);
 
         //Add a post
         final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -1105,7 +1101,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
         //Set Wifi Network online
         wifiManager.setWifiEnabled(true);
-        appSyncTestSetupHelper.sleep(3000);
+        Sleep.seconds(3);
     }
 
     @Test
