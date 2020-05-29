@@ -86,7 +86,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
             .content("Comments from test" + System.currentTimeMillis())
             .createdAt("fromTest")
             .build()
-        ).enqueue(NoOpGraphQLCallback.<CommentOnEventMutation.Data>instance());
+        ).enqueue(NoOpGraphQLCallback.instance());
 
         // Okay. Did we see it on the subscription?
         subscriptionCallback.awaitNextSuccessfulResponse();

@@ -180,7 +180,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
         final List<LatchedGraphQLCallback<UpdatePostMutation.Data>> onUpdatePostCallbacks = new ArrayList<>();
         for (int i = 0; i < 25; i++) {
-            onUpdatePostCallbacks.add(LatchedGraphQLCallback.<UpdatePostMutation.Data>instance());
+            onUpdatePostCallbacks.add(LatchedGraphQLCallback.instance());
         }
 
         // Add a post
@@ -492,7 +492,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
             // This test doesn't actually wait for completion, we're just going
             // to inspect that something is _queued_ to be executed.
             // So, we don't care about what arrives on the callback.
-            .enqueue(NoOpGraphQLCallback.<AddPostMutation.Data>instance());
+            .enqueue(NoOpGraphQLCallback.instance());
         }
         assertFalse(awsAppSyncClient.isMutationQueueEmpty());
         //noinspection deprecation TODO: @deprecated, but SDK does not propose migration path.

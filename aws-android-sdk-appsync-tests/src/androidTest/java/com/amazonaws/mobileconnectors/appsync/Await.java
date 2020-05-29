@@ -156,18 +156,12 @@ final class Await {
 
         final CountDownLatch latch = new CountDownLatch(1);
         resultErrorEmitter.emitTo(
-            new Consumer<R>() {
-                @Override
-                public void accept(R result) {
-                    resultContainer.set(result);
-                    latch.countDown();
-                }
-            }, new Consumer<E>() {
-                @Override
-                public void accept(E error) {
-                    errorContainer.set(error);
-                    latch.countDown();
-                }
+            result -> {
+                resultContainer.set(result);
+                latch.countDown();
+            }, error -> {
+                errorContainer.set(error);
+                latch.countDown();
             }
         );
 

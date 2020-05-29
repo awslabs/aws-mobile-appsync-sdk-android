@@ -37,8 +37,8 @@ final class DelegatingCallback<T> implements Callback<T> {
     static <T> DelegatingCallback<T> to(
             @Nullable Consumer<T> onResult, @Nullable Consumer<Exception> onError) {
         return new DelegatingCallback<>(
-            onResult != null ? onResult : DefaultConsumer.<T>instance(),
-            onError != null ? onError : DefaultConsumer.<Exception>instance()
+            onResult != null ? onResult : DefaultConsumer.instance(),
+            onError != null ? onError : DefaultConsumer.instance()
         );
     }
     @Override

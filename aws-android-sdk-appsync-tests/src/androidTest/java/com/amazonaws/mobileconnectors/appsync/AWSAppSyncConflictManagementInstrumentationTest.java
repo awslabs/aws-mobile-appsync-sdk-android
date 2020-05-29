@@ -92,7 +92,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
                     "Article", "", "", "", 1, null, null
                 ))
             )
-            .enqueue(NoOpGraphQLCallback.<UpdateArticleMutation.Data>instance());
+            .enqueue(NoOpGraphQLCallback.instance());
         }
     }
 

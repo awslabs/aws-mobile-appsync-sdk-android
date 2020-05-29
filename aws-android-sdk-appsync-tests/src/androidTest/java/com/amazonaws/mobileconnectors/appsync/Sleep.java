@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit;
  * The {@link InterruptedException} thrown by {@link Thread#sleep(long)} is wrapped into an
  * {@link RuntimeException} which helps cut down on test code clutter.
  */
+@SuppressWarnings("unused")
 final class Sleep {
     private Sleep() {}
 
