@@ -19,27 +19,14 @@ import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
-import com.amazonaws.mobileconnectors.appsync.demo.CreateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
-import com.amazonaws.mobileconnectors.appsync.demo.OnCreateArticleSubscription;
-import com.amazonaws.mobileconnectors.appsync.demo.OnCreatePostSubscription;
-import com.amazonaws.mobileconnectors.appsync.demo.OnDeleteArticleSubscription;
-import com.amazonaws.mobileconnectors.appsync.demo.OnDeletePostSubscription;
-import com.amazonaws.mobileconnectors.appsync.demo.OnUpdateArticleSubscription;
-import com.amazonaws.mobileconnectors.appsync.demo.OnUpdatePostSubscription;
-import com.amazonaws.mobileconnectors.appsync.demo.UpdateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
-import com.amazonaws.mobileconnectors.appsync.demo.type.CreateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
-import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
-import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
-import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
@@ -47,10 +34,10 @@ import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.util.Cancelable;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -58,13 +45,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Nonnull;
 
 import static android.net.wifi.WifiManager.WIFI_STATE_ENABLED;
+import static android.support.test.InstrumentationRegistry.getTargetContext;
 import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
 import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_MUTATION_SQL_STORE_NAME;
 import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_QUERY_SQL_STORE_NAME;
@@ -72,6 +59,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -1107,10 +1095,10 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testNoClientDatabasePrefixViaAwsConfiguration() {
         // Uses the configuration under the "MultiAuthAndroidIntegTestApp_NoClientDatabasePrefix" configuration key.
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_NoClientDatabasePrefix");
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
+                .context(getTargetContext())
                 .awsConfiguration(awsConfiguration)
                 .build();
         assertNotNull(awsAppSyncClient);
@@ -1122,7 +1110,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
     @Test
     public void testConfigHasClientDatabasePrefixAndUseClientDatabasePrefixTrue() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         String clientDatabasePrefixFromConfigJson = null;
         String clientName = null;
         try {
@@ -1137,7 +1125,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         }
 
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
+                .context(getTargetContext())
                 .awsConfiguration(awsConfiguration)
                 .useClientDatabasePrefix(true)
                 .build();
@@ -1149,7 +1137,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
     @Test
     public void testConfigHasClientDatabasePrefixAndUseClientDatabasePrefixFalse() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         String clientDatabasePrefixFromConfigJson = null;
         String clientName = null;
         try {
@@ -1164,7 +1152,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         }
 
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
+                .context(getTargetContext())
                 .awsConfiguration(awsConfiguration)
                 .useClientDatabasePrefix(false)
                 .build();
@@ -1176,331 +1164,210 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
     @Test
     public void testConfigHasNoClientDatabasePrefixAndUseClientDatabasePrefixTrue() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_NoClientDatabasePrefix");
-
-        try {
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .awsConfiguration(awsConfiguration)
-                    .useClientDatabasePrefix(true)
-                    .build();
-        } catch (Exception ex) {
-            assertNotNull(ex);
-            assertTrue(ex.getCause() instanceof RuntimeException);
-            assertEquals("ClientDatabasePrefix is not present in AppSync configuration in awsconfiguration.json " +
-                    "however .useClientDatabasePrefix(true) is passed in.", ex.getCause().getLocalizedMessage());
-        }
+                .context(getTargetContext())
+                .awsConfiguration(awsConfiguration)
+                .useClientDatabasePrefix(true)
+                .build()
+        );
+        assertEquals(
+            "ClientDatabasePrefix is not present in AppSync configuration in awsconfiguration.json " +
+                "however .useClientDatabasePrefix(true) is passed in.",
+            exception.getCause().getLocalizedMessage()
+        );
     }
 
     @Test
-    public void testConfigHasNoClientDatabasePrefixAndUseClientDatabasePrefixFalse() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+    public void testConfigHasNoClientDatabasePrefixAndUseClientDatabasePrefixFalse() throws JSONException {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_NoClientDatabasePrefix");
-
-        String clientName = null;
-        try {
-            clientName = awsConfiguration
-                    .optJsonObject("AppSync")
-                    .getString("AuthMode");
-        } catch (Exception ex) {
-            fail("Error in reading from awsconfiguration.json. " + ex.getLocalizedMessage());
-        }
-
-        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
+        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+            AWSAppSyncClient.builder()
+                .context(getTargetContext())
                 .awsConfiguration(awsConfiguration)
                 .useClientDatabasePrefix(false)
-                .build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
-                awsAppSyncClient,
-                null,
-                clientName);
+                .build(),
+            null,
+            awsConfiguration
+                .optJsonObject("AppSync")
+                .getString("AuthMode")
+        );
     }
 
     @Test
-    public void testCodeHasClientDatabasePrefixAndUseClientDatabasePrefixTrue() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-        String clientName = null;
-        String clientDatabasePrefix = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
-            clientName = awsConfiguration.optJsonObject("AppSync").getString("AuthMode");
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
+    public void testCodeHasClientDatabasePrefixAndUseClientDatabasePrefixTrue() throws JSONException {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
         AWSAppSyncClient.Builder awsAppSyncClientBuilder = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
-                .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                .serverUrl(serverUrl)
-                .region(region)
-                .useClientDatabasePrefix(true)
-                .clientDatabasePrefix(clientDatabasePrefix);
+            .context(getTargetContext())
+            .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+            .serverUrl(appSyncConfig.getString("ApiUrl"))
+            .region(Regions.fromName(appSyncConfig.getString("Region")))
+            .useClientDatabasePrefix(true)
+            .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"));
         AWSAppSyncClient awsAppSyncClient = awsAppSyncClientBuilder.build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(awsAppSyncClient, clientDatabasePrefix, clientName);
+        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+            awsAppSyncClient, appSyncConfig.getString("ClientDatabasePrefix"), appSyncConfig.getString("AuthMode")
+        );
     }
 
     @Test
-    public void testCodeHasClientDatabasePrefixAndUseClientDatabasePrefixFalse() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-        String clientDatabasePrefix = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
+    public void testCodeHasClientDatabasePrefixAndUseClientDatabasePrefixFalse() throws JSONException {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
-                .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                .serverUrl(serverUrl)
-                .region(region)
-                .useClientDatabasePrefix(false)
-                .clientDatabasePrefix(clientDatabasePrefix)
-                .build();
+            .context(getTargetContext())
+            .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+            .serverUrl(appSyncConfig.getString("ApiUrl"))
+            .region(Regions.fromName(appSyncConfig.getString("Region")))
+            .useClientDatabasePrefix(false)
+            .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"))
+            .build();
         appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(awsAppSyncClient, null, null);
     }
 
     @Test
     public void testCodeHasNoClientDatabasePrefixAndUseClientDatabasePrefixTrue() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(true)
-                    .build();
-        } catch (Exception ex) {
-            assertNotNull(ex);
-            assertEquals("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.", ex.getLocalizedMessage());
-        }
+                .context(getTargetContext())
+                .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+                .serverUrl(appSyncConfig.getString("ApiUrl"))
+                .region(Regions.fromName(appSyncConfig.getString("Region")))
+                .useClientDatabasePrefix(true)
+                .build()
+        );
+        String expected = "Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.";
+        assertEquals(expected, exception.getLocalizedMessage());
     }
 
     @Test
-    public void testCodeHasNoClientDatabasePrefixAndUseClientDatabasePrefixFalse() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-        String clientName = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-            clientName = awsConfiguration.optJsonObject("AppSync").getString("AuthMode");
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
+    public void testCodeHasNoClientDatabasePrefixAndUseClientDatabasePrefixFalse() throws JSONException {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
-                .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                .serverUrl(serverUrl)
-                .region(region)
-                .useClientDatabasePrefix(false)
-                .build();
-
+            .context(getTargetContext())
+            .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+            .serverUrl(appSyncConfig.getString("ApiUrl"))
+            .region(Regions.fromName(appSyncConfig.getString("Region")))
+            .useClientDatabasePrefix(false)
+            .build();
         appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
-                awsAppSyncClient,
-                null,
-                clientName);
+            awsAppSyncClient, null, appSyncConfig.getString("AuthMode")
+        );
     }
 
     @Test
     public void testConfigHasInvalidClientDatabasePrefix() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_InvalidClientDatabasePrefix");
-
-        try {
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .awsConfiguration(awsConfiguration)
-                    .useClientDatabasePrefix(true)
-                    .build();
-        } catch (RuntimeException re) {
-            assertTrue(re.getLocalizedMessage()
-                    .startsWith("ClientDatabasePrefix validation failed. Please pass in characters " +
-                            "that matches the pattern: ^[_a-zA-Z0-9]+$"));
-        }
+                .context(getTargetContext())
+                .awsConfiguration(awsConfiguration)
+                .useClientDatabasePrefix(true)
+                .build()
+        );
+        String expected = "ClientDatabasePrefix validation failed. Please pass in characters " +
+            "that matches the pattern: ^[_a-zA-Z0-9]+$";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     @Test
     public void testCodeHasInvalidClientDatabasePrefix() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(true)
-                    .clientDatabasePrefix("MultiAuthAndroidIntegTestApp_!@#$%^&*()")
-                    .build();
-        } catch (RuntimeException re) {
-            assertTrue(re.getLocalizedMessage()
-                    .startsWith("ClientDatabasePrefix validation failed. Please pass in characters " +
-                            "that matches the pattern: ^[_a-zA-Z0-9]+$"));
-        }
+                .context(getTargetContext())
+                .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+                .serverUrl(appSyncConfig.getString("ApiUrl"))
+                .region(Regions.fromName(appSyncConfig.getString("Region")))
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix("MultiAuthAndroidIntegTestApp_!@#$%^&*()") // This is the problem!!
+                .build()
+        );
+        String expected = "ClientDatabasePrefix validation failed. Please pass in characters " +
+            "that matches the pattern: ^[_a-zA-Z0-9]+$";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     @Test
     public void testCodeHasNullClientDatabasePrefix() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
+        //noinspection ConstantConditions null argument is what is is being tested
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(true)
-                    .clientDatabasePrefix(null)
-                    .build();
-        } catch (RuntimeException re) {
-            assertTrue(re.getLocalizedMessage()
-                    .startsWith("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true."));
-        }
+                .context(getTargetContext())
+                .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+                .serverUrl(appSyncConfig.getString("ApiUrl"))
+                .region(Regions.fromName(appSyncConfig.getString("Region")))
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix(null) // Note: this is the problem!!
+                .build()
+        );
+        String expected = "Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     @Test
     public void testCodeHasEmptyClientDatabasePrefix() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(true)
-                    .clientDatabasePrefix("")
-                    .build();
-        } catch (RuntimeException re) {
-            assertTrue(re.getLocalizedMessage()
-                    .startsWith("Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true."));
-        }
+                .context(getTargetContext())
+                .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+                .serverUrl(appSyncConfig.getString("ApiUrl"))
+                .region(Regions.fromName(appSyncConfig.getString("Region")))
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix("") // Note: this is the problem!!
+                .build()
+        );
+        String expected = "Please pass in a valid ClientDatabasePrefix when useClientDatabasePrefix is true.";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     @Test
-    public void testUseSameClientDatabasePrefixForDifferentAuthModes() {
+    public void testUseSameClientDatabasePrefixForDifferentAuthModes() throws JSONException {
         // Construct client-1 with API_KEY AuthMode and MultiAuthAndroidIntegTestApp_API_KEY prefix
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-        String clientDatabasePrefix = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
         AWSAppSyncClient.builder()
-                .context(InstrumentationRegistry.getTargetContext())
-                .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                .serverUrl(serverUrl)
-                .region(region)
-                .useClientDatabasePrefix(true)
-                .clientDatabasePrefix(clientDatabasePrefix)
-                .build();
+            .context(getTargetContext())
+            .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+            .serverUrl(appSyncConfig.getString("ApiUrl"))
+            .region(Regions.fromName(appSyncConfig.getString("Region")))
+            .useClientDatabasePrefix(true)
+            .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"))
+            .build();
 
         // Construct client-2 with AWS_IAM AuthMode and same prefix ("MultiAuthAndroidIntegTestApp_API_KEY")
-        try {
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .cognitoUserPoolsAuthProvider(new CognitoUserPoolsAuthProvider() {
-                        @Override
-                        public String getLatestAuthToken() {
-                            try {
-                                return AWSMobileClient.getInstance().getTokens().getIdToken().toString();
-                            } catch (Exception ex) {
-                                return null;
-                            }
-                        }
-                    })
-                    .useClientDatabasePrefix(true)
-                    .clientDatabasePrefix(clientDatabasePrefix)
-                    .build();
-        } catch (RuntimeException ex) {
-            assertTrue(ex.getLocalizedMessage()
-                    .startsWith("ClientDatabasePrefix validation failed. " +
-                            "The ClientDatabasePrefix "));
-        }
+                .context(getTargetContext())
+                .cognitoUserPoolsAuthProvider(() -> {
+                    try {
+                        return AWSMobileClient.getInstance()
+                            .getTokens()
+                            .getIdToken()
+                            .toString();
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+                })
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"))
+                .build()
+        );
+        String expected = "ClientDatabasePrefix validation failed. The ClientDatabasePrefix ";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     /**
@@ -1586,78 +1453,49 @@ public class AWSAppSyncMultiClientInstrumentationTest {
 
     @Test
     public void testNoContextThrowsException() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-        String clientDatabasePrefix = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .apiKey(new BasicAPIKeyAuthProvider(apiKey))
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(true)
-                    .clientDatabasePrefix(clientDatabasePrefix)
-                    .build();
-        } catch (Exception ex) {
-            assertTrue(ex.getLocalizedMessage().startsWith("A valid Android Context is required."));
-        }
+                .apiKey(new BasicAPIKeyAuthProvider(appSyncConfig.getString("ApiKey")))
+                .serverUrl(appSyncConfig.getString("ApiUrl"))
+                .region(Regions.fromName(appSyncConfig.getString("Region")))
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"))
+                .build()
+        );
+        String expected = "A valid Android Context is required.";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     @Test
     public void testNoAuthModeObjectThrowsExceptionViaCode() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        String apiKey = null;
-        String serverUrl  = null;
-        Regions region = null;
-        String clientDatabasePrefix = null;
-
-        try {
-            apiKey = awsConfiguration.optJsonObject("AppSync").getString("ApiKey");
-            serverUrl = awsConfiguration.optJsonObject("AppSync").getString("ApiUrl");
-            region = Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region"));
-            clientDatabasePrefix = awsConfiguration.optJsonObject("AppSync").getString("ClientDatabasePrefix");
-        } catch (JSONException e) {
-            fail("Error in reading from awsconfiguration.json. " + e.getLocalizedMessage());
-        }
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        JSONObject appSyncConfig = awsConfiguration.optJsonObject("AppSync");
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .serverUrl(serverUrl)
-                    .region(region)
-                    .useClientDatabasePrefix(true)
-                    .clientDatabasePrefix(clientDatabasePrefix)
-                    .build();
-        } catch (Exception ex) {
-            assertTrue(ex.getLocalizedMessage().startsWith("No valid AuthMode object is passed in to the builder."));
-        }
+                .context(getTargetContext())
+                .serverUrl(appSyncConfig.getString("ApiUrl"))
+                .region(Regions.fromName(appSyncConfig.getString("Region")))
+                .useClientDatabasePrefix(true)
+                .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"))
+                .build()
+        );
+        String expected = "No valid AuthMode object is passed in to the builder.";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 
     @Test
     public void testNoAuthModeObjectThrowsExceptionViaAWSConfiguration() {
-        AWSConfiguration awsConfiguration = new AWSConfiguration(InstrumentationRegistry.getTargetContext());
-
-        try {
+        AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
+        RuntimeException exception = assertThrows(RuntimeException.class, () ->
             AWSAppSyncClient.builder()
-                    .context(InstrumentationRegistry.getTargetContext())
-                    .awsConfiguration(awsConfiguration)
-                    .useClientDatabasePrefix(true)
-                    .build();
-        } catch (Exception ex) {
-            assertTrue(ex.getLocalizedMessage().startsWith("No valid AuthMode object is passed in to the builder."));
-        }
+                .context(getTargetContext())
+                .awsConfiguration(awsConfiguration)
+                .useClientDatabasePrefix(true)
+                .build()
+        );
+        String expected = "No valid AuthMode object is passed in to the builder.";
+        assertTrue(exception.getLocalizedMessage().startsWith(expected));
     }
 }
