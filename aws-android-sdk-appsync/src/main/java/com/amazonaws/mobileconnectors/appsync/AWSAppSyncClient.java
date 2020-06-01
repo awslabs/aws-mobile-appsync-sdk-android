@@ -259,9 +259,7 @@ public class AWSAppSyncClient {
         subscriptionManager.setScalarTypeAdapters(new ScalarTypeAdapters(builder.customTypeAdapters));
         mS3ObjectManager = builder.mS3ObjectManager;
 
-        SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(builder.mAwsConfiguration,
-            builder.mOidcAuthProvider,
-            applicationContext);
+        SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(builder);
 
         webSocketConnectionManager = new WebSocketConnectionManager(builder.mServerUrl,
             subscriptionAuthorizer,
@@ -553,8 +551,8 @@ public class AWSAppSyncClient {
                         throw new RuntimeException("AppSync configuration is missing from awsconfiguration.json");
                     }
 
-                    mServerUrl = appSyncJsonObject.getString("ApiUrl");
-                    mRegion = Regions.fromName(appSyncJsonObject.getString("Region"));
+                    mServerUrl = mServerUrl != null ? mServerUrl : appSyncJsonObject.getString("ApiUrl");
+                    mRegion = mRegion != null ? mRegion : Regions.fromName(appSyncJsonObject.getString("Region"));
 
                     if (mUseClientDatabasePrefix) {
                         // Populate the ClientDatabasePrefix from awsconfiguration.json
