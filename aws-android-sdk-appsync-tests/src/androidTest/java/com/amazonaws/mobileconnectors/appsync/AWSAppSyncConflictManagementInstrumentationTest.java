@@ -54,7 +54,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
                 .input(CreateArticleInput.builder()
                     .title(title)
                     .author(author)
-                    .version(100)
+//                    .version(100)
                     .build()
                 )
                 .build(),
@@ -78,7 +78,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
             "ALWAYS DISCARD",
             title + System.currentTimeMillis()
         };
-        for (int i = 0; i < title.length(); i++) {
+        for (int i = 0; i < titles.length; i++) {
             awsAppSyncClient.mutate(
                 UpdateArticleMutation.builder()
                     .input(UpdateArticleInput.builder()
@@ -204,7 +204,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
             .input(CreateArticleInput.builder()
                 .title(title)
                 .author(author)
-                .version(version)
+//                .version(version)
                 .build())
             .build(),
             new CreateArticleMutation.Data(new CreateArticleMutation.CreateArticle(
