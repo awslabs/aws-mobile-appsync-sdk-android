@@ -62,10 +62,9 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
             .input(CreateArticleInput.builder()
                 .title(title)
                 .author(author)
-                .version(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testAddComplexObject.pdf")
+                    .key("uploads/testAddComplexObject.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -88,7 +87,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         assertNotNull(createArticle.id());
         CreateArticleMutation.Pdf pdf = createArticle.pdf();
         assertNotNull(pdf);
-        assertEquals("testAddComplexObject.pdf", pdf.key());
+        assertEquals("uploads/testAddComplexObject.pdf", pdf.key());
 
         String updatedFilePath =
             appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
@@ -102,7 +101,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .expectedVersion(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testUpdatedComplexObject.pdf")
+                    .key("uploads/testUpdatedComplexObject.pdf")
                     .localUri(updatedFilePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -140,10 +139,9 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
             .input(CreateArticleInput.builder()
                 .title(title)
                 .author(author)
-                .version(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testAddComplexObject.pdf")
+                    .key("uploads/testAddComplexObject.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -180,7 +178,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .expectedVersion(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testUpdatedComplexObject.pdf")
+                    .key("uploads/testUpdatedComplexObject.pdf")
                     .localUri(updatedFilePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -218,10 +216,9 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
             .input(CreateArticleInput.builder()
                 .title(title)
                 .author(author)
-                .version(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket("dfadfdsfjeje")
-                    .key("testAddComplexObject.pdf")
+                    .key("uploads/testAddComplexObject.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -249,17 +246,16 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
             .input(CreateArticleInput.builder()
                 .title(title)
                 .author(author)
-                .version(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testAddTwoComplexObjects.pdf")
+                    .key("uploads/testAddTwoComplexObjects.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
                     .build())
                 .image(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testAddTwoComplexObjects.png")
+                    .key("uploads/testAddTwoComplexObjects.png")
                     .localUri(filePath)
                     .mimeType("image/png")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -295,14 +291,14 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .expectedVersion(1)
                 .pdf(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testUpdateTwoComplexObjects.pdf")
+                    .key("uploads/testUpdateTwoComplexObjects.pdf")
                     .localUri(updatedFilePath)
                     .mimeType("application/pdf")
                     .region(appSyncTestSetupHelper.getS3Region())
                     .build())
                 .image(S3ObjectInput.builder()
                     .bucket(appSyncTestSetupHelper.getBucketName())
-                    .key("testUpdateTwoComplexObjects.png")
+                    .key("uploads/testUpdateTwoComplexObjects.png")
                     .localUri(updatedFilePath)
                     .mimeType("image/png")
                     .region(appSyncTestSetupHelper.getS3Region())
@@ -341,7 +337,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
             .version(1)
             .pdf(S3ObjectInput.builder()
                 .bucket(appSyncTestSetupHelper.getBucketName())
-                .key("testAddComplexObjectWithCreateArticle2.pdf")
+                .key("uploads/testAddComplexObjectWithCreateArticle2.pdf")
                 .localUri(filePath)
                 .mimeType("application/pdf")
                 .region(appSyncTestSetupHelper.getS3Region())
@@ -363,7 +359,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         assertNotNull(createArticle2.id());
         CreateArticle2Mutation.Pdf pdf = createArticle2.pdf();
         assertNotNull(pdf);
-        assertEquals("testAddComplexObjectWithCreateArticle2.pdf", pdf.key());
+        assertEquals("uploads/testAddComplexObjectWithCreateArticle2.pdf", pdf.key());
     }
 
     Map<String, Response<AllArticlesQuery.Data>> listArticles(
