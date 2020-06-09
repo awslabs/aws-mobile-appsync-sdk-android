@@ -54,7 +54,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
                 .input(CreateArticleInput.builder()
                     .title(title)
                     .author(author)
-//                    .version(100)
+                    .version(100)
                     .build()
                 )
                 .build(),
@@ -204,7 +204,6 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
             .input(CreateArticleInput.builder()
                 .title(title)
                 .author(author)
-//                .version(version)
                 .build())
             .build(),
             new CreateArticleMutation.Data(new CreateArticleMutation.CreateArticle(
