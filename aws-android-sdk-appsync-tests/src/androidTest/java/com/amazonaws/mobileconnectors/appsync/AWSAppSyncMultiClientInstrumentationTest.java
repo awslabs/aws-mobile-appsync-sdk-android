@@ -345,7 +345,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             Log.d(TAG, "AWSAppSyncClient: " + awsAppSyncClient);
             assertNotNull(awsAppSyncClient);
 
-            Response<AllPostsQuery.Data> allPostsResponse = appSyncTestSetupHelper.listPosts(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY).get("NETWORK");
+            Response<AllPostsQuery.Data> allPostsResponse = Posts.list(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY).get("NETWORK");
             assertNotNull(allPostsResponse);
             assertNotNull(allPostsResponse.data());
             assertNotNull(allPostsResponse.data().listPosts());
@@ -355,7 +355,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             long numPostsFromNetwork = 0;
             for (AllPostsQuery.Item item : listPosts.items()) {
                 postID = item.id();
-                Response<GetPostQuery.Data> getPostQueryResponse = appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
+                Response<GetPostQuery.Data> getPostQueryResponse = Posts.query(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
                 assertNotNull(getPostQueryResponse);
                 assertNotNull(getPostQueryResponse.data());
                 assertNotNull(getPostQueryResponse.data().getPost());
@@ -366,7 +366,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             long numPostsFromCache = 0;
             for (AllPostsQuery.Item item : listPosts.items()) {
                 postID = item.id();
-                Response<GetPostQuery.Data> getPostQueryResponse = appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY, postID).get("CACHE");
+                Response<GetPostQuery.Data> getPostQueryResponse = Posts.query(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY, postID).get("CACHE");
                 assertNotNull(getPostQueryResponse);
                 assertNotNull(getPostQueryResponse.data());
                 assertNotNull(getPostQueryResponse.data().getPost());
@@ -400,7 +400,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 final AWSAppSyncClient awsAppSyncClient = appSyncClientMap.get(clientName);
                 Log.d(TAG, "AWSAppSyncClient for clientName: " + clientName + "; client: " + awsAppSyncClient);
                 assertNotNull(awsAppSyncClient);
-                Map<String, Response<AllPostsQuery.Data>> listPostsResponses = appSyncTestSetupHelper.listPosts(awsAppSyncClient, appSyncResponseFetcher);
+                Map<String, Response<AllPostsQuery.Data>> listPostsResponses = Posts.list(awsAppSyncClient, appSyncResponseFetcher);
                 Response<AllPostsQuery.Data> allPostsResponse = listPostsResponses.get("CACHE") != null
                         ? listPostsResponses.get("CACHE")
                         : listPostsResponses.get("NETWORK");
@@ -413,7 +413,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 String postID;
                 for (AllPostsQuery.Item item : listPosts.items()) {
                     postID = item.id();
-                    Map<String, Response<GetPostQuery.Data>> getPostResponses = appSyncTestSetupHelper.queryPost(awsAppSyncClient, appSyncResponseFetcher, postID);
+                    Map<String, Response<GetPostQuery.Data>> getPostResponses = Posts.query(awsAppSyncClient, appSyncResponseFetcher, postID);
 
                     if (clientName.equals("API_KEY") || clientName.equals("AWS_IAM")) {
                         assertResponseForQueryPost(appSyncResponseFetcher, getPostResponses, postID);
@@ -510,7 +510,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
             //Add a post through API Key Client
-            Response<AddPostMutation.Data> addPostMutationResponse = appSyncTestSetupHelper.addPost(apiKeyClientForPosts, title, author, url, content);
+            Response<AddPostMutation.Data> addPostMutationResponse = Posts.add(apiKeyClientForPosts, title, author, url, content);
             assertNotNull(addPostMutationResponse);
             assertNotNull(addPostMutationResponse.data());
             assertNotNull(addPostMutationResponse.data().createPost());
@@ -569,51 +569,51 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             assertNotNull(updatePostMutationResponse.data());
             assertNotNull(updatePostMutationResponse.data().updatePost());
 
-            Map<String, Response<GetPostQuery.Data>> getPostResponses = appSyncTestSetupHelper.queryPost(apiKeyClientForPosts, appSyncResponseFetcher, postID);
+            Map<String, Response<GetPostQuery.Data>> getPostResponses = Posts.query(apiKeyClientForPosts, appSyncResponseFetcher, postID);
             Response<GetPostQuery.Data> getPostQueryResponse = getPostResponses.get("NETWORK");
-            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "API_KEY");
+            Posts.validate(getPostQueryResponse, postID, "API_KEY");
 
             // Now, Query the post mutated through IAM Client with CACHE_ONLY and checks if it returns null.
             Log.d(TAG, "AWSAppSyncClient for AWS_IAM: " + iamClientForPosts);
             assertNotNull(iamClientForPosts);
 
-            getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostResponses = Posts.query(iamClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
             getPostQueryResponse = getPostResponses.get("CACHE");
 
             assertNotNull(getPostQueryResponse);
             assertNull(getPostQueryResponse.data());
 
             // Now, Query the post mutated through IAM Client with NETWORK_* and checks if it returns valid post object.
-            getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, appSyncResponseFetcher, postID);
+            getPostResponses = Posts.query(iamClientForPosts, appSyncResponseFetcher, postID);
             getPostQueryResponse = getPostResponses.get("NETWORK");
-            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AWS_IAM");
+            Posts.validate(getPostQueryResponse, postID, "AWS_IAM");
 
 
             // Now, Query the post mutated through IAM Client with CACHE_ONLY and checks if it returns valid post object.
-            getPostResponses = appSyncTestSetupHelper.queryPost(iamClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostResponses = Posts.query(iamClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
             getPostQueryResponse = getPostResponses.get("CACHE");
-            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AWS_IAM");
+            Posts.validate(getPostQueryResponse, postID, "AWS_IAM");
 
 
             // Now, Query the post mutated through Amazon Cognito User Pools Client with CACHE_ONLY
             Log.d(TAG, "AWSAppSyncClient for AMAZON_COGNITO_USER_POOLS: " + amazonCognitoUserPoolsClientForPosts);
             assertNotNull(amazonCognitoUserPoolsClientForPosts);
 
-            getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostResponses = Posts.query(amazonCognitoUserPoolsClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
             getPostQueryResponse = getPostResponses.get("CACHE");
 
             assertNotNull(getPostQueryResponse);
             assertNull(getPostQueryResponse.data());
 
             // Now, Query the post mutated through Amazon Cognito User Pools Client with NETWORK_*
-            getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, appSyncResponseFetcher, postID);
+            getPostResponses = Posts.query(amazonCognitoUserPoolsClientForPosts, appSyncResponseFetcher, postID);
             getPostQueryResponse = getPostResponses.get("NETWORK");
-            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
+            Posts.validate(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
 
             // Now, Query the post mutated through Amazon Cognito User Pools Client with CACHE_ONLY
-            getPostResponses = appSyncTestSetupHelper.queryPost(amazonCognitoUserPoolsClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
+            getPostResponses = Posts.query(amazonCognitoUserPoolsClientForPosts, AppSyncResponseFetchers.CACHE_ONLY, postID);
             getPostQueryResponse = getPostResponses.get("CACHE");
-            appSyncTestSetupHelper.assertQueryPostResponse(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
+            Posts.validate(getPostQueryResponse, postID, "AMAZON_COGNITO_USER_POOLS");
 
             try {
                 apiKeyClientForPosts.clearCaches();
@@ -631,7 +631,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         List<AWSAppSyncClient> clients = new ArrayList<>();
         clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
         clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPools2FromAWSConfiguration());
-        appSyncTestSetupHelper.testCRUD(clients);
+        PostCruds.test(clients);
         clients.clear();
     }
 
@@ -644,7 +644,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             public void run() {
                 List<AWSAppSyncClient> clients = new ArrayList<>();
                 clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-                appSyncTestSetupHelper.testCRUD(clients);
+                PostCruds.test(clients);
                 countDownLatch.countDown();
             }
         }).start();
@@ -654,7 +654,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             public void run() {
                 List<AWSAppSyncClient> clients = new ArrayList<>();
                 clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
-                appSyncTestSetupHelper.testCRUD(clients);
+                PostCruds.test(clients);
                 countDownLatch.countDown();
             }
         }).start();
@@ -664,7 +664,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             public void run() {
                 List<AWSAppSyncClient> clients = new ArrayList<>();
                 clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
-                appSyncTestSetupHelper.testCRUD(clients);
+                PostCruds.test(clients);
                 countDownLatch.countDown();
             }
         }).start();
@@ -701,7 +701,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             }
 
             //Add a post
-            Response<AddPostMutation.Data> addPostMutationResponse = appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+            Response<AddPostMutation.Data> addPostMutationResponse = Posts.add(awsAppSyncClient, title, author, url, content);
             assertNotNull(addPostMutationResponse);
             assertNotNull(addPostMutationResponse.data());
             assertNotNull(addPostMutationResponse.data().createPost());
@@ -781,7 +781,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 assertNotNull(updatePostMutationResponse.data().updatePost());
             }
 
-            Response<GetPostQuery.Data> getPostQueryResponse = appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
+            Response<GetPostQuery.Data> getPostQueryResponse = Posts.query(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
             assertNotNull(getPostQueryResponse);
             assertNotNull(getPostQueryResponse.data());
             assertNotNull(getPostQueryResponse.data().getPost());
@@ -814,7 +814,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
             //Add a post
-            Response<AddPostMutation.Data> addPostMutationResponse = appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+            Response<AddPostMutation.Data> addPostMutationResponse = Posts.add(awsAppSyncClient, title, author, url, content);
             assertNotNull(addPostMutationResponse);
             assertNotNull(addPostMutationResponse.data());
             assertNotNull(addPostMutationResponse.data().createPost());
@@ -883,7 +883,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             assertNotNull(updatePostMutationResponse.data());
             assertNotNull(updatePostMutationResponse.data().updatePost());
 
-            Response<GetPostQuery.Data> getPostQueryResponse = appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
+            Response<GetPostQuery.Data> getPostQueryResponse = Posts.query(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID).get("NETWORK");
             assertNotNull(getPostQueryResponse);
             assertNotNull(getPostQueryResponse.data());
             assertNotNull(getPostQueryResponse.data().getPost());
@@ -964,7 +964,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         // Query from cache and check no data is available
-        Response<AllPostsQuery.Data> listPostsResponse = appSyncTestSetupHelper.listPosts(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
+        Response<AllPostsQuery.Data> listPostsResponse = Posts.list(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
         assertNotNull(listPostsResponse);
         assertNull(listPostsResponse.data());
 
@@ -978,7 +978,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         List<AWSAppSyncClient> clients = new ArrayList<>();
         final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
         clients.add(awsAppSyncClient);
-        appSyncTestSetupHelper.testCRUD(clients);
+        PostCruds.test(clients);
 
         try {
             awsAppSyncClient.clearCaches(
@@ -995,7 +995,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         // Query from cache and check no data is available
-        Response<AllPostsQuery.Data> listPostsResponse = appSyncTestSetupHelper.listPosts(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
+        Response<AllPostsQuery.Data> listPostsResponse = Posts.list(awsAppSyncClient, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
         assertNotNull(listPostsResponse);
         assertNull(listPostsResponse.data());
     }
@@ -1007,7 +1007,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         clients.add(awsAppSyncClient);
 
         // Query from cache and check no data is available
-        Response<AllPostsQuery.Data> listPostsResponse = appSyncTestSetupHelper.listPosts(
+        Response<AllPostsQuery.Data> listPostsResponse = Posts.list(
                 awsAppSyncClient,
                 AppSyncResponseFetchers.NETWORK_FIRST)
                 .get("NETWORK");
@@ -1080,7 +1080,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         // Query from cache and check data is available since only mutations queue is cleared.
-        listPostsResponse = appSyncTestSetupHelper.listPosts(
+        listPostsResponse = Posts.list(
                 awsAppSyncClient,
                 AppSyncResponseFetchers.CACHE_ONLY)
                 .get("CACHE");

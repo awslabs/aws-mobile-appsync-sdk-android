@@ -135,7 +135,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
         // Query Posts through API Key Client
         Response<AllPostsQuery.Data> allPostsResponse =
-            appSyncTestSetupHelper.listPosts(userPoolsAppSyncClientForPosts, AppSyncResponseFetchers.NETWORK_ONLY)
+            Posts.list(userPoolsAppSyncClientForPosts, AppSyncResponseFetchers.NETWORK_ONLY)
                 .get("NETWORK");
         assertNotNull(allPostsResponse);
         assertNotNull(allPostsResponse.data());
@@ -148,12 +148,12 @@ public final class AWSAppSyncQueryInstrumentationTest {
         // query them individually.
         for (AllPostsQuery.Item item : items) {
             String postID = item.id();
-            Map<String, Response<GetPostQuery.Data>> responses = appSyncTestSetupHelper.queryPost(
+            Map<String, Response<GetPostQuery.Data>> responses = Posts.query(
                 userPoolsAppSyncClientForPosts,
                 AppSyncResponseFetchers.CACHE_AND_NETWORK,
                 postID);
-            appSyncTestSetupHelper.assertQueryPostResponse(responses.get("CACHE"), postID, "AMAZON_COGNITO_USER_POOLS");
-            appSyncTestSetupHelper.assertQueryPostResponse(responses.get("NETWORK"), postID, "AMAZON_COGNITO_USER_POOLS");
+            Posts.validate(responses.get("CACHE"), postID, "AMAZON_COGNITO_USER_POOLS");
+            Posts.validate(responses.get("NETWORK"), postID, "AMAZON_COGNITO_USER_POOLS");
         }
     }
 
@@ -161,7 +161,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
     public void testCRUDWithSingleClient() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
         clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration(false, REASONABLE_WAIT_TIME_MS));
-        appSyncTestSetupHelper.testCRUD(clients);
+        PostCruds.test(clients);
     }
 
     /**
@@ -185,7 +185,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
         // Add a post
         Response<AddPostMutation.Data> addPostMutationResponse =
-            appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+            Posts.add(awsAppSyncClient, title, author, url, content);
         assertNotNull(addPostMutationResponse);
         assertNotNull(addPostMutationResponse.data());
         AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
@@ -230,7 +230,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         }
 
         Response<GetPostQuery.Data> getPostQueryResponse =
-            appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID)
+            Posts.query(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID)
                 .get("NETWORK");
         assertNotNull(getPostQueryResponse);
         assertNotNull(getPostQueryResponse.data());
@@ -256,7 +256,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
         // Add a post
         Response<AddPostMutation.Data> addPostMutationResponse =
-            appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+            Posts.add(awsAppSyncClient, title, author, url, content);
         assertNotNull(addPostMutationResponse);
         assertNotNull(addPostMutationResponse.data());
         final AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
@@ -299,7 +299,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         assertNotNull(updatePostMutationResponse.data().updatePost());
 
         Response<GetPostQuery.Data> getPostQueryResponse =
-            appSyncTestSetupHelper.queryPost(awsAppSyncClient,
+            Posts.query(awsAppSyncClient,
                 AppSyncResponseFetchers.NETWORK_ONLY, postID)
                 .get("NETWORK");
         assertNotNull(getPostQueryResponse);
@@ -318,7 +318,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         final String updatedContent = "New content coming up @" + System.currentTimeMillis();
         final String randomID = UUID.randomUUID().toString();
         Response<UpdatePostMutation.Data> updatePostMutationResponse =
-            appSyncTestSetupHelper.updatePost(awsAppSyncClient, randomID, updatedContent);
+            Posts.update(awsAppSyncClient, randomID, updatedContent);
         assertNotNull(updatePostMutationResponse);
 
         UpdatePostMutation.Data data = updatePostMutationResponse.data();
