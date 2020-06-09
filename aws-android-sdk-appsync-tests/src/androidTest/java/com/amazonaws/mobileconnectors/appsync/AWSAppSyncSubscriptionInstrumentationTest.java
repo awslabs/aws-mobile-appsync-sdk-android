@@ -114,7 +114,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode.STAY_DISCONNECTED);
     }
 
-    private void testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode subscriptionReconnectMode) {
+    private static void testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode subscriptionReconnectMode) {
         final boolean shouldAutomaticallyReconnect =
             SubscriptionReconnectMode.AUTOMATICALLY_RECONNECT.equals(subscriptionReconnectMode);
         AWSAppSyncClient awsAppSyncClient =
@@ -176,7 +176,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
 
             // Create a Post.
             Response<AddPostMutation.Data> addPostMutationResponse =
-                appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+                Posts.add(awsAppSyncClient, title, author, url, content);
             assertNotNull(addPostMutationResponse.data());
 
             AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
@@ -187,7 +187,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
 
             // Update that same post, 5 times.
             for (int i = 0; i < 5; i++) {
-                Response<UpdatePostMutation.Data> updatePostMutationResponse = appSyncTestSetupHelper.updatePost(
+                Response<UpdatePostMutation.Data> updatePostMutationResponse = Posts.update(
                     awsAppSyncClient,
                     postId,
                     "Lost in the sky @" + System.currentTimeMillis());
@@ -196,7 +196,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
             Log.d(TAG, "Updated post five times");
 
             // Okay, now delete the post.
-            appSyncTestSetupHelper.deletePost(awsAppSyncClient, postId);
+            Posts.delete(awsAppSyncClient, postId);
             Log.d(TAG, "Deleted post");
 
             // Validate that the mutations "worked".
@@ -233,7 +233,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         testAddSubscriptionWithApiKeyAuthModel(SubscriptionReconnectMode.STAY_DISCONNECTED);
     }
 
-    private void testAddSubscriptionWithApiKeyAuthModel(SubscriptionReconnectMode subscriptionReconnectMode) {
+    private static void testAddSubscriptionWithApiKeyAuthModel(SubscriptionReconnectMode subscriptionReconnectMode) {
         boolean shouldAutomaticallyReconnect =
             SubscriptionReconnectMode.AUTOMATICALLY_RECONNECT.equals(subscriptionReconnectMode);
         AWSAppSyncClient awsAppSyncClient =
@@ -255,7 +255,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         // Sleep for a while to make sure the subscription goes through
         Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
 
-        appSyncTestSetupHelper.addPost(awsAppSyncClient,title,author,url,content);
+        Posts.add(awsAppSyncClient,title,author,url,content);
         Log.d(TAG, "Added Post");
 
         // Did the post show up on the subscription?
@@ -287,13 +287,13 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
 
         // Try to create post using only the fields that are required for success.
-        appSyncTestSetupHelper.addPostRequiredFieldsOnlyMutation(awsAppSyncClient,title,author,url,content);
+        Posts.addRequiredFieldsOnly(awsAppSyncClient,title,author,url,content);
         Log.d(TAG, "Added Post using addPostRequireFieldsOnlyMutation ");
         onCreatePostCallback.awaitNextSuccessfulResponse();
 
         // Try to create a post, by supplying an incomplete set of parameters.
         // Expect errors in the GraphQL response.
-        appSyncTestSetupHelper.addPostMissingRequiredFieldsMutation(awsAppSyncClient,title, author + System.currentTimeMillis(), url, content);
+        Posts.addMissingRequiredFields(awsAppSyncClient,title, author + System.currentTimeMillis(), url, content);
         Log.d(TAG, "Added Post using addPostMissingRequiredFieldsMutation");
         assertTrue(onCreatePostCallback.awaitNextResponse().hasErrors());
 
@@ -312,7 +312,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         testAddSubscriptionWithIAMAuthModel(false);
     }
 
-    private void testAddSubscriptionWithIAMAuthModel(boolean subscriptionAutoReconnect) {
+    private static void testAddSubscriptionWithIAMAuthModel(boolean subscriptionAutoReconnect) {
         AWSAppSyncClient awsAppSyncClient =
             appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(subscriptionAutoReconnect, 0);
 
@@ -332,7 +332,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
 
         // Create a post.
         String firstPostContent = "Well, show me the way, to the next whisky bar @" + System.currentTimeMillis();
-        appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, firstPostContent);
+        Posts.add(awsAppSyncClient, title, author, url, firstPostContent);
         Log.d(TAG, "Added Post");
 
         // Did it show up on the subscription?
@@ -346,7 +346,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
         // Add another post. The expectation is that we will NOT get a message
         // on the subscription, since we just closed it.
         String secondPostContent = "Well, show me the way, to the next whisky bar @" + System.currentTimeMillis();
-        appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, secondPostContent);
+        Posts.add(awsAppSyncClient, title, author, url, secondPostContent);
         onCreatePostCallback.expectNoResponse();
     }
 
