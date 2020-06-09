@@ -300,7 +300,7 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
 
         private void checkAndHandleStuckMutation() {
             //Return if there is currently no mutation is in progress.
-            if ( inMemoryOfflineMutationObjectBeingExecuted == null && persistentOfflineMutationObjectBeingExecuted == null ) {
+            if (inMemoryOfflineMutationObjectBeingExecuted == null && persistentOfflineMutationObjectBeingExecuted == null) {
                 return;
             }
 
@@ -308,11 +308,10 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             long elapsedTime = System.currentTimeMillis() - startTime;
 
             //Handle persistentOfflineMutationObject
-            if ( persistentOfflineMutationObjectBeingExecuted != null ) {
-
+            if (persistentOfflineMutationObjectBeingExecuted != null) {
                 //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
                 //to the next in queue.
-                if ( elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
+                if (elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
                     appSyncOfflineMutationManager.setInProgressMutationAsCompleted(persistentOfflineMutationObjectBeingExecuted.recordIdentifier);
                     sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
                 }
@@ -326,16 +325,17 @@ class AppSyncOfflineMutationInterceptor implements ApolloInterceptor {
             }
 
             //Handle inMemory Mutation Object
-            if (elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
+            if (inMemoryOfflineMutationObjectBeingExecuted != null) {
                 //If time has elapsed past the cancel window, set this mutation as done and signal queueHandler to move
                 //to the next in queue.
-                appSyncOfflineMutationManager.setInProgressMutationAsCompleted(inMemoryOfflineMutationObjectBeingExecuted.recordIdentifier);
-                sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
-            }
-            else if ( elapsedTime > maxMutationExecutionTime) {
-                //If time has elapsed past the queueTimeout, cancel the mutation by invoking dispose on the chain.
-                inMemoryOfflineMutationObjectBeingExecuted.chain.dispose();
-                dispose((Mutation) inMemoryOfflineMutationObjectBeingExecuted.request.operation);
+                if (elapsedTime > (maxMutationExecutionTime + CANCEL_WINDOW)) {
+                    appSyncOfflineMutationManager.setInProgressMutationAsCompleted(inMemoryOfflineMutationObjectBeingExecuted.recordIdentifier);
+                    sendEmptyMessage(MessageNumberUtil.FAIL_EXEC);
+                } else if (elapsedTime > maxMutationExecutionTime) {
+                    //If time has elapsed past the queueTimeout, cancel the mutation by invoking dispose on the chain.
+                    inMemoryOfflineMutationObjectBeingExecuted.chain.dispose();
+                    dispose((Mutation) inMemoryOfflineMutationObjectBeingExecuted.request.operation);
+                }
             }
         }
     }

@@ -34,6 +34,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 }
 
 repositories {
@@ -44,6 +49,7 @@ repositories {
 
 dependencies {
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
+    androidTestImplementation 'junit:junit:4.13'
     androidTestImplementation "com.amazonaws:aws-android-sdk-s3:$aws_version"
     androidTestImplementation "com.amazonaws:aws-android-sdk-appsync:$VERSION_NAME"
     androidTestImplementation ("com.amazonaws:aws-android-sdk-mobile-client:$aws_version@aar") { transitive = true }
