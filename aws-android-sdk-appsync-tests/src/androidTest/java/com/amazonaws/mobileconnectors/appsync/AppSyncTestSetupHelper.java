@@ -53,9 +53,6 @@ import com.apollographql.apollo.fetcher.ResponseFetcher;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -353,24 +350,6 @@ final class AppSyncTestSetupHelper {
         AWSAppSyncClient awsAppSyncClient4 = awsAppSyncClientBuilder4.build();
         assertAWSAppSynClientObjectConstruction(awsAppSyncClient4, clientDatabasePrefix, clientName);
         return awsAppSyncClient4;
-    }
-
-    @NonNull
-    String createDataFile(String fileName, String data) {
-        File f = new File(InstrumentationRegistry.getContext().getCacheDir() + fileName);
-        FileOutputStream fos;
-        try {
-            fos = new FileOutputStream(f);
-            fos.write(data.getBytes());
-        } catch (IOException ioException) {
-            throw new RuntimeException(ioException);
-        }
-        try {
-            fos.close();
-        } catch (IOException ioException) {
-            throw new RuntimeException(ioException);
-        }
-        return f.getAbsolutePath();
     }
 
     static class AppSyncTestCredentialsProvider implements AWSCredentialsProvider {

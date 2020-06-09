@@ -55,7 +55,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
     public void testAddUpdateComplexObject() {
         String title = "Thick as a brick";
         String author = "Tull @" + System.currentTimeMillis();
-        String filePath = appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -91,7 +91,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         assertEquals("testAddComplexObject.pdf", pdf.key());
 
         String updatedFilePath =
-            appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
+            DataFile.create("testFile2.txt", "This is the updated article file");
 
         LatchedGraphQLCallback<UpdateArticleMutation.Data> callback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(UpdateArticleMutation.builder()
@@ -132,8 +132,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         String title = "Thick as a brick";
         String author = "Tull @" + System.currentTimeMillis();
 
-        String filePath =
-            appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         iamAWSAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -169,7 +168,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         assertNull(createResponse.data().createArticle());
 
         String updatedFilePath =
-            appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
+            DataFile.create("testFile2.txt", "This is the updated article file");
 
         LatchedGraphQLCallback<UpdateArticleMutation.Data> updateCallback = LatchedGraphQLCallback.instance();
         iamAWSAppSyncClient.mutate(UpdateArticleMutation.builder()
@@ -210,8 +209,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         String title = "Thick as a brick";
         String author = "Tull-Bad Bucket";
 
-        String filePath =
-            appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         iamAWSAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -242,7 +240,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
     public void testAddUpdateTwoComplexObjects( ) {
         String title = "Thick as a brick";
         String author = "Tull @" + System.currentTimeMillis();
-        String filePath = appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -283,8 +281,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         //assertEquals("testAddTwoComplexObjects.pdf", response.data().createArticle().pdf().key());
         //assertEquals("testAddTwoComplexObjects.png", response.data().createArticle().image().key());
 
-        String updatedFilePath =
-            appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
+        String updatedFilePath = DataFile.create("testFile2.txt", "This is the updated article file");
 
         LatchedGraphQLCallback<UpdateArticleMutation.Data> updateCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(UpdateArticleMutation.builder()
@@ -332,7 +329,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
     public void testAddComplexObjectWithCreateArticle2() {
         String title = "Thick as a brick";
         String author = "Tull";
-        String filePath = appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticle2Mutation.Data> callback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(CreateArticle2Mutation.builder()
