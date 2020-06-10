@@ -54,11 +54,9 @@ public final class AWSAppSyncQueryInstrumentationTest {
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(30);
 
-    private static AppSyncTestSetupHelper appSyncTestSetupHelper;
-
     @BeforeClass
-    public static void setupOnce() {
-        appSyncTestSetupHelper = new AppSyncTestSetupHelper();
+    public static void beforeAny() {
+        CustomCognitoUserPool.setup();
     }
 
     @Before
@@ -75,8 +73,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testBaseSyncQuery() {
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
 
         // Perform a base query and await success.
         LatchedGraphQLCallback<Operation.Data> baseQueryCallback = LatchedGraphQLCallback.instance();
@@ -96,8 +93,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testBaseAndDeltaSyncQuery() {
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
 
         AllPostsQuery baseQuery =  AllPostsQuery.builder().build();
         LatchedGraphQLCallback<Operation.Data> baseQueryCallback = LatchedGraphQLCallback.instance();
@@ -129,13 +125,12 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testQueryPostsWithUserPoolsAuthorization() {
-        AWSAppSyncClient userPoolsAppSyncClientForPosts =
-            appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration();
+        AWSAppSyncClient userPoolsAppSyncClientForPosts = AWSAppSyncClients.withUserPoolsFromAWSConfiguration();
         Log.d(TAG, "AWSAppSyncClient for AMAZON_COGNITO_USER_POOLS: " + userPoolsAppSyncClientForPosts);
 
         // Query Posts through API Key Client
         Response<AllPostsQuery.Data> allPostsResponse =
-            appSyncTestSetupHelper.listPosts(userPoolsAppSyncClientForPosts, AppSyncResponseFetchers.NETWORK_ONLY)
+            Posts.list(userPoolsAppSyncClientForPosts, AppSyncResponseFetchers.NETWORK_ONLY)
                 .get("NETWORK");
         assertNotNull(allPostsResponse);
         assertNotNull(allPostsResponse.data());
@@ -148,20 +143,20 @@ public final class AWSAppSyncQueryInstrumentationTest {
         // query them individually.
         for (AllPostsQuery.Item item : items) {
             String postID = item.id();
-            Map<String, Response<GetPostQuery.Data>> responses = appSyncTestSetupHelper.queryPost(
+            Map<String, Response<GetPostQuery.Data>> responses = Posts.query(
                 userPoolsAppSyncClientForPosts,
                 AppSyncResponseFetchers.CACHE_AND_NETWORK,
                 postID);
-            appSyncTestSetupHelper.assertQueryPostResponse(responses.get("CACHE"), postID, "AMAZON_COGNITO_USER_POOLS");
-            appSyncTestSetupHelper.assertQueryPostResponse(responses.get("NETWORK"), postID, "AMAZON_COGNITO_USER_POOLS");
+            Posts.validate(responses.get("CACHE"), postID, "AMAZON_COGNITO_USER_POOLS");
+            Posts.validate(responses.get("NETWORK"), postID, "AMAZON_COGNITO_USER_POOLS");
         }
     }
 
     @Test
     public void testCRUDWithSingleClient() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration(false, REASONABLE_WAIT_TIME_MS));
-        appSyncTestSetupHelper.testCRUD(clients);
+        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration(false, REASONABLE_WAIT_TIME_MS));
+        PostCruds.test(clients);
     }
 
     /**
@@ -170,8 +165,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
      */
     @Test
     public void testMultipleOfflineMutations() {
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withUserPoolsFromAWSConfiguration();
 
         final String title = "AWSAppSyncMultiClientInstrumentationTest => testMultipleOfflineMutations => Learning to Live ";
         final String author = "Dream Theater @ ";
@@ -185,7 +179,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
         // Add a post
         Response<AddPostMutation.Data> addPostMutationResponse =
-            appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+            Posts.add(awsAppSyncClient, title, author, url, content);
         assertNotNull(addPostMutationResponse);
         assertNotNull(addPostMutationResponse.data());
         AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
@@ -230,7 +224,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         }
 
         Response<GetPostQuery.Data> getPostQueryResponse =
-            appSyncTestSetupHelper.queryPost(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID)
+            Posts.query(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID)
                 .get("NETWORK");
         assertNotNull(getPostQueryResponse);
         assertNotNull(getPostQueryResponse.data());
@@ -245,8 +239,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
      */
     @Test
     public void testSingleOfflineMutation() {
-        final AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
 
         final String title = "AWSAppSyncQueryInstrumentationTest => testSingleOfflineMutation => Learning to Live ";
         final String author = "Dream Theater @ ";
@@ -256,7 +249,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
         // Add a post
         Response<AddPostMutation.Data> addPostMutationResponse =
-            appSyncTestSetupHelper.addPost(awsAppSyncClient, title, author, url, content);
+            Posts.add(awsAppSyncClient, title, author, url, content);
         assertNotNull(addPostMutationResponse);
         assertNotNull(addPostMutationResponse.data());
         final AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
@@ -299,7 +292,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
         assertNotNull(updatePostMutationResponse.data().updatePost());
 
         Response<GetPostQuery.Data> getPostQueryResponse =
-            appSyncTestSetupHelper.queryPost(awsAppSyncClient,
+            Posts.query(awsAppSyncClient,
                 AppSyncResponseFetchers.NETWORK_ONLY, postID)
                 .get("NETWORK");
         assertNotNull(getPostQueryResponse);
@@ -311,14 +304,13 @@ public final class AWSAppSyncQueryInstrumentationTest {
 
     @Test
     public void testUpdateWithInvalidID() {
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
 
         //Try to update a Post with a Fake ID
         final String updatedContent = "New content coming up @" + System.currentTimeMillis();
         final String randomID = UUID.randomUUID().toString();
         Response<UpdatePostMutation.Data> updatePostMutationResponse =
-            appSyncTestSetupHelper.updatePost(awsAppSyncClient, randomID, updatedContent);
+            Posts.update(awsAppSyncClient, randomID, updatedContent);
         assertNotNull(updatePostMutationResponse);
 
         UpdatePostMutation.Data data = updatePostMutationResponse.data();
@@ -338,7 +330,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
     @Test
     public  void testCancelMutationWithinCallback() {
         AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+            AWSAppSyncClients.withIAMFromAWSConfiguration();
         final CountDownLatch add2CountDownLatch = new CountDownLatch(1);
 
         AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
@@ -410,7 +402,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
     @Test
     public void mutationQueueIsEmptyAfterMutationCompletes() {
         AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(true, REASONABLE_WAIT_TIME_MS);
+            AWSAppSyncClients.withIAMFromAWSConfiguration(true, REASONABLE_WAIT_TIME_MS);
         assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         // Note: when the test starts, we assume the mutation queue is going to be empty.
@@ -459,7 +451,7 @@ public final class AWSAppSyncQueryInstrumentationTest {
     @Test
     public void mutationQueueCanBeCleared() {
         AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(true, TimeUnit.SECONDS.toMillis(2));
+            AWSAppSyncClients.withIAMFromAWSConfiguration(true, TimeUnit.SECONDS.toMillis(2));
         assertTrue(awsAppSyncClient.isMutationQueueEmpty());
 
         // Queue up "a bunch" of mutations. 10 is arbitrary chosen as "a bunch."

@@ -40,22 +40,24 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(AndroidJUnit4.class)
 public class AWSAppSyncComplexObjectsInstrumentationTests {
-    private static AppSyncTestSetupHelper appSyncTestSetupHelper;
+    private static final String REGION = "us-west-2";
+    private static final String BUCKET_NAME = "aws-appsync-tests-android163429-dev";
+
     private static AWSAppSyncClient awsAppSyncClient;
     private static AWSAppSyncClient iamAWSAppSyncClient;
 
     @BeforeClass
     public static void setUpBeforeClass() {
-        appSyncTestSetupHelper = new AppSyncTestSetupHelper();
-        awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
-        iamAWSAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        CustomCognitoUserPool.setup();
+        awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
+        iamAWSAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
     }
 
     @Test
     public void testAddUpdateComplexObject() {
         String title = "Thick as a brick";
         String author = "Tull @" + System.currentTimeMillis();
-        String filePath = appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -63,11 +65,11 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .title(title)
                 .author(author)
                 .pdf(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testAddComplexObject.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -90,7 +92,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         assertEquals("uploads/testAddComplexObject.pdf", pdf.key());
 
         String updatedFilePath =
-            appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
+            DataFile.create("testFile2.txt", "This is the updated article file");
 
         LatchedGraphQLCallback<UpdateArticleMutation.Data> callback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(UpdateArticleMutation.builder()
@@ -100,11 +102,11 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .author(author)
                 .expectedVersion(1)
                 .pdf(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testUpdatedComplexObject.pdf")
                     .localUri(updatedFilePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -131,8 +133,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         String title = "Thick as a brick";
         String author = "Tull @" + System.currentTimeMillis();
 
-        String filePath =
-            appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         iamAWSAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -140,11 +141,11 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .title(title)
                 .author(author)
                 .pdf(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testAddComplexObject.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -167,7 +168,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         assertNull(createResponse.data().createArticle());
 
         String updatedFilePath =
-            appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
+            DataFile.create("testFile2.txt", "This is the updated article file");
 
         LatchedGraphQLCallback<UpdateArticleMutation.Data> updateCallback = LatchedGraphQLCallback.instance();
         iamAWSAppSyncClient.mutate(UpdateArticleMutation.builder()
@@ -177,11 +178,11 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .author(author)
                 .expectedVersion(1)
                 .pdf(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testUpdatedComplexObject.pdf")
                     .localUri(updatedFilePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -208,8 +209,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         String title = "Thick as a brick";
         String author = "Tull-Bad Bucket";
 
-        String filePath =
-            appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         iamAWSAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -221,7 +221,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                     .key("uploads/testAddComplexObject.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -239,7 +239,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
     public void testAddUpdateTwoComplexObjects( ) {
         String title = "Thick as a brick";
         String author = "Tull @" + System.currentTimeMillis();
-        String filePath = appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(CreateArticleMutation.builder()
@@ -247,18 +247,18 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .title(title)
                 .author(author)
                 .pdf(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testAddTwoComplexObjects.pdf")
                     .localUri(filePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .image(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testAddTwoComplexObjects.png")
                     .localUri(filePath)
                     .mimeType("image/png")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -279,8 +279,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
         //assertEquals("testAddTwoComplexObjects.pdf", response.data().createArticle().pdf().key());
         //assertEquals("testAddTwoComplexObjects.png", response.data().createArticle().image().key());
 
-        String updatedFilePath =
-            appSyncTestSetupHelper.createDataFile("testFile2.txt", "This is the updated article file");
+        String updatedFilePath = DataFile.create("testFile2.txt", "This is the updated article file");
 
         LatchedGraphQLCallback<UpdateArticleMutation.Data> updateCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(UpdateArticleMutation.builder()
@@ -290,18 +289,18 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
                 .author(author)
                 .expectedVersion(1)
                 .pdf(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testUpdateTwoComplexObjects.pdf")
                     .localUri(updatedFilePath)
                     .mimeType("application/pdf")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .image(S3ObjectInput.builder()
-                    .bucket(appSyncTestSetupHelper.getBucketName())
+                    .bucket(BUCKET_NAME)
                     .key("uploads/testUpdateTwoComplexObjects.png")
                     .localUri(updatedFilePath)
                     .mimeType("image/png")
-                    .region(appSyncTestSetupHelper.getS3Region())
+                    .region(REGION)
                     .build())
                 .build())
             .build(),
@@ -328,7 +327,7 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
     public void testAddComplexObjectWithCreateArticle2() {
         String title = "Thick as a brick";
         String author = "Tull";
-        String filePath = appSyncTestSetupHelper.createDataFile("testFile1.txt", "This is a test file");
+        String filePath = DataFile.create("testFile1.txt", "This is a test file");
 
         LatchedGraphQLCallback<CreateArticle2Mutation.Data> callback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(CreateArticle2Mutation.builder()
@@ -336,11 +335,11 @@ public class AWSAppSyncComplexObjectsInstrumentationTests {
             .title(title)
             .version(1)
             .pdf(S3ObjectInput.builder()
-                .bucket(appSyncTestSetupHelper.getBucketName())
+                .bucket(BUCKET_NAME)
                 .key("uploads/testAddComplexObjectWithCreateArticle2.pdf")
                 .localUri(filePath)
                 .mimeType("application/pdf")
-                .region(appSyncTestSetupHelper.getS3Region())
+                .region(REGION)
                 .build())
             .build(),
             new CreateArticle2Mutation.Data(new CreateArticle2Mutation.CreateArticle2(
