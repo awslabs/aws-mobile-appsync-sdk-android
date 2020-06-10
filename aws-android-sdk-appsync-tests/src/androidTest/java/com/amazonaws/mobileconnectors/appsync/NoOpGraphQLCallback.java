@@ -20,7 +20,7 @@ import com.apollographql.apollo.exception.ApolloException;
 final class NoOpGraphQLCallback<T> extends GraphQLCall.Callback<T> {
     private NoOpGraphQLCallback() {}
 
-    static <T> GraphQLCall.Callback<T> instance() {
+    static <T> NoOpGraphQLCallback<T> instance() {
         return new NoOpGraphQLCallback<>();
     }
 

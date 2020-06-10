@@ -158,11 +158,11 @@ final class AWSAppSyncClients {
             .useClientDatabasePrefix(true);
 
         AWSAppSyncClient awsAppSyncClient4 = awsAppSyncClientBuilder4.build();
-        assertAWSAppSynClientObjectConstruction(awsAppSyncClient4, clientDatabasePrefix, clientName);
+        validateAppSyncClient(awsAppSyncClient4, clientDatabasePrefix, clientName);
         return awsAppSyncClient4;
     }
 
-    static void assertAWSAppSynClientObjectConstruction(
+    static void validateAppSyncClient(
             AWSAppSyncClient awsAppSyncClient, String clientDatabasePrefix, @SuppressWarnings("unused") String clientName) {
         assertNotNull(awsAppSyncClient);
         assertNotNull(awsAppSyncClient.mSyncStore);
@@ -237,7 +237,7 @@ final class AWSAppSyncClients {
                 .useClientDatabasePrefix(true)
                 .defaultResponseFetcher(responseFetcher);
         AWSAppSyncClient awsAppSyncClient4 = awsAppSyncClientBuilder4.build();
-        assertAWSAppSynClientObjectConstruction(awsAppSyncClient4, clientDatabasePrefix, clientName);
+        validateAppSyncClient(awsAppSyncClient4, clientDatabasePrefix, clientName);
         return awsAppSyncClient4;
     }
 }
