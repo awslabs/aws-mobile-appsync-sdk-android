@@ -39,11 +39,10 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
     private static final String TAG = AWSAppSyncSubscriptionInstrumentationTest.class.getSimpleName();
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(5);
-    private static AppSyncTestSetupHelper appSyncTestSetupHelper;
 
     @BeforeClass
-    public static void setupOnce() {
-        appSyncTestSetupHelper = new AppSyncTestSetupHelper();
+    public static void beforeClass() {
+        CustomCognitoUserPool.setup();
     }
 
     @Before
@@ -65,8 +64,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
     @Test
     public void testSubscriptionWithApiKey() {
         // Get a client handle
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithApiKeyForGogiTest();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withApiKeyForGogiTest();
 
         // Create a subscription that listens for new comments that are made on events.
         AppSyncSubscriptionCall<NewCommentOnEventSubscription.Data> onNextCommentSubscriptionCall =
@@ -117,8 +115,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
     private static void testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode subscriptionReconnectMode) {
         final boolean shouldAutomaticallyReconnect =
             SubscriptionReconnectMode.AUTOMATICALLY_RECONNECT.equals(subscriptionReconnectMode);
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(shouldAutomaticallyReconnect, 0);
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration(shouldAutomaticallyReconnect, 0);
 
         // TODO: why is this looped over 3 times?
         for (int iteration = 0 ; iteration < 3; iteration ++ ) {
@@ -236,8 +233,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
     private static void testAddSubscriptionWithApiKeyAuthModel(SubscriptionReconnectMode subscriptionReconnectMode) {
         boolean shouldAutomaticallyReconnect =
             SubscriptionReconnectMode.AUTOMATICALLY_RECONNECT.equals(subscriptionReconnectMode);
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration(shouldAutomaticallyReconnect, 0);
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration(shouldAutomaticallyReconnect, 0);
 
         final String title = "Alabama Song [Whisky Bar]";
         final String author = "Doors @ " + System.currentTimeMillis();
@@ -268,8 +264,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
 
     @Test
     public void testAddSubscriptionWithIAMAuthModelForNullPatching() {
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
 
         final String title = "22 Acacia Avenue";
         final String author = "Maiden @ " + System.currentTimeMillis();
@@ -313,8 +308,7 @@ public final class AWSAppSyncSubscriptionInstrumentationTest {
     }
 
     private static void testAddSubscriptionWithIAMAuthModel(boolean subscriptionAutoReconnect) {
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(subscriptionAutoReconnect, 0);
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration(subscriptionAutoReconnect, 0);
 
         final String title = "Alabama Song [Whisky Bar]";
         final String author = "Doors @ " + System.currentTimeMillis();

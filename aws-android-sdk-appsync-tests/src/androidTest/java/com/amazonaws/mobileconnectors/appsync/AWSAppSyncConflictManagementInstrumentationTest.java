@@ -30,8 +30,6 @@ import static org.junit.Assert.assertTrue;
  */
 @RunWith(AndroidJUnit4.class)
 public class AWSAppSyncConflictManagementInstrumentationTest {
-    private static AppSyncTestSetupHelper appSyncTestSetupHelper;
-
     /**
      * We will do one add and 5 updates that try out the various paths of conflict
      * management. This function will exit once the add is completed and the
@@ -44,9 +42,8 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
         String title = "Minstrel in the Gallery";
         String author = "Tull";
 
-        appSyncTestSetupHelper = new AppSyncTestSetupHelper();
-        AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        CustomCognitoUserPool.setup();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
         LatchedGraphQLCallback<CreateArticleMutation.Data> createArticleCallback = LatchedGraphQLCallback.instance();
         awsAppSyncClient.mutate(
@@ -78,12 +75,12 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
             "ALWAYS DISCARD",
             title + System.currentTimeMillis()
         };
-        for (int i = 0; i < titles.length; i++) {
+        for (String string : titles) {
             awsAppSyncClient.mutate(
                 UpdateArticleMutation.builder()
                     .input(UpdateArticleInput.builder()
                         .id(createArticle.id())
-                        .title(titles[i])
+                        .title(string)
                         .author(author)
                         .expectedVersion(1)
                         .build())
@@ -92,14 +89,13 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
                     "Article", "", "", "", 1, null, null
                 ))
             )
-            .enqueue(NoOpGraphQLCallback.instance());
+                .enqueue(NoOpGraphQLCallback.instance());
         }
     }
 
     @Test
     public void testAddUpdateArticleNoConflict() {
-        final AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
         String title = "Thick as a brick";
         String author = "Tull" + System.currentTimeMillis();
@@ -110,8 +106,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
     @Test
     public void testAddUpdateArticleConflictDiscard() {
-        final AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
         //The TestConflictResolver setup in AppSyncTestSetupHelper will fail mutation
         // if the title is set to ALWAYS DISCARD
@@ -143,8 +138,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
 
     @Test
     public void testAddUpdateArticleConflictResolve( ) {
-        final AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
         String title = "Hallowed Point";
         String author = "Seasons in the Abyss @" + System.currentTimeMillis();
@@ -168,8 +162,7 @@ public class AWSAppSyncConflictManagementInstrumentationTest {
     public void testAddUpdateArticleConflictResolveWithAnotherConflict( ) {
         String title = "RESOLVE_CONFLICT_INCORRECTLY";
         String author = "Trivium @" + System.currentTimeMillis();
-        final AWSAppSyncClient awsAppSyncClient =
-            appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
         String articleId = addArticle(awsAppSyncClient, title, author + System.currentTimeMillis(),100);
 
