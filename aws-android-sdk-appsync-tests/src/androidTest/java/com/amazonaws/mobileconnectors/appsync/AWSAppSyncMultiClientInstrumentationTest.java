@@ -71,12 +71,11 @@ import static org.junit.Assert.fail;
 @RunWith(AndroidJUnit4.class)
 public class AWSAppSyncMultiClientInstrumentationTest {
     private static final String TAG = AWSAppSyncMultiClientInstrumentationTest.class.getSimpleName();
-
-    private static AppSyncTestSetupHelper appSyncTestSetupHelper;
+    private static String idToken = null;
 
     @BeforeClass
     public static void setupOnce() {
-        appSyncTestSetupHelper = new AppSyncTestSetupHelper();
+        idToken = CustomCognitoUserPool.setup();
     }
 
     @Before
@@ -93,9 +92,9 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testSyncOnlyBaseQuery() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withIAMFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withUserPoolsFromAWSConfiguration());
 
         for (AWSAppSyncClient awsAppSyncClient: clients) {
             final CountDownLatch syncLatch = new CountDownLatch(1);
@@ -136,9 +135,9 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testSyncOnlyBaseAndDeltaQuery() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withIAMFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withUserPoolsFromAWSConfiguration());
 
         for (AWSAppSyncClient awsAppSyncClient: clients) {
             final CountDownLatch baseQueryLatch = new CountDownLatch(1);
@@ -199,7 +198,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
      */
     @Test
     public void testClearDeltaSyncStore() {
-        AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
         assertNotNull(awsAppSyncClient);
 
         final CountDownLatch baseQueryLatch = new CountDownLatch(1);
@@ -337,9 +336,9 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testCache() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withIAMFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withUserPoolsFromAWSConfiguration());
 
         for (AWSAppSyncClient awsAppSyncClient : clients) {
             Log.d(TAG, "AWSAppSyncClient: " + awsAppSyncClient);
@@ -392,8 +391,8 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             Log.d(TAG, "Response Fetcher: " + appSyncResponseFetcher.toString());
 
             Map<String, AWSAppSyncClient> appSyncClientMap = new HashMap<>();
-            appSyncClientMap.put("AMAZON_COGNITO_USER_POOLS", appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration(appSyncResponseFetcher));
-            appSyncClientMap.put("AMAZON_COGNITO_USER_POOLS_2", appSyncTestSetupHelper.createAppSyncClientWithUserPools2FromAWSConfiguration(appSyncResponseFetcher));
+            appSyncClientMap.put("AMAZON_COGNITO_USER_POOLS", AWSAppSyncClients.withUserPoolsFromAWSConfiguration(appSyncResponseFetcher));
+            appSyncClientMap.put("AMAZON_COGNITO_USER_POOLS_2", AWSAppSyncClients.withUserPools2FromAWSConfiguration(idToken, appSyncResponseFetcher));
 
             for (final String clientName : appSyncClientMap.keySet()) {
                 // List Posts
@@ -494,9 +493,9 @@ public class AWSAppSyncMultiClientInstrumentationTest {
         for (ResponseFetcher appSyncResponseFetcher : appSyncResponseFetchers) {
             Log.d(TAG, "AppSyncResponseFetcher: " + appSyncResponseFetcher.toString());
 
-            final AWSAppSyncClient apiKeyClientForPosts = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
-            final AWSAppSyncClient iamClientForPosts = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration();
-            final AWSAppSyncClient amazonCognitoUserPoolsClientForPosts = appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration();
+            final AWSAppSyncClient apiKeyClientForPosts = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
+            final AWSAppSyncClient iamClientForPosts = AWSAppSyncClients.withIAMFromAWSConfiguration();
+            final AWSAppSyncClient amazonCognitoUserPoolsClientForPosts = AWSAppSyncClients.withUserPoolsFromAWSConfiguration();
 
             //Mutate and Query Posts through API Key Client
             Log.d(TAG, "AWSAppSyncClient for API_KEY: " + apiKeyClientForPosts);
@@ -629,8 +628,8 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testCRUDWithMultipleClientsOfSingleAuthMode() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPools2FromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withUserPoolsFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withUserPools2FromAWSConfiguration(idToken));
         PostCruds.test(clients);
         clients.clear();
     }
@@ -643,7 +642,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             @Override
             public void run() {
                 List<AWSAppSyncClient> clients = new ArrayList<>();
-                clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
+                clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration());
                 PostCruds.test(clients);
                 countDownLatch.countDown();
             }
@@ -653,7 +652,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             @Override
             public void run() {
                 List<AWSAppSyncClient> clients = new ArrayList<>();
-                clients.add(appSyncTestSetupHelper.createAppSyncClientWithUserPoolsFromAWSConfiguration());
+                clients.add(AWSAppSyncClients.withUserPoolsFromAWSConfiguration());
                 PostCruds.test(clients);
                 countDownLatch.countDown();
             }
@@ -663,7 +662,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             @Override
             public void run() {
                 List<AWSAppSyncClient> clients = new ArrayList<>();
-                clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
+                clients.add(AWSAppSyncClients.withIAMFromAWSConfiguration());
                 PostCruds.test(clients);
                 countDownLatch.countDown();
             }
@@ -683,8 +682,8 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testMultipleOfflineMutations() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withIAMFromAWSConfiguration());
 
         for (AWSAppSyncClient awsAppSyncClient : clients) {
             assertNotNull(awsAppSyncClient);
@@ -797,8 +796,8 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testSingleOfflineMutation() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration());
-        clients.add(appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration());
+        clients.add(AWSAppSyncClients.withIAMFromAWSConfiguration());
 
         for (AWSAppSyncClient awsAppSyncClient: clients) {
 
@@ -895,7 +894,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testClearCache() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
         clients.add(awsAppSyncClient);
 
         final String title = "Learning to Live ";
@@ -976,7 +975,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testClearCacheWithOptions() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
         clients.add(awsAppSyncClient);
         PostCruds.test(clients);
 
@@ -1003,7 +1002,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     @Test
     public void testClearMutationsCacheOnly() {
         List<AWSAppSyncClient> clients = new ArrayList<>();
-        final AWSAppSyncClient awsAppSyncClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
         clients.add(awsAppSyncClient);
 
         // Query from cache and check no data is available
@@ -1129,7 +1128,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 .awsConfiguration(awsConfiguration)
                 .useClientDatabasePrefix(true)
                 .build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+        AWSAppSyncClients.assertAWSAppSynClientObjectConstruction(
                 awsAppSyncClient,
                 clientDatabasePrefixFromConfigJson,
                 clientName);
@@ -1156,7 +1155,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
                 .awsConfiguration(awsConfiguration)
                 .useClientDatabasePrefix(false)
                 .build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+        AWSAppSyncClients.assertAWSAppSynClientObjectConstruction(
                 awsAppSyncClient,
                 null,
                 clientName);
@@ -1184,7 +1183,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
     public void testConfigHasNoClientDatabasePrefixAndUseClientDatabasePrefixFalse() throws JSONException {
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_NoClientDatabasePrefix");
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+        AWSAppSyncClients.assertAWSAppSynClientObjectConstruction(
             AWSAppSyncClient.builder()
                 .context(getTargetContext())
                 .awsConfiguration(awsConfiguration)
@@ -1209,7 +1208,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             .useClientDatabasePrefix(true)
             .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"));
         AWSAppSyncClient awsAppSyncClient = awsAppSyncClientBuilder.build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+        AWSAppSyncClients.assertAWSAppSynClientObjectConstruction(
             awsAppSyncClient, appSyncConfig.getString("ClientDatabasePrefix"), appSyncConfig.getString("AuthMode")
         );
     }
@@ -1226,7 +1225,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             .useClientDatabasePrefix(false)
             .clientDatabasePrefix(appSyncConfig.getString("ClientDatabasePrefix"))
             .build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(awsAppSyncClient, null, null);
+        AWSAppSyncClients.assertAWSAppSynClientObjectConstruction(awsAppSyncClient, null, null);
     }
 
     @Test
@@ -1257,7 +1256,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             .region(Regions.fromName(appSyncConfig.getString("Region")))
             .useClientDatabasePrefix(false)
             .build();
-        appSyncTestSetupHelper.assertAWSAppSynClientObjectConstruction(
+        AWSAppSyncClients.assertAWSAppSynClientObjectConstruction(
             awsAppSyncClient, null, appSyncConfig.getString("AuthMode")
         );
     }
@@ -1377,8 +1376,8 @@ public class AWSAppSyncMultiClientInstrumentationTest {
      */
     @Test
     public void testMultiClientMutation() {
-        AWSAppSyncClient iamClientWithDelay = appSyncTestSetupHelper.createAppSyncClientWithIAMFromAWSConfiguration(false, 15 * 1000);
-        AWSAppSyncClient apiKeyClient = appSyncTestSetupHelper.createAppSyncClientWithAPIKEYFromAWSConfiguration();
+        AWSAppSyncClient iamClientWithDelay = AWSAppSyncClients.withIAMFromAWSConfiguration(false, 15 * 1000);
+        AWSAppSyncClient apiKeyClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
         final Map<String, Long> resultMap = new HashMap<>();
 
