@@ -48,6 +48,7 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -456,6 +457,7 @@ public class MultiClientInstrumentationTest {
     }
 
     @Test
+    @Ignore("This test needs to be refactored.")
     public void testCRUDWithMultipleClientsAtTheSameTime() {
         List<AWSAppSyncClient> clients = Arrays.asList(
             AWSAppSyncClients.withAPIKEYFromAWSConfiguration(),

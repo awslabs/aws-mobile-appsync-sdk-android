@@ -317,7 +317,7 @@ public final class QueryInstrumentationTest {
         Error error = updatePostMutationResponse.errors().get(0);
         assertNotNull(error);
         assertNotNull(error.message());
-        assertTrue(error.message().contains("Service: AmazonDynamoDBv2; Status Code: 400; Error Code: ConditionalCheckFailedException;"));
+        assertTrue(error.message().contains("The conditional request failed"));
     }
 
     /**

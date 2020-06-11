@@ -1,0 +1,64 @@
+type Comment @model
+@key(name: "byEvent", fields: ["eventId", "content", "createdAt"]) {
+    eventId: ID!
+    commentId: String!
+    content: String!
+    createdAt: String!
+}
+
+type Event @model {
+    id: ID!
+    name: String
+    where: String
+    when: String
+    description: String
+    comments: [Comment] @connection(keyName: "byEvent", fields: ["id"])
+}
+#this works on created but we then have to add _version to UpdateArticleInput
+#
+type Article @model
+@versioned(versionField:"version", versionInput:"expectedVersion") {
+    id: ID!
+    author: String!
+    title: String
+    pdf: S3Object
+    image: S3Object
+    version: Int!
+}
+
+type S3Object {
+    bucket: String!
+    key: String!
+    region: String!
+    localUri: String
+    mimeType: String
+}
+
+
+type Post @model(subscriptions: { level: public })
+@auth(rules: [
+    { allow: owner },
+    { allow: private provider: iam},
+    { allow: public provider: apiKey }
+]){
+    id: ID!
+    author: String!
+    title: String
+    content: String
+    url: String
+    ups: Int
+    downs: Int
+    version: Int!
+}
+
+
+# After creation, we need to manually update the CreateArticleInput schema to be as follows
+#input CreateArticleInput {
+#	id: ID
+#	author: String!
+#	title: String
+#	pdf: S3ObjectInput
+#	image: S3ObjectInput
+#	version: Int
+#	_version: Int
+#}
