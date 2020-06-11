@@ -27,7 +27,6 @@ import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
 import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.Sleep;
-import com.amazonaws.mobileconnectors.appsync.util.Wifi;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Operation;
@@ -47,6 +46,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOffline;
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -63,14 +64,15 @@ public final class QueryInstrumentationTest {
     private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(30);
 
     @BeforeClass
-    public static void beforeAny() {
+    public static void beforeAnyTest() {
+        goOnline();
         CustomCognitoUserPool.setup();
     }
 
     @Before
     @After
-    public void enableWifiIfNotEnabled() {
-        Wifi.turnOn();
+    public void ensureInternetConnection() {
+        goOnline();
     }
 
     @Test
@@ -189,8 +191,7 @@ public final class QueryInstrumentationTest {
         assertNotNull(createPost.id());
         final String postID = createPost.id();
 
-        // Go "offline"
-        Wifi.turnOff();
+        goOffline();
 
         for (int i = 0; i < onUpdatePostCallbacks.size(); i++) {
             awsAppSyncClient
@@ -256,8 +257,7 @@ public final class QueryInstrumentationTest {
         assertNotNull(createPost.id());
         final String postID = createPost.id();
 
-        // Set Wifi Network offline
-        Wifi.turnOff();
+        goOffline();
 
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
         LatchedGraphQLCallback<UpdatePostMutation.Data> onUpdatePostCallback = LatchedGraphQLCallback.instance();
