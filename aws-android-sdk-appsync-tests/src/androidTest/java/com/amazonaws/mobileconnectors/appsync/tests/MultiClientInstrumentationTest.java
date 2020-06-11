@@ -17,10 +17,9 @@ import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClientException;
 import com.amazonaws.mobileconnectors.appsync.ClearCacheException;
 import com.amazonaws.mobileconnectors.appsync.ClearCacheOptions;
 import com.amazonaws.mobileconnectors.appsync.SyncStore;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
 import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
-import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
-import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
@@ -28,12 +27,12 @@ import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
 import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
 import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.JsonExtract;
-import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.amazonaws.mobileconnectors.appsync.util.Wifi;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
@@ -504,15 +503,7 @@ public class MultiClientInstrumentationTest {
             assertNotNull(postId);
 
             int numberOfLatches = 3;
-            new Thread(() -> {
-                // TODO: What on earth is this business?
-                for (int i = 0; i < numberOfLatches; i++) {
-                    Wifi.turnOff();
-                    Sleep.seconds(3);
-                    Wifi.turnOn();
-                    Sleep.seconds(7);
-                }
-            }).start();
+            Wifi.turnOff();
 
             List<LatchedGraphQLCallback<UpdatePostMutation.Data>> callbacks = new ArrayList<>();
             for (int i = 0; i < numberOfLatches; i++) {
@@ -584,12 +575,7 @@ public class MultiClientInstrumentationTest {
             String postId = post.id();
             assertNotNull(postId);
 
-            new Thread(() -> {
-                //  TODO: What on earth?
-                Wifi.turnOff();
-                Sleep.seconds(1);
-                Wifi.turnOn();
-            }).start();
+            Wifi.turnOff();
 
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
             LatchedGraphQLCallback<UpdatePostMutation.Data> callback = LatchedGraphQLCallback.instance();
@@ -624,10 +610,7 @@ public class MultiClientInstrumentationTest {
     @Test
     public void testClearCache() throws ClearCacheException {
         AWSAppSyncClient client = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
-
-        //Set Wifi Network offline
         Wifi.turnOff();
-        Sleep.seconds(3);
 
         // Add a post
         AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
@@ -657,9 +640,6 @@ public class MultiClientInstrumentationTest {
             Posts.list(client, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
         assertNotNull(listPostsResponse);
         assertNull(listPostsResponse.data());
-
-        Wifi.turnOn();
-        Sleep.seconds(3);
     }
 
     @Test
@@ -694,7 +674,6 @@ public class MultiClientInstrumentationTest {
         assertNotNull(networkResponse.data());
 
         Wifi.turnOff();
-        Sleep.seconds(3);
 
         //Add a post
         AddPostMutation.Data addPostMutationData = new AddPostMutation.Data(new AddPostMutation.CreatePost(
@@ -724,9 +703,6 @@ public class MultiClientInstrumentationTest {
             Posts.list(client, AppSyncResponseFetchers.CACHE_ONLY).get("CACHE");
         assertNotNull(cacheResponse);
         assertNotNull(cacheResponse.data());
-
-        Wifi.turnOn();
-        Sleep.seconds(3);
     }
 
     @Test

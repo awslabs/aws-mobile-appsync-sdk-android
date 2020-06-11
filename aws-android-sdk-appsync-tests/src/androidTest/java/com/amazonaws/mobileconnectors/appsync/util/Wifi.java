@@ -12,22 +12,24 @@ import android.net.wifi.WifiManager;
 
 import static android.net.wifi.WifiManager.WIFI_STATE_ENABLED;
 import static android.support.test.InstrumentationRegistry.getTargetContext;
-import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings("unused")
 public final class Wifi {
     private Wifi() {}
 
     public static void turnOn() {
-        assertTrue(wifiManager().setWifiEnabled(true));
+        RetryStrategies.linear(() -> wifiManager().setWifiEnabled(true), Wifi::isOn, 3, 2);
     }
 
     public static void turnOff() {
-        assertTrue(wifiManager().setWifiEnabled(false));
+        RetryStrategies.linear(() -> wifiManager().setWifiEnabled(false), Wifi::isOff, 3, 2);
+    }
+
+    static boolean isOff() {
+        return !isOn();
     }
 
     static boolean isOn() {
-        return WIFI_STATE_ENABLED != wifiManager().getWifiState();
+        return WIFI_STATE_ENABLED == wifiManager().getWifiState();
     }
 
     private static WifiManager wifiManager() {

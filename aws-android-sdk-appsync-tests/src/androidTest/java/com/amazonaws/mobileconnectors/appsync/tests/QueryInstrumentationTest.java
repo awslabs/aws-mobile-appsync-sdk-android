@@ -7,19 +7,14 @@
 
 package com.amazonaws.mobileconnectors.appsync.tests;
 
-import android.content.Context;
-import android.net.wifi.WifiManager;
 import android.support.annotation.NonNull;
-import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
-import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
 import com.amazonaws.mobileconnectors.appsync.AppSyncMutationCall;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
 import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
-import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
-import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
@@ -28,8 +23,11 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
+import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
+import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.Sleep;
+import com.amazonaws.mobileconnectors.appsync.util.Wifi;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Operation;
@@ -72,13 +70,7 @@ public final class QueryInstrumentationTest {
     @Before
     @After
     public void enableWifiIfNotEnabled() {
-        Context context = InstrumentationRegistry.getContext();
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        if (WifiManager.WIFI_STATE_ENABLED != wifiManager.getWifiState()) {
-            wifiManager.setWifiEnabled(true);
-            Sleep.milliseconds(EXTENDED_WAIT_TIME_MS);
-        }
-        assertEquals("Wifi is not enabled.", WifiManager.WIFI_STATE_ENABLED, wifiManager.getWifiState());
+        Wifi.turnOn();
     }
 
     @Test
@@ -198,10 +190,7 @@ public final class QueryInstrumentationTest {
         final String postID = createPost.id();
 
         // Go "offline"
-        Context context = InstrumentationRegistry.getContext();
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        assertTrue(wifiManager.setWifiEnabled(false));
-        Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
+        Wifi.turnOff();
 
         for (int i = 0; i < onUpdatePostCallbacks.size(); i++) {
             awsAppSyncClient
@@ -268,10 +257,7 @@ public final class QueryInstrumentationTest {
         final String postID = createPost.id();
 
         // Set Wifi Network offline
-        Context context = InstrumentationRegistry.getContext();
-        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        assertTrue(wifiManager.setWifiEnabled(false));
-        Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
+        Wifi.turnOff();
 
         Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
         LatchedGraphQLCallback<UpdatePostMutation.Data> onUpdatePostCallback = LatchedGraphQLCallback.instance();
