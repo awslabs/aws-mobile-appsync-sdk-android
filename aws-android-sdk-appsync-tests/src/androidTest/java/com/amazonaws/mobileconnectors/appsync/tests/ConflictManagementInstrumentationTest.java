@@ -5,14 +5,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.tests;
 
 import android.support.test.runner.AndroidJUnit4;
 
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
+import com.amazonaws.mobileconnectors.appsync.ConflictResolutionFailedException;
+import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.demo.CreateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
+import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
 import com.apollographql.apollo.api.Response;
 
 import org.junit.BeforeClass;
@@ -29,7 +35,7 @@ import static org.junit.Assert.assertTrue;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-public class AWSAppSyncConflictManagementInstrumentationTest {
+public class ConflictManagementInstrumentationTest {
     /**
      * We will do one add and 5 updates that try out the various paths of conflict
      * management. This function will exit once the add is completed and the

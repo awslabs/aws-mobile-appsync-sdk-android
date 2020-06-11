@@ -5,12 +5,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.amazonaws.mobile.config.AWSConfiguration;
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.S3ObjectManagerImplementation;
+import com.amazonaws.mobileconnectors.appsync.SyncStore;
+import com.amazonaws.mobileconnectors.appsync.identity.DelayedCognitoCredentialsProvider;
+import com.amazonaws.mobileconnectors.appsync.identity.TestAWSMobileClient;
+import com.amazonaws.mobileconnectors.appsync.util.JsonExtract;
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
@@ -23,18 +29,16 @@ import org.json.JSONObject;
 import java.util.concurrent.TimeUnit;
 
 import static android.support.test.InstrumentationRegistry.getTargetContext;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DATABASE_NAME_DELIMITER;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_MUTATION_SQL_STORE_NAME;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_QUERY_SQL_STORE_NAME;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-final class AWSAppSyncClients {
+/**
+ * This is factory class to create various {@link AWSAppSyncClient}s.
+ */
+public final class AWSAppSyncClients {
     private static final String TAG = AWSAppSyncClients.class.getName();
 
     @NonNull
-    static AWSAppSyncClient withApiKeyForGogiTest() {
+    public static AWSAppSyncClient withApiKeyForGogiTest() {
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("SubscriptionIntegrationTestGogi");
         return AWSAppSyncClient.builder()
@@ -44,12 +48,12 @@ final class AWSAppSyncClients {
     }
 
     @NonNull
-    static AWSAppSyncClient withIAMFromAWSConfiguration() {
+    public static AWSAppSyncClient withIAMFromAWSConfiguration() {
         return withIAMFromAWSConfiguration(true, 0);
     }
 
     @NonNull
-    static AWSAppSyncClient withIAMFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
+    public static AWSAppSyncClient withIAMFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AWS_IAM");
 
@@ -81,12 +85,12 @@ final class AWSAppSyncClients {
     }
 
     @NonNull
-    static AWSAppSyncClient withAPIKEYFromAWSConfiguration() {
+    public static AWSAppSyncClient withAPIKEYFromAWSConfiguration() {
         return withAPIKEYFromAWSConfiguration(true, 0);
     }
 
     @NonNull
-    static AWSAppSyncClient withAPIKEYFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
+    public static AWSAppSyncClient withAPIKEYFromAWSConfiguration(boolean subscriptionsAutoReconnect, long credentialsDelay) {
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
 
         JSONObject ccpConfig = awsConfiguration.optJsonObject("CredentialsProvider");
@@ -116,7 +120,7 @@ final class AWSAppSyncClients {
     }
 
     @NonNull
-    static AWSAppSyncClient withUserPoolsFromAWSConfiguration() {
+    public static AWSAppSyncClient withUserPoolsFromAWSConfiguration() {
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS");
 
@@ -141,8 +145,8 @@ final class AWSAppSyncClients {
     }
 
     @NonNull
-    static AWSAppSyncClient withUserPools2FromAWSConfiguration(
-            String idTokenStringForCustomCognitoUserPool) {
+    public static AWSAppSyncClient withUserPools2FromAWSConfiguration(
+        String idTokenStringForCustomCognitoUserPool) {
         // Amazon Cognito User Pools - Custom CognitoUserPool
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS_2");
@@ -158,36 +162,18 @@ final class AWSAppSyncClients {
             .useClientDatabasePrefix(true);
 
         AWSAppSyncClient awsAppSyncClient4 = awsAppSyncClientBuilder4.build();
-        assertAWSAppSynClientObjectConstruction(awsAppSyncClient4, clientDatabasePrefix, clientName);
+        validateAppSyncClient(awsAppSyncClient4, clientDatabasePrefix, clientName);
         return awsAppSyncClient4;
     }
 
-    static void assertAWSAppSynClientObjectConstruction(
+    public static void validateAppSyncClient(
             AWSAppSyncClient awsAppSyncClient, String clientDatabasePrefix, @SuppressWarnings("unused") String clientName) {
         assertNotNull(awsAppSyncClient);
-        assertNotNull(awsAppSyncClient.mSyncStore);
-        if (clientDatabasePrefix != null) {
-            assertEquals(
-                clientDatabasePrefix + DATABASE_NAME_DELIMITER + DEFAULT_QUERY_SQL_STORE_NAME,
-                awsAppSyncClient.querySqlStoreName
-            );
-            assertEquals(
-                clientDatabasePrefix + DATABASE_NAME_DELIMITER + DEFAULT_MUTATION_SQL_STORE_NAME,
-                awsAppSyncClient.mutationSqlStoreName
-            );
-            assertEquals(
-                clientDatabasePrefix + DATABASE_NAME_DELIMITER + DEFAULT_DELTA_SYNC_SQL_STORE_NAME,
-                awsAppSyncClient.deltaSyncSqlStoreName
-            );
-        } else {
-            assertEquals(DEFAULT_QUERY_SQL_STORE_NAME, awsAppSyncClient.querySqlStoreName);
-            assertEquals(DEFAULT_MUTATION_SQL_STORE_NAME, awsAppSyncClient.mutationSqlStoreName);
-            assertEquals(DEFAULT_DELTA_SYNC_SQL_STORE_NAME, awsAppSyncClient.deltaSyncSqlStoreName);
-        }
+        SyncStore.validate(awsAppSyncClient, clientDatabasePrefix);
     }
 
     @NonNull
-    static AWSAppSyncClient withUserPoolsFromAWSConfiguration(ResponseFetcher responseFetcher) {
+    public static AWSAppSyncClient withUserPoolsFromAWSConfiguration(ResponseFetcher responseFetcher) {
         // Amazon Cognito User Pools
         AWSConfiguration awsConfiguration = new AWSConfiguration(getTargetContext());
         awsConfiguration.setConfiguration("MultiAuthAndroidIntegTestApp_AMAZON_COGNITO_USER_POOLS");
@@ -214,8 +200,8 @@ final class AWSAppSyncClients {
     }
 
     @NonNull
-    static AWSAppSyncClient withUserPools2FromAWSConfiguration(
-            String idTokenStringForCustomCognitoUserPool, ResponseFetcher responseFetcher) {
+    public static AWSAppSyncClient withUserPools2FromAWSConfiguration(
+        String idTokenStringForCustomCognitoUserPool, ResponseFetcher responseFetcher) {
         // Amazon Cognito User Pools - Custom CognitoUserPool
         String clientDatabasePrefix = null;
         String clientName = null;
@@ -237,7 +223,7 @@ final class AWSAppSyncClients {
                 .useClientDatabasePrefix(true)
                 .defaultResponseFetcher(responseFetcher);
         AWSAppSyncClient awsAppSyncClient4 = awsAppSyncClientBuilder4.build();
-        assertAWSAppSynClientObjectConstruction(awsAppSyncClient4, clientDatabasePrefix, clientName);
+        validateAppSyncClient(awsAppSyncClient4, clientDatabasePrefix, clientName);
         return awsAppSyncClient4;
     }
 }

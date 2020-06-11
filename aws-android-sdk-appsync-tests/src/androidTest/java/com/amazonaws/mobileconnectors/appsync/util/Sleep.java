@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.util;
 
 import java.util.concurrent.TimeUnit;
 
@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
  * The {@link InterruptedException} thrown by {@link Thread#sleep(long)} is wrapped into an
  * {@link RuntimeException} which helps cut down on test code clutter.
  */
-final class Sleep {
+public final class Sleep {
     private Sleep() {}
 
     /**
@@ -22,7 +22,7 @@ final class Sleep {
      * @param milliseconds Duration of time to sleep
      * @throws RuntimeException If unable to sleep for the requested amount of time
      */
-    static void milliseconds(long milliseconds) {
+    public static void milliseconds(long milliseconds) {
         try {
             Thread.sleep(milliseconds);
         } catch (InterruptedException interruptedException) {
@@ -35,7 +35,7 @@ final class Sleep {
      * @param seconds Duration of time to sleep
      * @throws RuntimeException If unable to sleep for the requested amount of time
      */
-    static void seconds(long seconds) {
+    public static void seconds(long seconds) {
         milliseconds(TimeUnit.SECONDS.toMillis(seconds));
     }
 }

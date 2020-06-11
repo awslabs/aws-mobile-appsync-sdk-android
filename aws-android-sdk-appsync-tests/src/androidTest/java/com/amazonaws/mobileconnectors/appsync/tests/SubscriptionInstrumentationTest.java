@@ -5,13 +5,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.tests;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
+import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
+import com.amazonaws.mobileconnectors.appsync.client.LatchedSubscriptionCallback;
+import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.CommentOnEventMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.NewCommentOnEventSubscription;
@@ -22,6 +28,8 @@ import com.amazonaws.mobileconnectors.appsync.demo.OnDeletePostSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnUpdateArticleSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnUpdatePostSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
+import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
+import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.apollographql.apollo.api.Response;
 
 import org.junit.After;
@@ -35,8 +43,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public final class AWSAppSyncSubscriptionInstrumentationTest {
-    private static final String TAG = AWSAppSyncSubscriptionInstrumentationTest.class.getSimpleName();
+public final class SubscriptionInstrumentationTest {
+    private static final String TAG = SubscriptionInstrumentationTest.class.getSimpleName();
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(5);
 

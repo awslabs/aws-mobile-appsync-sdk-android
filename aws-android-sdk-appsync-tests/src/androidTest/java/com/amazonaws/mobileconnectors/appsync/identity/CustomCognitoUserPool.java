@@ -5,13 +5,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.identity;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.amazonaws.mobile.client.results.SignInResult;
 import com.amazonaws.mobile.config.AWSConfiguration;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoDevice;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserSession;
@@ -23,17 +24,17 @@ import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.Authentic
 
 import static android.support.test.InstrumentationRegistry.getTargetContext;
 
-final class CustomCognitoUserPool {
+public final class CustomCognitoUserPool {
     private static final String TAG = CustomCognitoUserPool.class.getSimpleName();
 
     private CustomCognitoUserPool() {}
 
     @NonNull
-    static String setup() {
+    public static String setup() {
         // Sign in the user.
         Await.result((Await.ResultErrorEmitter<SignInResult, RuntimeException>) (onResult, onError) -> {
-            DelegatingCallback<SignInResult> callback =
-                DelegatingCallback.to(onResult, exception -> onError.accept(new RuntimeException(exception)));
+            DelegatingMobileClientCallback<SignInResult> callback =
+                DelegatingMobileClientCallback.to(onResult, exception -> onError.accept(new RuntimeException(exception)));
             TestAWSMobileClient.instance(getTargetContext())
                 .signIn("appsync-multi-auth-test-user", "P@ssw0rd!", null, callback);
         });

@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.identity;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
@@ -13,14 +13,15 @@ import android.support.test.InstrumentationRegistry;
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
+import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.amazonaws.regions.Regions;
 
 // TODO: Why does this exist?
-final class DelayedCognitoCredentialsProvider implements AWSCredentialsProvider {
+public final class DelayedCognitoCredentialsProvider implements AWSCredentialsProvider {
     private final AWSCredentialsProvider credentialsProvider;
     private final long credentialsDelay;
 
-    DelayedCognitoCredentialsProvider(String cognitoIdentityPoolID, Regions region, long credentialsDelay) {
+    public DelayedCognitoCredentialsProvider(String cognitoIdentityPoolID, Regions region, long credentialsDelay) {
         Context context = InstrumentationRegistry.getContext();
         this.credentialsProvider = new CognitoCachingCredentialsProvider(context, cognitoIdentityPoolID, region);
         this.credentialsDelay = credentialsDelay;

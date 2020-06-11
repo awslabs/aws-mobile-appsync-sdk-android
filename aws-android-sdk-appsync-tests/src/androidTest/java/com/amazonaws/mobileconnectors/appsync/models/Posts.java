@@ -5,10 +5,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.models;
 
 import android.util.Log;
 
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.AppSyncMutationCall;
+import com.amazonaws.mobileconnectors.appsync.client.DelegatingGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMissingRequiredFieldsMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostRequiredFieldsOnlyMutation;
@@ -20,6 +24,8 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.DeletePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
+import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.fetcher.CacheAndNetworkFetcher;
@@ -33,7 +39,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 @SuppressWarnings({"UnusedReturnValue", "SameParameterValue"})
-final class Posts {
+public final class Posts {
     private static final String TAG = Posts.class.getName();
 
     private Posts() {}
@@ -47,8 +53,8 @@ final class Posts {
      * @param content Content of post
      * @return A response from AppSync
      */
-    static Response<AddPostMutation.Data> add(
-            AWSAppSyncClient client, String title, String author, String url, String content) {
+    public static Response<AddPostMutation.Data> add(
+        AWSAppSyncClient client, String title, String author, String url, String content) {
         LatchedGraphQLCallback<AddPostMutation.Data> callback = LatchedGraphQLCallback.instance();
         client.mutate(
             AddPostMutation.builder()
@@ -76,7 +82,7 @@ final class Posts {
      * @param postId ID of Post to delete
      * @return A Response from AppSync
      */
-    static Response<DeletePostMutation.Data> delete(AWSAppSyncClient client, String postId) {
+    public static Response<DeletePostMutation.Data> delete(AWSAppSyncClient client, String postId) {
         LatchedGraphQLCallback<DeletePostMutation.Data> callback = LatchedGraphQLCallback.instance();
         client.mutate(
             DeletePostMutation.builder()
@@ -99,8 +105,8 @@ final class Posts {
      * @param content New content for post with given ID
      * @return A Response from AppSync
      */
-    static Response<UpdatePostMutation.Data> update(
-            AWSAppSyncClient client, String postId, String content) {
+    public static Response<UpdatePostMutation.Data> update(
+        AWSAppSyncClient client, String postId, String content) {
         LatchedGraphQLCallback<UpdatePostMutation.Data> callback = LatchedGraphQLCallback.instance();
         client.mutate(
             UpdatePostMutation.builder()
@@ -124,8 +130,8 @@ final class Posts {
      * @param postId ID of a post for which to query
      * @return cached/network responses, labeled in a Map as "NETWORK" and/or "CACHE"
      */
-    static Map<String, Response<GetPostQuery.Data>> query(
-            AWSAppSyncClient client, ResponseFetcher responseFetcher, String postId) {
+    public static Map<String, Response<GetPostQuery.Data>> query(
+        AWSAppSyncClient client, ResponseFetcher responseFetcher, String postId) {
         Log.d(TAG, "Calling Query queryPost with responseFetcher: " + responseFetcher.toString());
         int expectedResponseCount =
             responseFetcher.equals(AppSyncResponseFetchers.CACHE_AND_NETWORK) ? 2 : 1;
@@ -155,8 +161,8 @@ final class Posts {
         return getPostQueryResponses;
     }
 
-    static Map<String, Response<AllPostsQuery.Data>> list(
-            AWSAppSyncClient client, ResponseFetcher responseFetcher) {
+    public static Map<String, Response<AllPostsQuery.Data>> list(
+        AWSAppSyncClient client, ResponseFetcher responseFetcher) {
         int expectedResponseCount =
             responseFetcher.equals(AppSyncResponseFetchers.CACHE_AND_NETWORK) ? 2 : 1;
         CountDownLatch queryCountDownLatch = new CountDownLatch(expectedResponseCount);
@@ -224,7 +230,7 @@ final class Posts {
         call.cancel();
     }
 
-    static Response<AddPostMissingRequiredFieldsMutation.Data> addMissingRequiredFields(
+    public static Response<AddPostMissingRequiredFieldsMutation.Data> addMissingRequiredFields(
         AWSAppSyncClient client, String title, String author, String url, String content) {
         LatchedGraphQLCallback<AddPostMissingRequiredFieldsMutation.Data> callback = LatchedGraphQLCallback.instance();
         client.mutate(
@@ -244,7 +250,7 @@ final class Posts {
         return callback.awaitResponse();
     }
 
-    static Response<AddPostRequiredFieldsOnlyMutation.Data> addRequiredFieldsOnly(
+    public static Response<AddPostRequiredFieldsOnlyMutation.Data> addRequiredFieldsOnly(
         AWSAppSyncClient client, String title, String author, String url, String content) {
         LatchedGraphQLCallback<AddPostRequiredFieldsOnlyMutation.Data> callback =
             LatchedGraphQLCallback.instance();
@@ -265,7 +271,7 @@ final class Posts {
         return callback.awaitResponse();
     }
 
-    static void validate(Response<GetPostQuery.Data> response, String postId, String authMode) {
+    public static void validate(Response<GetPostQuery.Data> response, String postId, String authMode) {
         assertNotNull(response);
         assertNotNull(response.data());
         assertNotNull(response.data().getPost());
