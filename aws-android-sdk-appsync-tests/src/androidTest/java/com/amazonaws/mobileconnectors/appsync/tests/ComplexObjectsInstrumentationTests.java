@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -54,7 +55,8 @@ public class ComplexObjectsInstrumentationTests {
     private static AWSAppSyncClient iamAWSAppSyncClient;
 
     @BeforeClass
-    public static void setUpBeforeClass() {
+    public static void beforeAnyTests() {
+        goOnline();
         CustomCognitoUserPool.setup();
         awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
         iamAWSAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();

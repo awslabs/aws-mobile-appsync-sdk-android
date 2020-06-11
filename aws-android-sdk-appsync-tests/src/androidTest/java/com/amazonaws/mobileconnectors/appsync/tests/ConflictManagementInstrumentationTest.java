@@ -25,6 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +45,9 @@ public class ConflictManagementInstrumentationTest {
      * when one of the tests in this suite starts.
      */
     @BeforeClass
-    public static void setupBeforeClass() {
+    public static void beforeAnyTests() {
+        goOnline();
+
         String title = "Minstrel in the Gallery";
         String author = "Tull";
 
@@ -114,7 +117,7 @@ public class ConflictManagementInstrumentationTest {
     public void testAddUpdateArticleConflictDiscard() {
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
 
-        //The TestConflictResolver setup in AppSyncTestSetupHelper will fail mutation
+        // The TestConflictResolver setup in AppSyncTestSetupHelper will fail mutation
         // if the title is set to ALWAYS DISCARD
         String title = "ALWAYS DISCARD";
         String author = "Tull @" + System.currentTimeMillis();

@@ -33,7 +33,6 @@ import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.JsonExtract;
-import com.amazonaws.mobileconnectors.appsync.util.Wifi;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Operation.Variables;
@@ -64,6 +63,8 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import static android.support.test.InstrumentationRegistry.getTargetContext;
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOffline;
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -83,14 +84,15 @@ public class MultiClientInstrumentationTest {
     private static String idToken = null;
 
     @BeforeClass
-    public static void setupOnce() {
+    public static void beforeAnyTests() {
+        goOnline();
         idToken = CustomCognitoUserPool.setup();
     }
 
     @Before
     @After
     public void ensureNetworkIsUp() {
-        Wifi.turnOn();
+        goOnline();
     }
 
     @Test
@@ -503,7 +505,7 @@ public class MultiClientInstrumentationTest {
             assertNotNull(postId);
 
             int numberOfLatches = 3;
-            Wifi.turnOff();
+            goOffline();
 
             List<LatchedGraphQLCallback<UpdatePostMutation.Data>> callbacks = new ArrayList<>();
             for (int i = 0; i < numberOfLatches; i++) {
@@ -575,7 +577,7 @@ public class MultiClientInstrumentationTest {
             String postId = post.id();
             assertNotNull(postId);
 
-            Wifi.turnOff();
+            goOffline();
 
             Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
             LatchedGraphQLCallback<UpdatePostMutation.Data> callback = LatchedGraphQLCallback.instance();
@@ -610,7 +612,7 @@ public class MultiClientInstrumentationTest {
     @Test
     public void testClearCache() throws ClearCacheException {
         AWSAppSyncClient client = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
-        Wifi.turnOff();
+        goOffline();
 
         // Add a post
         AddPostMutation.Data expected = new AddPostMutation.Data(new AddPostMutation.CreatePost(
@@ -673,7 +675,7 @@ public class MultiClientInstrumentationTest {
         assertNotNull(networkResponse);
         assertNotNull(networkResponse.data());
 
-        Wifi.turnOff();
+        goOffline();
 
         //Add a post
         AddPostMutation.Data addPostMutationData = new AddPostMutation.Data(new AddPostMutation.CreatePost(

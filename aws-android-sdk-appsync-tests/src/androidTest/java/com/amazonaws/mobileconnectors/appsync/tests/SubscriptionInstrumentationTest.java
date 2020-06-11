@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -42,7 +43,8 @@ public final class SubscriptionInstrumentationTest {
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
 
     @BeforeClass
-    public static void beforeClass() {
+    public static void beforeAnyTests() {
+        goOnline();
         CustomCognitoUserPool.setup();
     }
 
