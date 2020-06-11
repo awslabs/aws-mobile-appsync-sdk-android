@@ -35,7 +35,7 @@ type S3Object {
 }
 
 
-type Post @model
+type Post @model(subscriptions: { level: public })
 @auth(rules: [
     { allow: owner },
     { allow: private provider: iam},
