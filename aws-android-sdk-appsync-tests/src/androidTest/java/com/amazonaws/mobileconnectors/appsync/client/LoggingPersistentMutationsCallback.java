@@ -5,11 +5,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.util.Log;
 
-class LoggingPersistentMutationsCallback implements PersistentMutationsCallback {
+import com.amazonaws.mobileconnectors.appsync.PersistentMutationsCallback;
+import com.amazonaws.mobileconnectors.appsync.PersistentMutationsError;
+import com.amazonaws.mobileconnectors.appsync.PersistentMutationsResponse;
+
+final class LoggingPersistentMutationsCallback implements PersistentMutationsCallback {
     private static final String TAG = LoggingPersistentMutationsCallback.class.getName();
 
     private LoggingPersistentMutationsCallback() {}

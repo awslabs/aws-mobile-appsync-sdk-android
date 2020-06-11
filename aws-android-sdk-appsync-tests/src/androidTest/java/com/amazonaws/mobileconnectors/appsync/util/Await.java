@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.util;
 
 import android.support.annotation.NonNull;
 
@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * A utility to await a value from an async function, in a synchronous way.
  */
 @SuppressWarnings({"WeakerAccess", "SameParameterValue", "unused", "UnusedReturnValue"})
-final class Await {
+public final class Await {
     private static final long DEFAULT_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
 
     private Await() {}
@@ -29,7 +29,7 @@ final class Await {
      * @param waitTimeMs Time in milliseconds to wait for count down before timing out with exception
      * @throws RuntimeException If the latch doesn't count down in the specified amount of time
      */
-    static void latch(CountDownLatch latch, long waitTimeMs) {
+    public static void latch(CountDownLatch latch, long waitTimeMs) {
         try {
             latch.await(waitTimeMs, TimeUnit.MILLISECONDS);
         } catch (InterruptedException interruptedException) {
@@ -47,7 +47,7 @@ final class Await {
      * @param latch A count down latch for which countdown is awaited
      * @throws RuntimeException If the latch doesn't count down in a reasonable amount of time
      */
-    static void latch(@NonNull CountDownLatch latch) {
+    public static void latch(@NonNull CountDownLatch latch) {
         latch(latch, DEFAULT_WAIT_TIME_MS);
     }
 
@@ -63,7 +63,7 @@ final class Await {
      * @throws RuntimeException In all other situations where there is not a non-null result
      */
     @NonNull
-    static <R, E extends Throwable> R result(
+    public static <R, E extends Throwable> R result(
         @NonNull ResultErrorEmitter<R, E> resultErrorEmitter) throws E {
         return result(DEFAULT_WAIT_TIME_MS, resultErrorEmitter);
     }
@@ -81,7 +81,7 @@ final class Await {
      * @throws RuntimeException In all other situations where there is not a non-null result
      */
     @NonNull
-    static <R, E extends Throwable> R result(
+    public static <R, E extends Throwable> R result(
         long timeMs, @NonNull ResultErrorEmitter<R, E> resultErrorEmitter) throws E {
 
         Objects.requireNonNull(resultErrorEmitter);
@@ -127,7 +127,7 @@ final class Await {
      * @throws RuntimeException If no error is emitted by the emitter
      */
     @NonNull
-    static <R, E extends Throwable> E error(
+    public static <R, E extends Throwable> E error(
             long timeMs, @NonNull ResultErrorEmitter<R, E> resultErrorEmitter) {
 
         Objects.requireNonNull(resultErrorEmitter);
@@ -183,7 +183,7 @@ final class Await {
      * @param <R> Type of result
      * @param <E> Type of error
      */
-    interface ResultErrorEmitter<R, E extends Throwable> {
+    public interface ResultErrorEmitter<R, E extends Throwable> {
         /**
          * A function that emits a value upon completion, either as a
          * result or as an error.

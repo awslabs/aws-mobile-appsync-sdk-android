@@ -5,13 +5,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.tests;
 
 import android.support.test.runner.AndroidJUnit4;
 import android.util.Log;
 
 import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobile.config.AWSConfiguration;
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClientException;
+import com.amazonaws.mobileconnectors.appsync.ClearCacheException;
+import com.amazonaws.mobileconnectors.appsync.ClearCacheOptions;
+import com.amazonaws.mobileconnectors.appsync.SyncStore;
+import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
+import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
@@ -19,7 +28,13 @@ import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
+import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
+import com.amazonaws.mobileconnectors.appsync.util.JsonExtract;
+import com.amazonaws.mobileconnectors.appsync.util.Sleep;
+import com.amazonaws.mobileconnectors.appsync.util.Wifi;
 import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Operation.Variables;
@@ -49,9 +64,6 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 
 import static android.support.test.InstrumentationRegistry.getTargetContext;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_DELTA_SYNC_SQL_STORE_NAME;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_MUTATION_SQL_STORE_NAME;
-import static com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient.DEFAULT_QUERY_SQL_STORE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -66,8 +78,8 @@ import static org.junit.Assert.fail;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-public class AWSAppSyncMultiClientInstrumentationTest {
-    private static final String TAG = AWSAppSyncMultiClientInstrumentationTest.class.getSimpleName();
+public class MultiClientInstrumentationTest {
+    private static final String TAG = MultiClientInstrumentationTest.class.getSimpleName();
     private static String idToken = null;
 
     @BeforeClass
@@ -724,10 +736,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             .context(getTargetContext())
             .awsConfiguration(awsConfiguration)
             .build();
-        assertNotNull(awsAppSyncClient.mSyncStore);
-        assertEquals(DEFAULT_QUERY_SQL_STORE_NAME, awsAppSyncClient.querySqlStoreName);
-        assertEquals(DEFAULT_MUTATION_SQL_STORE_NAME, awsAppSyncClient.mutationSqlStoreName);
-        assertEquals(DEFAULT_DELTA_SYNC_SQL_STORE_NAME, awsAppSyncClient.deltaSyncSqlStoreName);
+        SyncStore.validate(awsAppSyncClient, null);
     }
 
     @Test

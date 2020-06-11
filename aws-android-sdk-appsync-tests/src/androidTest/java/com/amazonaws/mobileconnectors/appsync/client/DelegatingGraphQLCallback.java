@@ -5,10 +5,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.support.annotation.NonNull;
 
+import com.amazonaws.mobileconnectors.appsync.util.Consumer;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
@@ -19,7 +20,7 @@ import com.apollographql.apollo.exception.ApolloException;
  * {@link Response}, it just passes it to the corresponding {@link Consumer} by calling
  * {@link Consumer#accept(T)}.
  */
-final class DelegatingGraphQLCallback<T> extends GraphQLCall.Callback<T> {
+public final class DelegatingGraphQLCallback<T> extends GraphQLCall.Callback<T> {
     private final Consumer<Response<T>> onResponse;
     private final Consumer<ApolloException> onFailure;
 
@@ -38,9 +39,9 @@ final class DelegatingGraphQLCallback<T> extends GraphQLCall.Callback<T> {
      * @param <T> Type of data in response
      * @return A delegating GraphQLCall.Callback
      */
-    static <T> DelegatingGraphQLCallback<T> to(
-            @NonNull Consumer<Response<T>> onResponse,
-            @NonNull Consumer<ApolloException> onFailure) {
+    public static <T> DelegatingGraphQLCallback<T> to(
+        @NonNull Consumer<Response<T>> onResponse,
+        @NonNull Consumer<ApolloException> onFailure) {
         return new DelegatingGraphQLCallback<>(onResponse, onFailure);
     }
 

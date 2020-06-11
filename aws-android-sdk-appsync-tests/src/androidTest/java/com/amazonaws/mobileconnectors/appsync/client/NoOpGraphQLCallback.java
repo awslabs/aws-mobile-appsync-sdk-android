@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.support.annotation.NonNull;
 
@@ -17,10 +17,10 @@ import com.apollographql.apollo.exception.ApolloException;
  * An {@link GraphQLCall.Callback} that does nothing.
  * @param <T> Type of data in the GraphQL response
  */
-final class NoOpGraphQLCallback<T> extends GraphQLCall.Callback<T> {
+public final class NoOpGraphQLCallback<T> extends GraphQLCall.Callback<T> {
     private NoOpGraphQLCallback() {}
 
-    static <T> NoOpGraphQLCallback<T> instance() {
+    public static <T> NoOpGraphQLCallback<T> instance() {
         return new NoOpGraphQLCallback<>();
     }
 

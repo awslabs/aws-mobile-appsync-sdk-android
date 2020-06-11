@@ -1,13 +1,14 @@
 /*
- * Copyright 2020 Amazon.com,
+ * Copyright 2018-2020 Amazon.com,
  * Inc. or its affiliates. All Rights Reserved.
  * <p>
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.identity;
 
 import com.amazonaws.mobile.client.Callback;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * to block the calling thread of execution until a result/error is received.
  * @param <T> The type of result expected
  */
-final class LatchedCallback<T> implements Callback<T> {
+final class LatchedMobileClientCallback<T> implements Callback<T> {
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
 
     private final CountDownLatch resultLatch;
@@ -27,7 +28,7 @@ final class LatchedCallback<T> implements Callback<T> {
     private final AtomicReference<Exception> errorContainer;
     private final long waitTimeMs;
 
-    private LatchedCallback(long waitTimeMs) {
+    private LatchedMobileClientCallback(long waitTimeMs) {
         this.resultLatch = new CountDownLatch(1);
         this.resultContainer = new AtomicReference<>();
         this.errorLatch = new CountDownLatch(1);
@@ -42,8 +43,8 @@ final class LatchedCallback<T> implements Callback<T> {
      * @param <T> Type of result provided to callback
      * @return A latched callback
      */
-    static <T> LatchedCallback<T> instance() {
-        return new LatchedCallback<>(REASONABLE_WAIT_TIME_MS);
+    static <T> LatchedMobileClientCallback<T> instance() {
+        return new LatchedMobileClientCallback<>(REASONABLE_WAIT_TIME_MS);
     }
 
     /**
@@ -55,8 +56,8 @@ final class LatchedCallback<T> implements Callback<T> {
      * @return A latched callback
      */
     @SuppressWarnings("unused")
-    static <T> LatchedCallback<T> instance(long waitTimeMs) {
-        return new LatchedCallback<>(waitTimeMs);
+    static <T> LatchedMobileClientCallback<T> instance(long waitTimeMs) {
+        return new LatchedMobileClientCallback<>(waitTimeMs);
     }
 
     @Override

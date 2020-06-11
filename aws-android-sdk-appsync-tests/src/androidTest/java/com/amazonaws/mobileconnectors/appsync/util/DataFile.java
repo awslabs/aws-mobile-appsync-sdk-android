@@ -4,7 +4,7 @@
  * <p>
  * SPDX-License-Identifier: Apache-2.0
  */
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.util;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -14,7 +14,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-final class DataFile {
+public final class DataFile {
     private DataFile() {}
 
     @NonNull

@@ -5,10 +5,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.models;
 
 import android.util.Log;
 
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.DeletePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
@@ -23,10 +24,10 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-final class PostCruds {
+public final class PostCruds {
     private static final String TAG = PostCruds.class.getName();
 
-    static void test(Collection<AWSAppSyncClient> awsAppSyncClients) {
+    public static void test(Collection<AWSAppSyncClient> awsAppSyncClients) {
         for (final AWSAppSyncClient awsAppSyncClient : awsAppSyncClients) {
             assertNotNull(awsAppSyncClient);
             final String title = "Home [Scene Six]";
