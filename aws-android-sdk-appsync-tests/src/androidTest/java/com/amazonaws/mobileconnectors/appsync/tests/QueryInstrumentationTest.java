@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.tests;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
@@ -13,6 +13,13 @@ import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.util.Log;
 
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
+import com.amazonaws.mobileconnectors.appsync.AppSyncMutationCall;
+import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
+import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
@@ -20,6 +27,9 @@ import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
+import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Error;
 import com.apollographql.apollo.api.Operation;
@@ -49,8 +59,8 @@ import static org.junit.Assert.fail;
 /**
  * Tests for base and delta queries, list/get of models.
  */
-public final class AWSAppSyncQueryInstrumentationTest {
-    private static final String TAG = AWSAppSyncQueryInstrumentationTest.class.getSimpleName();
+public final class QueryInstrumentationTest {
+    private static final String TAG = QueryInstrumentationTest.class.getSimpleName();
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
     private static final long EXTENDED_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(30);
 

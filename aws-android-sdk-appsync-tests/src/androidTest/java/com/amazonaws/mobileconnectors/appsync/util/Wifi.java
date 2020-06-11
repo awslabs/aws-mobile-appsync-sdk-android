@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.util;
 
 import android.content.Context;
 import android.net.wifi.WifiManager;
@@ -15,14 +15,14 @@ import static android.support.test.InstrumentationRegistry.getTargetContext;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("unused")
-final class Wifi {
+public final class Wifi {
     private Wifi() {}
 
-    static void turnOn() {
+    public static void turnOn() {
         assertTrue(wifiManager().setWifiEnabled(true));
     }
 
-    static void turnOff() {
+    public static void turnOff() {
         assertTrue(wifiManager().setWifiEnabled(false));
     }
 

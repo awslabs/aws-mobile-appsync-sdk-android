@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.identity;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
@@ -20,13 +20,13 @@ import java.util.Objects;
  * The singleton instance of the client is initialized in a synchronous way, and is
  * usable as soon as it is returned.
  */
-final class TestAWSMobileClient {
+public final class TestAWSMobileClient {
     private static AWSMobileClient instance;
 
-    static synchronized AWSMobileClient instance(@NonNull Context context) {
+    public static synchronized AWSMobileClient instance(@NonNull Context context) {
         Objects.requireNonNull(context);
         if (instance == null) {
-            LatchedCallback<UserStateDetails> callback = LatchedCallback.instance();
+            LatchedMobileClientCallback<UserStateDetails> callback = LatchedMobileClientCallback.instance();
             AWSMobileClient.getInstance().initialize(context, callback);
             callback.awaitResult();
             instance = AWSMobileClient.getInstance();

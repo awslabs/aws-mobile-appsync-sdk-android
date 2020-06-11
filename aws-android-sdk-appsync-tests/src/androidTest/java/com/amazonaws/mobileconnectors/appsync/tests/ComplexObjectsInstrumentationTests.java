@@ -5,10 +5,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.tests;
 
 import android.support.test.runner.AndroidJUnit4;
 
+import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
+import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
+import com.amazonaws.mobileconnectors.appsync.client.DelegatingGraphQLCallback;
+import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.demo.AllArticlesQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.CreateArticle2Mutation;
 import com.amazonaws.mobileconnectors.appsync.demo.CreateArticleMutation;
@@ -17,6 +21,9 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.CreateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.S3ObjectInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
+import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
+import com.amazonaws.mobileconnectors.appsync.util.DataFile;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 
@@ -39,7 +46,7 @@ import static org.junit.Assert.assertTrue;
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
 @RunWith(AndroidJUnit4.class)
-public class AWSAppSyncComplexObjectsInstrumentationTests {
+public class ComplexObjectsInstrumentationTests {
     private static final String REGION = "us-west-2";
     private static final String BUCKET_NAME = "aws-appsync-tests-android163429-dev";
 

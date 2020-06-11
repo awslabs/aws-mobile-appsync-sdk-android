@@ -1,15 +1,9 @@
-/*
- * Copyright 2020 Amazon.com,
- * Inc. or its affiliates. All Rights Reserved.
- * <p>
- * SPDX-License-Identifier: Apache-2.0
- */
-
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.identity;
 
 import android.support.annotation.Nullable;
 
 import com.amazonaws.mobile.client.Callback;
+import com.amazonaws.mobileconnectors.appsync.util.Consumer;
 
 /**
  * An AWS Mobile Client {@link Callback} which passes any received result/error
@@ -18,11 +12,11 @@ import com.amazonaws.mobile.client.Callback;
  * That consumer can deal with the exception, from there on.
  * @param <T> Type of result received in the callback
  */
-final class DelegatingCallback<T> implements Callback<T> {
+final class DelegatingMobileClientCallback<T> implements Callback<T> {
     private final Consumer<T> onResult;
     private final Consumer<Exception> onError;
 
-    private DelegatingCallback(Consumer<T> onResult, Consumer<Exception> onError) {
+    private DelegatingMobileClientCallback(Consumer<T> onResult, Consumer<Exception> onError) {
         this.onResult = onResult;
         this.onError = onError;
     }
@@ -34,9 +28,9 @@ final class DelegatingCallback<T> implements Callback<T> {
      * @param <T> Type of result data
      * @return An AWS Mobile Client callback which delegates values to one of two consumers.
      */
-    static <T> DelegatingCallback<T> to(
-            @Nullable Consumer<T> onResult, @Nullable Consumer<Exception> onError) {
-        return new DelegatingCallback<>(
+    static <T> DelegatingMobileClientCallback<T> to(
+        @Nullable Consumer<T> onResult, @Nullable Consumer<Exception> onError) {
+        return new DelegatingMobileClientCallback<>(
             onResult != null ? onResult : DefaultConsumer.instance(),
             onError != null ? onError : DefaultConsumer.instance()
         );

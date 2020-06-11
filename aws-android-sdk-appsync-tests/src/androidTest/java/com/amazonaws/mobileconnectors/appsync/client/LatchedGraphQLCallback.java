@@ -5,11 +5,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
@@ -26,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <T> The type of data in the GraphQL response, arriving at callback
  */
 @SuppressWarnings("unused")
-final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
+public final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
 
     private final CountDownLatch responseLatch;
@@ -51,7 +52,7 @@ final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
      * @return A latched GraphQLCall.Callback
      */
     @NonNull
-    static <T> LatchedGraphQLCallback<T> instance() {
+    public static <T> LatchedGraphQLCallback<T> instance() {
         return new LatchedGraphQLCallback<>(REASONABLE_WAIT_TIME_MS);
     }
 
@@ -63,7 +64,7 @@ final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
      * @return A latched GraphQLCall.Callback
      */
     @NonNull
-    static <T> LatchedGraphQLCallback<T> instance(long waitTimeMs) {
+    public static <T> LatchedGraphQLCallback<T> instance(long waitTimeMs) {
         return new LatchedGraphQLCallback<>(waitTimeMs);
     }
 
@@ -86,7 +87,7 @@ final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
      * @throws RuntimeException If no response arrives before the timeout elapses
      */
     @Nullable
-    Response<T> awaitResponse() {
+    public Response<T> awaitResponse() {
         Await.latch(responseLatch, waitTimeMs);
         return responseContainer.get();
     }
@@ -102,7 +103,7 @@ final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
      *          is null, or contains errors, or has null data
      */
     @NonNull
-    Response<T> awaitSuccessfulResponse() {
+    public Response<T> awaitSuccessfulResponse() {
         Response<T> response = awaitResponse();
         if (response == null) {
             throw new RuntimeException("Null response.");
@@ -121,7 +122,7 @@ final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
      * @throws RuntimeException If the timeout elapses before a failure is received by callback
      */
     @Nullable
-    ApolloException awaitFailure() {
+    public ApolloException awaitFailure() {
         Await.latch(failureLatch, waitTimeMs);
         return failureContainer.get();
     }

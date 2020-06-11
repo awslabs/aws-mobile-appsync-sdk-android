@@ -5,11 +5,13 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
+import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.exception.ApolloException;
 
@@ -26,7 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @param <T>
  */
 @SuppressWarnings({"unused", "UnusedReturnValue", "SameParameterValue", "WeakerAccess"})
-final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Callback<T> {
+public final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Callback<T> {
     private static final long REASONABLE_WAIT_TIME_MS = TimeUnit.SECONDS.toMillis(10);
 
     private final CountDownLatch failureLatch;
@@ -51,7 +53,7 @@ final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Ca
      * @param <T> The type of value expected in the subscription items
      * @return A latched subscription callback
      */
-    static <T> LatchedSubscriptionCallback<T> instance() {
+    public static <T> LatchedSubscriptionCallback<T> instance() {
         return new LatchedSubscriptionCallback<>(REASONABLE_WAIT_TIME_MS);
     }
 
@@ -140,7 +142,7 @@ final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Ca
      * @throws RuntimeException If unable to produce the requested number of responses, or if any
      *                          of the buffered responses are null, containing GraphQL errors, or null data
      */
-    List<Response<T>> awaitSuccessfulResponses(int desiredQuantity) {
+    public List<Response<T>> awaitSuccessfulResponses(int desiredQuantity) {
         awaitResponses(desiredQuantity);
         for (int pos = 0; pos < responses.size(); pos++) {
             Response<T> response = responses.get(pos);
@@ -160,7 +162,7 @@ final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Ca
      * a timeout elapses. When the timeout elapses, an error is raised.
      * @return The next response that was found on the subscription
      */
-    Response<T> awaitNextResponse() {
+    public Response<T> awaitNextResponse() {
         return awaitResponses(1).get(0);
     }
 
@@ -175,7 +177,7 @@ final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Ca
      *                          or if the next repsonse that arrives is not a valid, non-null
      *                          successful response
      */
-    Response<T> awaitNextSuccessfulResponse() {
+    public Response<T> awaitNextSuccessfulResponse() {
         return requireValidResponse(awaitNextResponse());
     }
 
@@ -185,7 +187,7 @@ final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Ca
      * Note that this method lasts a duration of time _at least_ as long as the timeout value.
      * @throws RuntimeException If a value is received before the timeout elapses
      */
-    void expectNoResponse() {
+    public void expectNoResponse() {
         Response<T> unexpectedResponse;
         try {
             unexpectedResponse = awaitNextResponse();
@@ -212,7 +214,7 @@ final class LatchedSubscriptionCallback<T> implements AppSyncSubscriptionCall.Ca
      * If no completion callback is received before the timeout, an error is thrown.
      * @throws RuntimeException If timeout elapses before completion callback occurs
      */
-    void awaitCompletion() {
+    public void awaitCompletion() {
         Await.latch(completionLatch, waitTimeMs);
     }
 

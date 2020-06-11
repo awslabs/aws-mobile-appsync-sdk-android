@@ -5,20 +5,22 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-package com.amazonaws.mobileconnectors.appsync;
+package com.amazonaws.mobileconnectors.appsync.client;
 
 import android.util.Log;
 
+import com.amazonaws.mobileconnectors.appsync.ConflictResolutionHandler;
+import com.amazonaws.mobileconnectors.appsync.ConflictResolverInterface;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
-class TestConflictResolver implements ConflictResolverInterface {
+final class TestConflictResolver implements ConflictResolverInterface {
     private static final String TAG = TestConflictResolver.class.getSimpleName();
 
-    @SuppressWarnings("NullableProblems")
+    @SuppressWarnings({"NullableProblems", "ConstantConditions"})
     @Override
     public void resolveConflict(
             ConflictResolutionHandler handler,
