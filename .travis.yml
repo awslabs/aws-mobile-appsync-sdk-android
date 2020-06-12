@@ -5,7 +5,7 @@ before_install:
 - chmod +x gradlew
 - yes | sdkmanager "platforms;android-27"
 - android list target
-- echo no | avdmanager create avd -n test -k "system-images;android-28;google_apis;x86_64"
+- echo no | android create avd --force -n test -k "system-images;android-28;google_apis;x86_64"
 - emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
 - adb -e logcat *:I | tee logcat.log > /dev/null 2>&1 &
