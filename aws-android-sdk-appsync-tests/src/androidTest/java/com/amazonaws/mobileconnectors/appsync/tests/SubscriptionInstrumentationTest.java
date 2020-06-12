@@ -30,6 +30,7 @@ import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.apollographql.apollo.api.Response;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -53,6 +54,7 @@ public final class SubscriptionInstrumentationTest {
      * create a model, and then validate the subscription sees the created thing.
      */
     @Test
+    @Ignore("Need to figure out configuration for Gogi test")
     public void testSubscriptionWithApiKey() {
         // Get a client handle
         AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withApiKeyForGogiTest();
