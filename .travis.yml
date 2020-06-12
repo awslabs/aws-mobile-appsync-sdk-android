@@ -6,7 +6,7 @@ before_install:
 - yes | sdkmanager tools
 - sdkmanager "system-images;android-27;google_apis;x86"
 - android list target
-- echo no | avdmanager create avd --force -n test -k "system-images;android-28;google_apis;x86_64"
+- echo no | avdmanager create avd --force -n test -k "system-images;android-27;google_apis;x86"
 - $ANDROID_HOME/emulator/emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
 - adb -e logcat *:I | tee logcat.log > /dev/null 2>&1 &
