@@ -17,7 +17,11 @@ type Event @model {
 #this works on created but we then have to add _version to UpdateArticleInput
 #
 type Article @model
-@versioned(versionField:"version", versionInput:"expectedVersion") {
+@versioned
+@auth(rules: [
+    { allow: public provider: apiKey },
+    { allow: private provider: iam}
+]) {
     id: ID!
     author: String!
     title: String
@@ -35,9 +39,9 @@ type S3Object {
 }
 
 
-type Post @model(subscriptions: { level: public })
+type Post @model #(subscriptions: { level: public })
 @auth(rules: [
-    { allow: owner },
+    { allow: private provider: userPools },
     { allow: private provider: iam},
     { allow: public provider: apiKey }
 ]){
@@ -50,7 +54,6 @@ type Post @model(subscriptions: { level: public })
     downs: Int
     version: Int!
 }
-
 
 # After creation, we need to manually update the CreateArticleInput schema to be as follows
 #input CreateArticleInput {
