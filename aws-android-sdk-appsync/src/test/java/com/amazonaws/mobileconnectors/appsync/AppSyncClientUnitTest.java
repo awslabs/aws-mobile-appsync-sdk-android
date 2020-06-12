@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowApplication;
 
@@ -64,7 +65,7 @@ public class AppSyncClientUnitTest {
 
     @Before
     public void setup() {
-        shadowContext = ShadowApplication.getInstance().getApplicationContext();
+        shadowContext = RuntimeEnvironment.application;
         mockContext = Mockito.mock(Context.class);
         mockLogger = Mockito.mock(ApolloLogger.class);
         mockSubscription = Mockito.mock(Subscription.class);

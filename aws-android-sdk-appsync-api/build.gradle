@@ -5,10 +5,10 @@ apply from: rootProject.file('gradle-mvn-push.gradle')
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'com.google.code.findbugs:jsr305:3.0.1' // compileOnly
+    implementation 'com.google.code.findbugs:jsr305:3.0.2' // compileOnly
     api 'javax.annotation:jsr250-api:1.0' // compileOnly
 
-    implementation "com.squareup.okhttp3:okhttp:3.8.1" // compileOnly
+    implementation 'com.squareup.okhttp3:okhttp:4.3.1' // compileOnly
 }
 
 publishing {

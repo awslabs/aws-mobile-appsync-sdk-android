@@ -11,7 +11,7 @@ import com.google.common.collect.Lists;
 
 import com.moowork.gradle.node.task.NodeTask;
 
-import org.gradle.api.internal.tasks.options.Option;
+import org.gradle.api.tasks.options.Option;
 
 import java.io.File;
 import java.util.ArrayList;

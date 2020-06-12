@@ -29,6 +29,9 @@ import okhttp3.ResponseBody;
  */
 class ApolloResponseBuilder {
     private static final String TAG = ApolloResponseBuilder.class.getSimpleName();
+    private static final String CONTENT_TYPE = "application/json";
+    private static final MediaType MEDIA_TYPE = MediaType.parse(CONTENT_TYPE);
+
     private final Map<ScalarType, CustomTypeAdapter> customTypeAdapters;
     private final ResponseNormalizer<Map<String, Object>> mapResponseNormalizer;
 
@@ -41,7 +44,7 @@ class ApolloResponseBuilder {
 
     <D extends Operation.Data, T, V extends Operation.Variables> Response<T> buildResponse(String message, Subscription<D, T, V> subscription) {
         // Parse the response using OperationResponseParser
-        ResponseBody messageBody = ResponseBody.create(MediaType.parse("text/plain"), message);
+        ResponseBody messageBody = ResponseBody.create(message, MEDIA_TYPE);
         OperationResponseParser<D, T> parser = new OperationResponseParser<>(
             subscription,
             subscription.responseFieldMapper(),
