@@ -3,9 +3,11 @@ before_install:
 - ls -l aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - wc aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - chmod +x gradlew
-- yes | sdkmanager "platforms;android-27"
+- yes | sdkmanager "platforms;android-28"
+- sdkmanager tools
+- sdkmanager "system-images;android-28;google_apis;x86_64"
 - android list target
-- echo no | android create avd --force -n test -k "system-images;android-28;google_apis;x86_64"
+- echo no | avdmanager create avd -n test -k "system-images;android-28;google_apis;x86_64"
 - emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
 - adb -e logcat *:I | tee logcat.log > /dev/null 2>&1 &
@@ -25,4 +27,4 @@ script:
 - cd ..
 after_failure:
   - cat aws-android-sdk-appsync-tests/build/outputs/androidTest-results/connected/*.xml
-  - - echo " LOGCAT "; echo "========"; cat logcat.log; pkill -KILL -f adb
+  - echo " LOGCAT "; echo "========"; cat logcat.log; pkill -KILL -f adb
