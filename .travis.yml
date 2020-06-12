@@ -4,7 +4,7 @@ before_install:
 - wc aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - chmod +x gradlew
 - yes | sdkmanager "platforms;android-28"
-- sdkmanager tools
+- yes | sdkmanager tools
 - sdkmanager "system-images;android-28;google_apis;x86_64"
 - android list target
 - echo no | avdmanager create avd -n test -k "system-images;android-28;google_apis;x86_64"
