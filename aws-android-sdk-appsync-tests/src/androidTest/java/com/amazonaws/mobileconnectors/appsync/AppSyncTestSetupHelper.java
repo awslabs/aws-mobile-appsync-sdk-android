@@ -46,11 +46,11 @@ import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.Authentic
 import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3Client;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.S3ObjectManager;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.fetcher.ResponseFetcher;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.api.S3ObjectManager;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.fetcher.ResponseFetcher;
 
 import org.json.JSONException;
 import org.json.JSONObject;

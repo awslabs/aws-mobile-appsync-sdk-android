@@ -18,10 +18,10 @@ import com.amazonaws.mobileconnectors.appsync.demo.type.CreateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.S3ObjectInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.fetcher.ResponseFetcher;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.fetcher.ResponseFetcher;
 
 import org.junit.BeforeClass;
 import org.junit.Test;

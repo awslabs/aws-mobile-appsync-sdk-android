@@ -13,7 +13,7 @@ import com.amazonaws.apollographql.apollo.internal.ApolloLogger;
 
 /**
  * A ResponseFetcher is an {@link ApolloInterceptor} inserted at the beginning of a request chain.
- * It can control how a request is fetched by configuring {@link com.apollographql.apollo.interceptor.FetchOptions}.
+ * It can control how a request is fetched by configuring {@link com.amazonaws.apollographql.apollo.interceptor.FetchOptions}.
  *
  * See {@link AppSyncResponseFetchers} for a basic set of fetchers.
  */

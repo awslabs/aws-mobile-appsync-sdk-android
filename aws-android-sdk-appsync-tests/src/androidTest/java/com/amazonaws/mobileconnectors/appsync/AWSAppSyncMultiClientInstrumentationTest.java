@@ -38,13 +38,13 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.regions.Regions;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Error;
-import com.apollographql.apollo.api.Query;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.fetcher.ResponseFetcher;
-import com.apollographql.apollo.internal.util.Cancelable;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Error;
+import com.amazonaws.apollographql.apollo.api.Query;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.fetcher.ResponseFetcher;
+import com.amazonaws.apollographql.apollo.internal.util.Cancelable;
 
 import org.json.JSONException;
 import org.junit.After;
@@ -117,7 +117,7 @@ public class AWSAppSyncMultiClientInstrumentationTest {
             final CountDownLatch syncLatch = new CountDownLatch(1);
 
             boolean success = false;
-            Query<AllPostsQuery.Data, AllPostsQuery.Data, com.apollographql.apollo.api.Operation.Variables> baseQuery = AllPostsQuery.builder().build();
+            Query<AllPostsQuery.Data, AllPostsQuery.Data, com.amazonaws.apollographql.apollo.api.Operation.Variables> baseQuery = AllPostsQuery.builder().build();
             GraphQLCall.Callback baseQueryCallback = new GraphQLCall.Callback<AllPostsQuery.Data>() {
                 @Override
                 public void onResponse(@Nonnull Response<AllPostsQuery.Data> response) {

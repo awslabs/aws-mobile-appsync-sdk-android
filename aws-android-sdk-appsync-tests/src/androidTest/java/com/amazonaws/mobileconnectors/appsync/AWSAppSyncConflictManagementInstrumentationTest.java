@@ -14,9 +14,9 @@ import com.amazonaws.mobileconnectors.appsync.demo.CreateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdateArticleMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreateArticleInput;
 import com.amazonaws.mobileconnectors.appsync.demo.type.UpdateArticleInput;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
