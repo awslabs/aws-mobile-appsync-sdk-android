@@ -35,10 +35,10 @@ task pluginVersion {
     def outputDir = file("src/generated/kotlin")
 
     doLast {
-        def versionFile = file("$outputDir/com/apollographql/android/Version.kt")
+        def versionFile = file("$outputDir/com/amazonaws/apollographql/android/Version.kt")
         versionFile.parentFile.mkdirs()
         versionFile.text = """// Generated file. Do not edit!
-package com.apollographql.android
+package com.amazonaws.apollographql.android
 val VERSION = "$VERSION_NAME"
 """
     }

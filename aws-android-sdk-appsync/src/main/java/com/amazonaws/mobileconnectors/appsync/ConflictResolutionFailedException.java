@@ -1,6 +1,6 @@
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
 
 public class ConflictResolutionFailedException extends ApolloException {
     public ConflictResolutionFailedException(String message) {

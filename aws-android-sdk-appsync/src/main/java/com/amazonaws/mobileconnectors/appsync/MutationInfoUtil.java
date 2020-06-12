@@ -7,8 +7,8 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.api.Mutation;
-import com.apollographql.apollo.interceptor.ApolloInterceptor;
+import com.amazonaws.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptor;
 
 enum MuationType {
     InMemory,

@@ -9,10 +9,10 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.util.Log;
 
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.cache.normalized.ApolloStore;
-import com.apollographql.apollo.interceptor.ApolloInterceptor;
-import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.cache.normalized.ApolloStore;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptor;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptorChain;
 
 import java.util.concurrent.Executor;
 

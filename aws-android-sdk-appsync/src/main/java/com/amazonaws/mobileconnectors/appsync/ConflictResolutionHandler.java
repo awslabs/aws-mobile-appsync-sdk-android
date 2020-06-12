@@ -7,14 +7,12 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import android.os.Message;
 import android.util.Log;
 
-import com.apollographql.apollo.api.Error;
-import com.apollographql.apollo.api.Mutation;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.internal.Optional;
-import com.apollographql.apollo.exception.ApolloParseException;
+import com.amazonaws.apollographql.apollo.api.Error;
+import com.amazonaws.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.api.internal.Optional;
 
 import org.json.JSONArray;
 import org.json.JSONException;

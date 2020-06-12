@@ -9,13 +9,13 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.os.Handler;
 
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.exception.ApolloHttpException;
-import com.apollographql.apollo.exception.ApolloNetworkException;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.exception.ApolloHttpException;
+import com.amazonaws.apollographql.apollo.exception.ApolloNetworkException;
 
 import javax.annotation.Nonnull;
 
-import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
+import static com.amazonaws.apollographql.apollo.api.internal.Utils.checkNotNull;
 
 /**
  * Android wrapper for {@link AppSyncPrefetch.Callback} to be operated on specified {@link Handler}

@@ -10,13 +10,13 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.util.Log;
 
 import com.amazonaws.AmazonClientException;
-import com.apollographql.apollo.api.Mutation;
-import com.apollographql.apollo.api.S3InputObjectInterface;
-import com.apollographql.apollo.api.S3ObjectManager;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.exception.ApolloNetworkException;
-import com.apollographql.apollo.interceptor.ApolloInterceptor;
-import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
+import com.amazonaws.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.api.S3InputObjectInterface;
+import com.amazonaws.apollographql.apollo.api.S3ObjectManager;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.exception.ApolloNetworkException;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptor;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptorChain;
 
 import java.io.IOException;
 import java.util.concurrent.Executor;

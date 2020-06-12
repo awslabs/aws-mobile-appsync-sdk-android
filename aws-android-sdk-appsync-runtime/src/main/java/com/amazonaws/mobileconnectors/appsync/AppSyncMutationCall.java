@@ -7,12 +7,12 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.cache.normalized.ApolloStore;
-import com.apollographql.apollo.api.Mutation;
-import com.apollographql.apollo.api.OperationName;
-import com.apollographql.apollo.api.Query;
-import com.apollographql.apollo.cache.CacheHeaders;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.cache.normalized.ApolloStore;
+import com.amazonaws.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.api.OperationName;
+import com.amazonaws.apollographql.apollo.api.Query;
+import com.amazonaws.apollographql.apollo.cache.CacheHeaders;
 
 import javax.annotation.Nonnull;
 

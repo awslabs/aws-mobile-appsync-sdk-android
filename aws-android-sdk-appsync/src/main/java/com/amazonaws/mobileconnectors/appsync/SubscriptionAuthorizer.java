@@ -19,7 +19,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthPro
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
 import com.amazonaws.regions.Regions;
-import com.apollographql.apollo.api.Subscription;
+import com.amazonaws.apollographql.apollo.api.Subscription;
 
 import org.json.JSONException;
 import org.json.JSONObject;

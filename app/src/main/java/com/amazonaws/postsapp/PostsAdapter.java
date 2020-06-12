@@ -17,10 +17,10 @@ import com.amazonaws.amplify.generated.graphql.OnDeltaPostSubscription;
 import com.amazonaws.amplify.generated.graphql.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Query;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Query;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
 
 import java.util.ArrayList;
 import java.util.HashMap;

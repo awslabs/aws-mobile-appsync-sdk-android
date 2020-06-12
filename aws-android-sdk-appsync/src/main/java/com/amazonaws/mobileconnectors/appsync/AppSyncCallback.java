@@ -10,16 +10,16 @@ package com.amazonaws.mobileconnectors.appsync;
 import android.os.Handler;
 import android.os.Looper;
 
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.exception.ApolloHttpException;
-import com.apollographql.apollo.exception.ApolloNetworkException;
-import com.apollographql.apollo.exception.ApolloParseException;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.exception.ApolloHttpException;
+import com.amazonaws.apollographql.apollo.exception.ApolloNetworkException;
+import com.amazonaws.apollographql.apollo.exception.ApolloParseException;
 
 import javax.annotation.Nonnull;
 
-import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
+import static com.amazonaws.apollographql.apollo.api.internal.Utils.checkNotNull;
 
 /**
  * <p>Android wrapper for {@link GraphQLCall.Callback} to be operated on specified {@link Handler}</p>

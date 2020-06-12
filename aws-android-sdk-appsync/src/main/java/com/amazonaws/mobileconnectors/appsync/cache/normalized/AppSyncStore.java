@@ -7,21 +7,21 @@
 
 package com.amazonaws.mobileconnectors.appsync.cache.normalized;
 
-import com.apollographql.apollo.api.GraphqlFragment;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.ResponseFieldMapper;
-import com.apollographql.apollo.cache.CacheHeaders;
-import com.apollographql.apollo.cache.normalized.ApolloStore;
-import com.apollographql.apollo.cache.normalized.CacheKey;
-import com.apollographql.apollo.cache.normalized.CacheKeyResolver;
-import com.apollographql.apollo.cache.normalized.GraphQLStoreOperation;
-import com.apollographql.apollo.cache.normalized.NormalizedCache;
-import com.apollographql.apollo.cache.normalized.Record;
-import com.apollographql.apollo.internal.cache.normalized.ReadableStore;
-import com.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
-import com.apollographql.apollo.internal.cache.normalized.Transaction;
-import com.apollographql.apollo.internal.cache.normalized.WriteableStore;
+import com.amazonaws.apollographql.apollo.api.GraphqlFragment;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.api.ResponseFieldMapper;
+import com.amazonaws.apollographql.apollo.cache.CacheHeaders;
+import com.amazonaws.apollographql.apollo.cache.normalized.ApolloStore;
+import com.amazonaws.apollographql.apollo.cache.normalized.CacheKey;
+import com.amazonaws.apollographql.apollo.cache.normalized.CacheKeyResolver;
+import com.amazonaws.apollographql.apollo.cache.normalized.GraphQLStoreOperation;
+import com.amazonaws.apollographql.apollo.cache.normalized.NormalizedCache;
+import com.amazonaws.apollographql.apollo.cache.normalized.Record;
+import com.amazonaws.apollographql.apollo.internal.cache.normalized.ReadableStore;
+import com.amazonaws.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
+import com.amazonaws.apollographql.apollo.internal.cache.normalized.Transaction;
+import com.amazonaws.apollographql.apollo.internal.cache.normalized.WriteableStore;
 
 import java.util.Collection;
 import java.util.List;

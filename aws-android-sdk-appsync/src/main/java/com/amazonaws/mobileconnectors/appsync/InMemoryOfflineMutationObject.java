@@ -7,19 +7,14 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Message;
 import android.util.Log;
 
-import com.apollographql.apollo.interceptor.ApolloInterceptor;
-import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptor;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptorChain;
 
 import java.util.concurrent.Executor;
 
 import javax.annotation.Nonnull;
-
-import static com.amazonaws.mobileconnectors.appsync.AppSyncOfflineMutationManager.MSG_EXEC;
 
 /**
  * InMemoryOfflineMutationObject.

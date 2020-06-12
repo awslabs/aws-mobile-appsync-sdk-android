@@ -7,10 +7,10 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.fetcher.ResponseFetcher;
-import com.apollographql.apollo.internal.util.Cancelable;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.fetcher.ResponseFetcher;
+import com.amazonaws.apollographql.apollo.internal.util.Cancelable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

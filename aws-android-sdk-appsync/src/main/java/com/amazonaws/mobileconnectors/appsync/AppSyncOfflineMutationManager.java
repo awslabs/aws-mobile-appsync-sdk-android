@@ -19,16 +19,15 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import com.apollographql.apollo.CustomTypeAdapter;
-import com.apollographql.apollo.api.Mutation;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.S3InputObjectInterface;
-import com.apollographql.apollo.api.ScalarType;
-import com.apollographql.apollo.internal.json.InputFieldJsonWriter;
-import com.apollographql.apollo.internal.json.JsonWriter;
-import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.amazonaws.apollographql.apollo.CustomTypeAdapter;
+import com.amazonaws.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.S3InputObjectInterface;
+import com.amazonaws.apollographql.apollo.api.ScalarType;
+import com.amazonaws.apollographql.apollo.internal.json.InputFieldJsonWriter;
+import com.amazonaws.apollographql.apollo.internal.json.JsonWriter;
+import com.amazonaws.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 

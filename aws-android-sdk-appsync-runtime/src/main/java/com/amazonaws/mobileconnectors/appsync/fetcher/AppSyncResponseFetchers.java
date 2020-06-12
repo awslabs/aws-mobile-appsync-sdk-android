@@ -7,19 +7,21 @@
 
 package com.amazonaws.mobileconnectors.appsync.fetcher;
 
-import com.apollographql.apollo.fetcher.ResponseFetcher;
-import com.apollographql.apollo.internal.fetcher.CacheFirstFetcher;
-import com.apollographql.apollo.internal.fetcher.CacheOnlyFetcher;
-import com.apollographql.apollo.internal.fetcher.CacheAndNetworkFetcher;
-import com.apollographql.apollo.internal.fetcher.NetworkFirstFetcher;
-import com.apollographql.apollo.internal.fetcher.NetworkOnlyFetcher;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.fetcher.ResponseFetcher;
+import com.amazonaws.apollographql.apollo.internal.fetcher.CacheFirstFetcher;
+import com.amazonaws.apollographql.apollo.internal.fetcher.CacheOnlyFetcher;
+import com.amazonaws.apollographql.apollo.internal.fetcher.CacheAndNetworkFetcher;
+import com.amazonaws.apollographql.apollo.internal.fetcher.NetworkFirstFetcher;
+import com.amazonaws.apollographql.apollo.internal.fetcher.NetworkOnlyFetcher;
 
 public final class AppSyncResponseFetchers {
 
   /**
    * Signals the appsync client to <b>only</b> fetch the data from the normalized cache. If it's not present in
    * the normalized cache or if an exception occurs while trying to fetch it from the normalized cache, an empty {@link
-   * com.apollographql.apollo.api.Response} is sent back with the {@link com.apollographql.apollo.api.Operation} info
+   * Response} is sent back with the {@link Operation} info
    * wrapped inside.
    */
   public static final ResponseFetcher CACHE_ONLY = new CacheOnlyFetcher();

@@ -14,9 +14,9 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.apollographql.apollo.api.S3InputObjectInterface;
-import com.apollographql.apollo.api.S3ObjectInterface;
-import com.apollographql.apollo.api.S3ObjectManager;
+import com.amazonaws.apollographql.apollo.api.S3InputObjectInterface;
+import com.amazonaws.apollographql.apollo.api.S3ObjectInterface;
+import com.amazonaws.apollographql.apollo.api.S3ObjectManager;
 
 import java.io.File;
 import java.lang.reflect.Method;

@@ -12,9 +12,9 @@ import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
 
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Subscription;
-import com.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.Subscription;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
 
 import org.json.JSONException;
 import org.json.JSONObject;

@@ -12,13 +12,13 @@ import android.util.Log;
 
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Query;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.Subscription;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.fetcher.ResponseFetcher;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.Query;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.api.Subscription;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.fetcher.ResponseFetcher;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Field;

@@ -9,14 +9,14 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.util.Log;
 
-import com.apollographql.apollo.CustomTypeAdapter;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.ScalarType;
-import com.apollographql.apollo.api.Subscription;
-import com.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
-import com.apollographql.apollo.internal.response.OperationResponseParser;
-import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.amazonaws.apollographql.apollo.CustomTypeAdapter;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.Response;
+import com.amazonaws.apollographql.apollo.api.ScalarType;
+import com.amazonaws.apollographql.apollo.api.Subscription;
+import com.amazonaws.apollographql.apollo.internal.cache.normalized.ResponseNormalizer;
+import com.amazonaws.apollographql.apollo.internal.response.OperationResponseParser;
+import com.amazonaws.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
 import java.io.IOException;
 import java.util.Map;

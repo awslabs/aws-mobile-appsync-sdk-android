@@ -14,19 +14,17 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import com.apollographql.apollo.CustomTypeAdapter;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Error;
-import com.apollographql.apollo.api.Mutation;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.api.ScalarType;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.exception.ApolloNetworkException;
-import com.apollographql.apollo.exception.ApolloParseException;
-import com.apollographql.apollo.interceptor.ApolloInterceptor;
-import com.apollographql.apollo.interceptor.ApolloInterceptorChain;
-import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.amazonaws.apollographql.apollo.CustomTypeAdapter;
+import com.amazonaws.apollographql.apollo.api.Error;
+import com.amazonaws.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.ScalarType;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.exception.ApolloNetworkException;
+import com.amazonaws.apollographql.apollo.exception.ApolloParseException;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptor;
+import com.amazonaws.apollographql.apollo.interceptor.ApolloInterceptorChain;
+import com.amazonaws.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
 import org.json.JSONObject;
 

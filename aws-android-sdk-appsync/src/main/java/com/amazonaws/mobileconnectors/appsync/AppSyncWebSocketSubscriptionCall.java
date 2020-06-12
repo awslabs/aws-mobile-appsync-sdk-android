@@ -9,8 +9,8 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.support.annotation.NonNull;
 
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.api.Subscription;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.api.Subscription;
 
 /**
  * Represents a client call to subscribe. It can be used to execute and cancel a GraphQL subscription.

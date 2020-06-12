@@ -4,19 +4,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.Toast;
 
 
 import com.amazonaws.amplify.generated.graphql.ListPostsQuery;
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
-
-import javax.annotation.Nonnull;
 
 public class UpdatePostActivity extends AppCompatActivity {
     private static ListPostsQuery.ListPost sPost;

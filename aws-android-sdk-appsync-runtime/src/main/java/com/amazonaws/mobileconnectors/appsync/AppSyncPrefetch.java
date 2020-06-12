@@ -7,13 +7,13 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import com.apollographql.apollo.GraphQLCall;
-import com.apollographql.apollo.api.Operation;
-import com.apollographql.apollo.exception.ApolloCanceledException;
-import com.apollographql.apollo.exception.ApolloException;
-import com.apollographql.apollo.exception.ApolloHttpException;
-import com.apollographql.apollo.exception.ApolloNetworkException;
-import com.apollographql.apollo.internal.util.Cancelable;
+import com.amazonaws.apollographql.apollo.GraphQLCall;
+import com.amazonaws.apollographql.apollo.api.Operation;
+import com.amazonaws.apollographql.apollo.exception.ApolloCanceledException;
+import com.amazonaws.apollographql.apollo.exception.ApolloException;
+import com.amazonaws.apollographql.apollo.exception.ApolloHttpException;
+import com.amazonaws.apollographql.apollo.exception.ApolloNetworkException;
+import com.amazonaws.apollographql.apollo.internal.util.Cancelable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

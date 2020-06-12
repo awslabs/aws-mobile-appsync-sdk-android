@@ -9,7 +9,7 @@ package com.amazonaws.mobileconnectors.appsync;
 
 import android.util.Log;
 
-import com.apollographql.apollo.api.Mutation;
+import com.amazonaws.apollographql.apollo.api.Mutation;
 
 import java.util.HashSet;
 import java.util.LinkedList;

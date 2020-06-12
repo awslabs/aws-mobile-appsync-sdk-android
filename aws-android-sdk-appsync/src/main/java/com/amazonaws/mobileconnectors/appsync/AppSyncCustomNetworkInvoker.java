@@ -14,11 +14,11 @@ import android.util.Log;
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.mobileconnectors.appsync.utils.StringUtils;
 import com.amazonaws.util.VersionInfoUtils;
-import com.apollographql.apollo.api.S3InputObjectInterface;
-import com.apollographql.apollo.api.S3ObjectManager;
-import com.apollographql.apollo.exception.ApolloNetworkException;
-import com.apollographql.apollo.exception.ApolloParseException;
-import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
+import com.amazonaws.apollographql.apollo.api.S3InputObjectInterface;
+import com.amazonaws.apollographql.apollo.api.S3ObjectManager;
+import com.amazonaws.apollographql.apollo.exception.ApolloNetworkException;
+import com.amazonaws.apollographql.apollo.exception.ApolloParseException;
+import com.amazonaws.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -42,7 +42,7 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 
-import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
+import static com.amazonaws.apollographql.apollo.api.internal.Utils.checkNotNull;
 
 /**
  * AppSyncCustomNetworkInvoker.
