@@ -402,6 +402,35 @@ cd aws-android-sdk-appsync-tests/
 
 To run tests from Android Studio, run `./gradlew publishToMavenLocal` from project root, then open the `aws-android-sdk-appsync-tests/` directory in Android Studio, and run the tests through the UI.
 
+### Integration testing infrastructure
+
+When trying to replicate the integration testing infrastructure in an AWS account, you can start by [creating an Amplify CLI project](https://docs.amplify.aws/cli/start/workflows) with the following configuration:
+
+- Include the Auth category with the default settings provided by the CLI.
+- Include the Storage category and only allow authenticated access.
+- Include the API category.
+    - Use the `schema.graphql` file stored in `src/main/assets/schema.graphql`.
+    - Configure API Key, IAM and Cognito User Pools as authorization providers.
+- Copy the `src/main/assets/Mutation.updateArticle.req.vtl` to your Amplify project under `amplify/backend/api/<your api name/resolvers`.
+- Deploy your project to an AWS account by running `amplify push`.
+- After successful deployment you will need to manually edit the GraphQL schema via the AppSync AWS console. The generated `CreateArticleInput` is missing the `version: Int` field. The schema for that type should look like the following:
+```graphql
+    input CreateArticleInput {
+        id: ID
+        author: String!
+        title: String
+        pdf: S3ObjectInput
+        image: S3ObjectInput
+        version: Int # Add this line
+        _version: Int
+    }
+``` 
+- Update the `src/main/res/raw/awsconfiguration.json` file with the configuration returned by the Amplify CLI deployment. 
+
+__NOTE 1__: There's still some refactoring to be done with regards to the integration tests for this repo.
+
+__NOTE 2__: The `src/main/graphql/com/amazonaws/mobileconnectors/appsync/demo/schema.json` is used by the AppSync build tool to generate code. If something is missing or needs to be added or modified from the generated code, this is where you can try to manipulate that.
+
 ## License
 
 This library is licensed under the Apache License 2.0.
