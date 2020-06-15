@@ -12,14 +12,15 @@ before_install:
 - adb shell input keyevent 82 &
 language: android
 android:
-components:
-  - tools
-  - platform-tools
-  - tools
-  - build-tools-28.0.2
-  - android-28
-  - android-25
-  - sys-img-armeabi-v7a-android-25
+  components:
+    - tools
+    - platform-tools
+    - tools
+    - build-tools-28.0.2
+    - build-tools-25.0.3
+    - android-28
+    - android-25
+    - sys-img-armeabi-v7a-android-25
 script:
 - ./gradlew publishToMavenLocal
 - cd aws-android-sdk-appsync-tests
