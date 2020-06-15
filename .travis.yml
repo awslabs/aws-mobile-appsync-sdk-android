@@ -3,26 +3,22 @@ before_install:
 - ls -l aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - wc aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - chmod +x gradlew
-- yes | sdkmanager "platforms;android-25"
-- yes | sdkmanager tools
-- sdkmanager "system-images;android-25;google_apis;armeabi-v7a"
+- yes | sdkmanager "platforms;android-27"
 - android list target
-- echo no | avdmanager create avd --force -n test -k "system-images;android-25;google_apis;armeabi-v7a"
-- $ANDROID_HOME/emulator/emulator -avd test -no-skin -no-audio -no-window &
+- echo no | android create avd --force -n test -t android-22 --abi armeabi-v7a
+- emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
-- adb -e logcat *:I | tee logcat.log > /dev/null 2>&1 &
 - adb shell input keyevent 82 &
 language: android
 android:
   components:
-    - tools
-    - platform-tools
-    - tools
-    - build-tools-28.0.2
-    - build-tools-25.0.3
-    - android-28
-    - android-25
-    - sys-img-armeabi-v7a-android-25
+  - tools
+  - platform-tools
+  - tools
+  - build-tools-28.0.2
+  - android-28
+  - android-22
+  - sys-img-armeabi-v7a-android-22
 script:
 - ./gradlew publishToMavenLocal
 - cd aws-android-sdk-appsync-tests
@@ -30,5 +26,4 @@ script:
 - "./gradlew build connectedCheck --stacktrace "
 - cd ..
 after_failure:
-- cat aws-android-sdk-appsync-tests/build/outputs/androidTest-results/connected/*.xml
-- echo " LOGCAT "; echo "========"; cat logcat.log; pkill -KILL -f adb
+  - cat aws-android-sdk-appsync-tests/build/outputs/androidTest-results/connected/*.xml
