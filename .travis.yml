@@ -4,8 +4,9 @@ before_install:
 - wc aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - chmod +x gradlew
 - yes | sdkmanager "platforms;android-25"
+- yes | sdkmanager tools
 - android list target
-- echo no | avdmanager create avd -n test --force -k "system-images;android-25;google_apis;armeabi-v7a"
+- echo no | avdmanager create avd --force -n test -k "system-images;android-25;google_apis;armeabi-v7a"
 - emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
 - adb -e logcat *:I | tee logcat.log > /dev/null 2>&1 &
