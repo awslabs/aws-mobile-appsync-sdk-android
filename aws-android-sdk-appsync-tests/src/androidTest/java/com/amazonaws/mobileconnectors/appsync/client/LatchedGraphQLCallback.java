@@ -77,6 +77,11 @@ public final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
     @Override
     public void onFailure(@NonNull ApolloException failure) {
         failureContainer.set(failure);
+        releaseLatches();
+    }
+
+    private void releaseLatches() {
+        responseLatch.countDown();
         failureLatch.countDown();
     }
 
@@ -106,10 +111,16 @@ public final class LatchedGraphQLCallback<T> extends GraphQLCall.Callback<T> {
     public Response<T> awaitSuccessfulResponse() {
         Response<T> response = awaitResponse();
         if (response == null) {
+            if (failureContainer.get() != null) {
+                throw new RuntimeException("Unexpected failure. " + failureContainer.get(), failureContainer.get().getCause());
+            }
             throw new RuntimeException("Null response.");
         } else if (response.hasErrors()) {
             throw new RuntimeException("Response has errors: " + response.errors());
         } else if (response.data() == null) {
+            if (failureContainer.get() != null) {
+                throw new RuntimeException("Unexpected failure. " + failureContainer.get(), failureContainer.get().getCause());
+            }
             throw new RuntimeException("Null response data.");
         }
         return response;
