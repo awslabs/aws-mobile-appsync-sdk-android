@@ -5,6 +5,7 @@ before_install:
 - chmod +x gradlew
 - yes | sdkmanager "platforms;android-25"
 - yes | sdkmanager tools
+- sdkmanager "system-images;android-25;google_apis;armeabi-v7a"
 - android list target
 - echo no | avdmanager create avd --force -n test -k "system-images;android-25;google_apis;armeabi-v7a"
 - emulator -avd test -no-skin -no-audio -no-window &
