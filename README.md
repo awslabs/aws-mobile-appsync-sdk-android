@@ -390,18 +390,6 @@ public void addPost() {
 }
 ```
 
-## Running the Integration tests
-
-Integration test for the SDK are in the `aws-android-sdk-appsync-tests` directory, which is an independent gradle project. The tests depend on certain artifacts being published to the local maven repository. In order to publish required artifacts to the local maven repository and run the tests, execute following commands from the project root:
-
-```
-./gradlew publishToMavenLocal
-cd aws-android-sdk-appsync-tests/
-./gradlew connectedAndroidTest
-```
-
-To run tests from Android Studio, run `./gradlew publishToMavenLocal` from project root, then open the `aws-android-sdk-appsync-tests/` directory in Android Studio, and run the tests through the UI.
-
 ## License
 
 This library is licensed under the Apache License 2.0.
