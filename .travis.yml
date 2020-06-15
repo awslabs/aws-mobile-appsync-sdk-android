@@ -8,7 +8,7 @@ before_install:
 - sdkmanager "system-images;android-25;google_apis;armeabi-v7a"
 - android list target
 - echo no | avdmanager create avd --force -n test -k "system-images;android-25;google_apis;armeabi-v7a"
-- emulator -avd test -no-skin -no-audio -no-window &
+- $ANDROID_HOME/emulator/emulator -avd test -no-skin -no-audio -no-window &
 - android-wait-for-emulator
 - adb -e logcat *:I | tee logcat.log > /dev/null 2>&1 &
 - adb shell input keyevent 82 &
