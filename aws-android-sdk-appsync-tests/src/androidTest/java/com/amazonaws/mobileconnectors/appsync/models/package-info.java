@@ -11,9 +11,5 @@
  * {@link com.amazonaws.mobileconnectors.appsync.models.Posts} simplifies CRUD operations
  * using an AppSync client.
  *
- * {@link com.amazonaws.mobileconnectors.appsync.models.PostCruds} is a test snippet
- * that can be recycled across various instrumentation tests, to test if CRUD
- * operations are working for the Post model. Underneath the hood, it makes a bunch of calls
- * to {@link com.amazonaws.mobileconnectors.appsync.models.Posts}. :-).
  */
 package com.amazonaws.mobileconnectors.appsync.models;

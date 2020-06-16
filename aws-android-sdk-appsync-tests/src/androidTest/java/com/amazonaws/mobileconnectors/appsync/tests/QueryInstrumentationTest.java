@@ -20,10 +20,8 @@ import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
-import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
-import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
 import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.Sleep;
@@ -39,16 +37,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOffline;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -154,148 +149,6 @@ public final class QueryInstrumentationTest {
             Posts.validate(responses.get("CACHE"), postID, "AMAZON_COGNITO_USER_POOLS");
             Posts.validate(responses.get("NETWORK"), postID, "AMAZON_COGNITO_USER_POOLS");
         }
-    }
-
-    @Test
-    public void testCRUDWithSingleClient() {
-        List<AWSAppSyncClient> clients = new ArrayList<>();
-        clients.add(AWSAppSyncClients.withAPIKEYFromAWSConfiguration(false, REASONABLE_WAIT_TIME_MS));
-        PostCruds.test(clients);
-    }
-
-    /**
-     * This test should be run on a physical device or simulator with cellular data turned off.
-     * The test disables the wifi on the device to create the offline scenario.
-     */
-    @Test
-    public void testMultipleOfflineMutations() {
-        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withUserPoolsFromAWSConfiguration();
-
-        final String title = "AWSAppSyncMultiClientInstrumentationTest => testMultipleOfflineMutations => Learning to Live ";
-        final String author = "Dream Theater @ ";
-        final String url = "Dream Theater Station";
-        final String content = "No energy for anger @" + System.currentTimeMillis();
-
-        final List<LatchedGraphQLCallback<UpdatePostMutation.Data>> onUpdatePostCallbacks = new ArrayList<>();
-        for (int i = 0; i < 25; i++) {
-            onUpdatePostCallbacks.add(LatchedGraphQLCallback.instance());
-        }
-
-        // Add a post
-        Response<AddPostMutation.Data> addPostMutationResponse =
-            Posts.add(awsAppSyncClient, title, author, url, content);
-        assertNotNull(addPostMutationResponse);
-        assertNotNull(addPostMutationResponse.data());
-        AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
-        assertNotNull(createPost);
-        assertNotNull(createPost.id());
-        final String postID = createPost.id();
-
-        goOffline();
-
-        for (int i = 0; i < onUpdatePostCallbacks.size(); i++) {
-            awsAppSyncClient
-                .mutate(
-                    UpdatePostMutation.builder()
-                        .input(UpdatePostInput.builder()
-                            .id(postID)
-                            .author(author + i)
-                            .build())
-                        .build(),
-                    new UpdatePostMutation.Data(new UpdatePostMutation.UpdatePost(
-                        "Post",
-                        postID,
-                        "",
-                        "",
-                        content,
-                        "",
-                        0
-                    ))
-                )
-                .enqueue(onUpdatePostCallbacks.get(i));
-        }
-
-        for (int i = 0; i < onUpdatePostCallbacks.size(); i++) {
-            Response<UpdatePostMutation.Data> updatePostMutationResponse =
-                onUpdatePostCallbacks.get(i).awaitSuccessfulResponse();
-            assertNotNull(updatePostMutationResponse);
-            assertNotNull(updatePostMutationResponse.data());
-            assertNotNull(updatePostMutationResponse.data().updatePost());
-        }
-
-        Response<GetPostQuery.Data> getPostQueryResponse =
-            Posts.query(awsAppSyncClient, AppSyncResponseFetchers.NETWORK_ONLY, postID)
-                .get("NETWORK");
-        assertNotNull(getPostQueryResponse);
-        assertNotNull(getPostQueryResponse.data());
-        assertNotNull(getPostQueryResponse.data().getPost());
-        assertNotNull(getPostQueryResponse.data().getPost().author());
-        assertEquals(author + (onUpdatePostCallbacks.size() - 1), getPostQueryResponse.data().getPost().author());
-    }
-
-    /**
-     * This test should be run on a physical device or simulator with cellular data turned off.
-     * The test disables the wifi on the device to create the offline scenario.
-     */
-    @Test
-    public void testSingleOfflineMutation() {
-        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withIAMFromAWSConfiguration();
-
-        final String title = "AWSAppSyncQueryInstrumentationTest => testSingleOfflineMutation => Learning to Live ";
-        final String author = "Dream Theater @ ";
-        final String url = "Dream Theater Station";
-        final String content = "No energy for anger @" + System.currentTimeMillis();
-        final String updatedAuthor = author + System.currentTimeMillis();
-
-        // Add a post
-        Response<AddPostMutation.Data> addPostMutationResponse =
-            Posts.add(awsAppSyncClient, title, author, url, content);
-        assertNotNull(addPostMutationResponse);
-        assertNotNull(addPostMutationResponse.data());
-        final AddPostMutation.CreatePost createPost = addPostMutationResponse.data().createPost();
-        assertNotNull(createPost);
-        assertNotNull(createPost.id());
-        final String postID = createPost.id();
-
-        goOffline();
-
-        Log.v(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Kicking off update");
-        LatchedGraphQLCallback<UpdatePostMutation.Data> onUpdatePostCallback = LatchedGraphQLCallback.instance();
-        awsAppSyncClient
-            .mutate(
-                UpdatePostMutation.builder()
-                    .input(UpdatePostInput.builder()
-                        .id(postID)
-                        .author(updatedAuthor)
-                        .build())
-                    .build(),
-                new UpdatePostMutation.Data(new UpdatePostMutation.UpdatePost(
-                    "Post",
-                    postID,
-                    "",
-                    "",
-                    content,
-                    "",
-                    0
-                ))
-            )
-            .enqueue(onUpdatePostCallback);
-
-        Log.d(TAG, "Thread:[" + Thread.currentThread().getId() + "]: Waiting for latches to be counted down");
-        Response<UpdatePostMutation.Data> updatePostMutationResponse = onUpdatePostCallback.awaitResponse();
-        assertNotNull(updatePostMutationResponse);
-        assertNotNull(updatePostMutationResponse.data());
-        assertNotNull(updatePostMutationResponse.data().updatePost());
-
-        Response<GetPostQuery.Data> getPostQueryResponse =
-            Posts.query(awsAppSyncClient,
-                AppSyncResponseFetchers.NETWORK_ONLY, postID)
-                .get("NETWORK");
-        assertNotNull(getPostQueryResponse);
-        assertNotNull(getPostQueryResponse.data());
-        assertNotNull(getPostQueryResponse.data().getPost());
-        assertNotNull(getPostQueryResponse.data().getPost().author());
-        assertEquals(updatedAuthor, getPostQueryResponse.data().getPost().author());
     }
 
     @Test

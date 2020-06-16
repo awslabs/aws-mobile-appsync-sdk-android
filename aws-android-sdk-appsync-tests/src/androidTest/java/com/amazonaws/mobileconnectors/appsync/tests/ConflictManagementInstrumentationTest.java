@@ -11,7 +11,6 @@ import android.support.test.runner.AndroidJUnit4;
 
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
-import com.amazonaws.mobileconnectors.appsync.ConflictResolutionFailedException;
 import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.demo.CreateArticleMutation;
@@ -28,7 +27,6 @@ import org.junit.runner.RunWith;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Instrumented test, which will execute on an Android device.
@@ -111,89 +109,6 @@ public class ConflictManagementInstrumentationTest {
 
         String articleID = addArticle(awsAppSyncClient,title,author,1);
         updateArticle(awsAppSyncClient, articleID, title, author + System.currentTimeMillis(), 1, 2);
-    }
-
-    @Test
-    public void testAddUpdateArticleConflictDiscard() {
-        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
-
-        // The TestConflictResolver setup in AppSyncTestSetupHelper will fail mutation
-        // if the title is set to ALWAYS DISCARD
-        String title = "ALWAYS DISCARD";
-        String author = "Tull @" + System.currentTimeMillis();
-        String articleId = addArticle(awsAppSyncClient,title,author,100);
-
-        LatchedGraphQLCallback<UpdateArticleMutation.Data> callback = LatchedGraphQLCallback.instance();
-        awsAppSyncClient.mutate(
-            UpdateArticleMutation.builder()
-                .input(UpdateArticleInput.builder()
-                    .id(articleId)
-                    .title(title)
-                    .author(author)
-                    .expectedVersion(1)
-                    .build())
-                .build(),
-            new UpdateArticleMutation.Data(new UpdateArticleMutation.UpdateArticle(
-                "Article", "", "", "", 2, null, null
-            ))
-        )
-        .enqueue(callback);
-
-        assertTrue(callback.awaitFailure() instanceof ConflictResolutionFailedException);
-
-        //Do some more transaction to make sure nothing is stuck
-        testAddUpdateArticleConflictResolve();
-    }
-
-    @Test
-    public void testAddUpdateArticleConflictResolve( ) {
-        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
-
-        String title = "Hallowed Point";
-        String author = "Seasons in the Abyss @" + System.currentTimeMillis();
-
-        String articleId = addArticle(awsAppSyncClient, title, author + System.currentTimeMillis(),100);
-
-        //Send expectedVersion as 2. The conflict resolution mechanism should update version to 101 and the test should pass.
-        updateArticle(awsAppSyncClient, articleId, title, author + "@" + System.currentTimeMillis(),2, 101);
-
-        //No conflict
-        updateArticle(awsAppSyncClient, articleId, title, author + "@" + System.currentTimeMillis(),101, 102);
-
-        //Send expectedVersion as 101. The conflict resolution mechanism should update version to 103 and the test should pass.
-        updateArticle(awsAppSyncClient, articleId, title, author + "@" + System.currentTimeMillis(),101, 103);
-
-        //Send expectedVersion as 110. The conflict resolution mechanism should update version to 104 and the test should pass.
-        updateArticle(awsAppSyncClient, articleId, title, author + "@" + System.currentTimeMillis(),110, 104);
-    }
-
-    @Test
-    public void testAddUpdateArticleConflictResolveWithAnotherConflict( ) {
-        String title = "RESOLVE_CONFLICT_INCORRECTLY";
-        String author = "Trivium @" + System.currentTimeMillis();
-        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withAPIKEYFromAWSConfiguration();
-
-        String articleId = addArticle(awsAppSyncClient, title, author + System.currentTimeMillis(),100);
-
-        LatchedGraphQLCallback<UpdateArticleMutation.Data> callback = LatchedGraphQLCallback.instance();
-        awsAppSyncClient.mutate(UpdateArticleMutation.builder()
-            .input(UpdateArticleInput.builder()
-                .id(articleId)
-                .title(title)
-                .author(author)
-                .expectedVersion(2)
-                .build())
-            .build(),
-            new UpdateArticleMutation.Data(new UpdateArticleMutation.UpdateArticle(
-                "Article", "", "", "", 2, null, null
-            ))
-        )
-        .enqueue(callback);
-
-        assertNotNull(callback.awaitFailure());
-
-        //Do some more mutations to make sure nothing is stuck.
-        testAddUpdateArticleConflictResolve();
     }
 
     private String addArticle(
