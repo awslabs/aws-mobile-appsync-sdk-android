@@ -49,61 +49,6 @@ public final class SubscriptionInstrumentationTest {
         CustomCognitoUserPool.setup();
     }
 
-    /**
-     * Validate that subscriptions work with IAM credentials. To test, form a subscription,
-     * create a model, and then validate the subscription sees the created thing.
-     */
-    @Test
-    @Ignore("Need to figure out configuration for Gogi test")
-    public void testSubscriptionWithApiKey() {
-        // Get a client handle
-        AWSAppSyncClient awsAppSyncClient = AWSAppSyncClients.withApiKeyForGogiTest();
-
-        // Create a subscription that listens for new comments that are made on events.
-        AppSyncSubscriptionCall<NewCommentOnEventSubscription.Data> onNextCommentSubscriptionCall =
-            awsAppSyncClient.subscribe(NewCommentOnEventSubscription.builder()
-                .eventId("9a95ab20-cd3e-43ea-a04e-93769a531a00")
-                .build());
-        LatchedSubscriptionCallback<NewCommentOnEventSubscription.Data> subscriptionCallback =
-            LatchedSubscriptionCallback.instance();
-        onNextCommentSubscriptionCall.execute(subscriptionCallback);
-
-        // Wait for the subscription to setup
-        Sleep.milliseconds(REASONABLE_WAIT_TIME_MS);
-
-        // Create a comment, associated to an event ID.
-        awsAppSyncClient.mutate(CommentOnEventMutation.builder()
-            .eventId("9a95ab20-cd3e-43ea-a04e-93769a531a00")
-            .content("Comments from test" + System.currentTimeMillis())
-            .createdAt("fromTest")
-            .build()
-        ).enqueue(NoOpGraphQLCallback.instance());
-
-        // Okay. Did we see it on the subscription?
-        subscriptionCallback.awaitNextSuccessfulResponse();
-
-        // Validate that the subscription is completed when cancel() is called on it.
-        onNextCommentSubscriptionCall.cancel();
-        subscriptionCallback.awaitCompletion();
-    }
-
-    /**
-     * Create a *bunch* of subscriptions using IAM auth, and auto-reconnect retry mode.
-     * Make sure that all of the stuff we mutate shows up over the various subscriptions.
-     */
-    @Test
-    public void testMultipleSubscriptionsWithIAM() {
-        testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode.AUTOMATICALLY_RECONNECT);
-    }
-
-    /**
-     * Create a *bunch* of subscriptions using IAM auth, and no-reconnect retry mode.
-     * Make sure that all of the stuff we mutate shows up over the various subscriptions.
-     */
-    @Test
-    public void testMultipleSubscriptionsWithIAMNoReconnect() {
-        testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode.STAY_DISCONNECTED);
-    }
 
     private static void testMultipleSubscriptionsWithIAM(SubscriptionReconnectMode subscriptionReconnectMode) {
         final boolean shouldAutomaticallyReconnect =
