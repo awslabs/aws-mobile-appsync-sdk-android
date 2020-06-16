@@ -23,22 +23,16 @@ import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
-import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
-import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
-import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
 import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
-import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.JsonExtract;
 import com.amazonaws.regions.Regions;
-import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Operation.Variables;
 import com.apollographql.apollo.api.Query;
 import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.exception.ApolloException;
 import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.util.Cancelable;
 
@@ -47,20 +41,13 @@ import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nonnull;
 
 import static android.support.test.InstrumentationRegistry.getTargetContext;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOffline;
@@ -268,26 +255,6 @@ public class MultiClientInstrumentationTest {
             assertNotNull(response.data().getPost().ups());
             assertNotNull(response.data().getPost().downs());
         }
-    }
-
-    @Test
-    @Ignore("This test needs to be refactored.")
-    public void testCRUDWithMultipleClientsAtTheSameTime() {
-        List<AWSAppSyncClient> clients = Arrays.asList(
-            AWSAppSyncClients.withAPIKEYFromAWSConfiguration(),
-            AWSAppSyncClients.withUserPoolsFromAWSConfiguration(),
-            AWSAppSyncClients.withIAMFromAWSConfiguration()
-        );
-        CountDownLatch countDownLatch = new CountDownLatch(clients.size());
-
-        for (AWSAppSyncClient client : clients) {
-            new Thread(() -> {
-                PostCruds.test(Collections.singletonList(client));
-                countDownLatch.countDown();
-            }).start();
-        }
-
-        Await.latch(countDownLatch);
     }
 
     @Test

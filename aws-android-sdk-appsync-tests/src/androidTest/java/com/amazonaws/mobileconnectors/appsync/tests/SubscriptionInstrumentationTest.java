@@ -13,10 +13,7 @@ import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.AppSyncSubscriptionCall;
 import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
 import com.amazonaws.mobileconnectors.appsync.client.LatchedSubscriptionCallback;
-import com.amazonaws.mobileconnectors.appsync.client.NoOpGraphQLCallback;
 import com.amazonaws.mobileconnectors.appsync.demo.AddPostMutation;
-import com.amazonaws.mobileconnectors.appsync.demo.CommentOnEventMutation;
-import com.amazonaws.mobileconnectors.appsync.demo.NewCommentOnEventSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnCreateArticleSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnCreatePostSubscription;
 import com.amazonaws.mobileconnectors.appsync.demo.OnDeleteArticleSubscription;
@@ -30,7 +27,6 @@ import com.amazonaws.mobileconnectors.appsync.util.Sleep;
 import com.apollographql.apollo.api.Response;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;

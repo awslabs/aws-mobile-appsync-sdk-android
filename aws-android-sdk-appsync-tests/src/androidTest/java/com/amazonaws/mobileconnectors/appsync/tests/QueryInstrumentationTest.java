@@ -20,10 +20,8 @@ import com.amazonaws.mobileconnectors.appsync.demo.AllPostsQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.GetPostQuery;
 import com.amazonaws.mobileconnectors.appsync.demo.UpdatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.demo.type.CreatePostInput;
-import com.amazonaws.mobileconnectors.appsync.demo.type.UpdatePostInput;
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.identity.CustomCognitoUserPool;
-import com.amazonaws.mobileconnectors.appsync.models.PostCruds;
 import com.amazonaws.mobileconnectors.appsync.models.Posts;
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.amazonaws.mobileconnectors.appsync.util.Sleep;
@@ -39,16 +37,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOffline;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
