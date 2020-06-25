@@ -173,8 +173,14 @@ class ApolloPlugin implements Plugin<Project> {
 
     private void createSourceSetExtensions() {
         getSourceSets().all { sourceSet ->
-            sourceSet.extensions.create(GraphQLSourceDirectorySet.NAME, GraphQLSourceDirectorySet, sourceSet.name,
-                    fileResolver)
+            sourceDirectorySet = project.objects.sourceDirectorySet('graphql',
+                    "${name} GraphQL source")
+
+            sourceSet.extensions.add('graphql', sourceDirectorySet)
+            sourceSet.extensions.configure('graphql', { sourceDirectorySet ->
+                sourceDirectorySet.srcDir("src/${name}/graphql")
+                sourceDirectorySet.include('**/*.graphql', '**/schema.json')
+            })
         }
     }
 
