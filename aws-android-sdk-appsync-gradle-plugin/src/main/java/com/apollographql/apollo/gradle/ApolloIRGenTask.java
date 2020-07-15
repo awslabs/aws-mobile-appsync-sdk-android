@@ -55,11 +55,7 @@ public class ApolloIRGenTask extends NodeTask {
     this.sourceSets = sourceSets;
     this.extension = extension;
 
-    File apolloScript = new File(getProject().getBuildDir(), APOLLO_CODEGEN);
-    if (!apolloScript.isFile()) {
-      throw new GradleException("Apollo-codegen was not found in node_modules. Please run the installApolloCodegen task.");
-    }
-    setScript(apolloScript);
+    setScript(new File(getProject().getBuildDir(), APOLLO_CODEGEN));
 
     outputFolder = new File(getProject().getBuildDir() + File.separator +
         Joiner.on(File.separator).join(GraphQLCompiler.Companion.getOUTPUT_DIRECTORY()) + "/generatedIR/" + variant);
@@ -92,6 +88,12 @@ public class ApolloIRGenTask extends NodeTask {
             + File.separator + extension.getOutputPackageName().replace(".", File.separator));
       }
     }
+
+    File apolloScript = new File(getProject().getBuildDir(), APOLLO_CODEGEN);
+    if (!apolloScript.isFile()) {
+      throw new GradleException("Apollo-codegen was not found in node_modules. Please run the installApolloCodegen task.");
+    }
+    setScript(apolloScript);
 
     final List<ApolloCodegenArgs> codegenArgs;
     if (schemaFile == null) {

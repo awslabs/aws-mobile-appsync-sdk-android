@@ -124,6 +124,7 @@ class ApolloPlugin implements Plugin<Project> {
         project.plugins.apply NodePlugin
         NodeExtension nodeConfig = project.extensions.findByName("node") as NodeExtension
         nodeConfig.download = true
+        nodeConfig.version = NODE_VERSION
     }
 
     private ApolloIRGenTask createApolloIRGenTask(String sourceSetOrVariantName, Collection<Object> sourceSets) {
