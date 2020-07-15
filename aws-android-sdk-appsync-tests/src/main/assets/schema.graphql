@@ -1,0 +1,54 @@
+type Comment @model
+@key(name: "byEvent", fields: ["eventId", "content", "createdAt"]) {
+    eventId: ID!
+    commentId: String!
+    content: String!
+    createdAt: String!
+}
+
+type Event @model {
+    id: ID!
+    name: String
+    where: String
+    when: String
+    description: String
+    comments: [Comment] @connection(keyName: "byEvent", fields: ["id"])
+}
+
+type Article @model
+@versioned
+@auth(rules: [
+    { allow: public provider: apiKey },
+    { allow: private provider: iam}
+]) {
+    id: ID!
+    author: String!
+    title: String
+    pdf: S3Object
+    image: S3Object
+    version: Int!
+}
+
+type S3Object {
+    bucket: String!
+    key: String!
+    region: String!
+    localUri: String
+    mimeType: String
+}
+
+type Post @model #(subscriptions: { level: public })
+@auth(rules: [
+    { allow: private provider: userPools },
+    { allow: private provider: iam},
+    { allow: public provider: apiKey }
+]){
+    id: ID!
+    author: String!
+    title: String
+    content: String
+    url: String
+    ups: Int
+    downs: Int
+    version: Int!
+}
