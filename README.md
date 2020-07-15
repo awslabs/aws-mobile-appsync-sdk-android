@@ -20,7 +20,7 @@ Step by step documentation can be found here: https://aws-amplify.github.io/docs
 In the project's `build.gradle`, add a dependency to the `dependencies` inside the `buildscript` block:
 
 ```groovy
-classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
+classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.2'
 ```
 
 Also, add the maven plugins repository to your `repositories`.
@@ -70,7 +70,7 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:4.0.0'
-        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.2'
     }
 }
 
@@ -98,7 +98,7 @@ apply plugin: 'com.amazonaws.appsync'
 Add the following dependency:
 
 ```groovy
-implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.1'
+implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.2'
 ```
 
 **Sample app's `build.gradle`**
@@ -113,7 +113,7 @@ android {
 
 dependencies {
     // Typical dependencies
-    implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.1'
+    implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.2'
 }
 ```
 
