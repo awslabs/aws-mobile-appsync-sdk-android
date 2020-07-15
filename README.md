@@ -76,7 +76,6 @@ buildscript {
 
 allprojects {
     repositories {
-        mavenLocal()
         maven {
             url "https://plugins.gradle.org/m2/"
         }
