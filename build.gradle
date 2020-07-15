@@ -3,6 +3,9 @@ buildscript {
     ext.aws_version = AWS_CORE_SDK_VERSION
 
     repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
         google()
         jcenter()
     }
@@ -15,6 +18,9 @@ buildscript {
 
 allprojects {
     repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
         google()
         jcenter()
     }
@@ -23,3 +29,4 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+

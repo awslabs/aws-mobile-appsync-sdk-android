@@ -24,19 +24,71 @@ the build script:
     classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
 ```
 
-**Sample project's build.gradle**
+Also, add the maven plugins repository to your `repositories`.
+
+Do this for the `respositories` block under `buildscript`:
 
 ```groovy
-    // Top-level build file where you can add configuration options common to all sub-projects/modules.
-    buildscript {
-        // ..other code..
-        dependencies {
-            classpath 'com.android.tools.build:gradle:3.0.1'
-            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
-            // NOTE: Do not place your application dependencies here; they belong
-            // in the individual module build.gradle files
+buildscript {
+    repositories {
+        // Add this maven block.
+        maven {
+            url "https://plugins.gradle.org/m2/"
         }
+        google()
+        jcenter()
     }
+}
+```
+
+And also under `allprojects`, too:
+
+```groovy
+allprojects {
+    repositories {
+        // Add this maven block.
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
+```
+
+**Sample project's `build.gradle`**
+
+```groovy
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+        mavenLocal()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
+    }
+}
+
+allprojects {
+    repositories {
+        mavenLocal()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
+
+... other stuff ...
+>>>>>>> 12e2610... squashme: More support for plugin
 ```
 
 #### App's build.gradle
