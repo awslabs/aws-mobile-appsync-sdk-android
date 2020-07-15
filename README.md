@@ -25,7 +25,7 @@ classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
 
 Also, add the maven plugins repository to your `repositories`.
 
-Do this for the `respositories` block under `buildscript`:
+Do this for the `repositories` block under `buildscript`:
 
 ```groovy
 buildscript {
