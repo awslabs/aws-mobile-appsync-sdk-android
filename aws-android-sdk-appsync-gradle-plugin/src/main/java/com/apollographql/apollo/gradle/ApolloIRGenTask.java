@@ -39,8 +39,10 @@ import javax.annotation.Nullable;
 
 public class ApolloIRGenTask extends NodeTask {
   static final String APOLLO_CODEGEN_EXEC_FILE = "lib/cli.js";
-  private static final String APOLLO_CODEGEN = "apollo-codegen/node_modules/apollo-codegen/" + APOLLO_CODEGEN_EXEC_FILE;
   static final String NAME = "generate%sApolloIR";
+
+  private static final String APOLLO_CODEGEN = "apollo-codegen/node_modules/apollo-codegen/" + APOLLO_CODEGEN_EXEC_FILE;
+  private static final String SCHEMA_FILE_NAME = "schema.json";
 
   @Internal private String variant;
   @Internal private ImmutableList<String> sourceSets;
@@ -52,6 +54,9 @@ public class ApolloIRGenTask extends NodeTask {
     this.variant = variant;
     this.sourceSets = sourceSets;
     this.extension = extension;
+
+    setScript(new File(getProject().getBuildDir(), APOLLO_CODEGEN));
+
     outputFolder = new File(getProject().getBuildDir() + File.separator +
         Joiner.on(File.separator).join(GraphQLCompiler.Companion.getOUTPUT_DIRECTORY()) + "/generatedIR/" + variant);
   }
@@ -175,7 +180,7 @@ public class ApolloIRGenTask extends NodeTask {
   private List<File> getSchemaFilesFrom(Set<File> files) {
     return FluentIterable.from(files).filter(new Predicate<File>() {
       @Override public boolean apply(@Nullable File file) {
-        return file != null && file.getName().equals(GraphQLSourceDirectorySet.SCHEMA_FILE_NAME);
+        return file != null && file.getName().equals(SCHEMA_FILE_NAME);
       }
       public boolean test(@Nullable File file) {return apply(file);}
     }).toSortedList(new Comparator<File>() {
@@ -191,7 +196,7 @@ public class ApolloIRGenTask extends NodeTask {
   private List<File> queryFilesFrom(Set<File> files) {
     return FluentIterable.from(files).filter(new Predicate<File>() {
       @Override public boolean apply(@Nullable File file) {
-        return file != null && !file.getName().equals(GraphQLSourceDirectorySet.SCHEMA_FILE_NAME);
+        return file != null && !file.getName().equals(SCHEMA_FILE_NAME);
       }
       public boolean test(@Nullable File file) {return apply(file);}
     }).toList();

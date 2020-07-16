@@ -2,18 +2,20 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.amazonaws.appsync'
 
 buildscript {
-    ext.version = VERSION_NAME
     ext.aws_version = AWS_CORE_SDK_VERSION
 
     repositories {
         mavenLocal()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
         google()
         jcenter()
     }
 
     dependencies {
         classpath "com.amazonaws:aws-android-sdk-appsync-gradle-plugin:$VERSION_NAME"
-        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath 'com.android.tools.build:gradle:4.0.0'
     }
 }
 
@@ -43,6 +45,9 @@ android {
 
 repositories {
     mavenLocal()
+    maven {
+        url "https://plugins.gradle.org/m2/"
+    }
     google()
     jcenter()
 }

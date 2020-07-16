@@ -20,7 +20,39 @@ Step by step documentation can be found here: https://aws-amplify.github.io/docs
 In the project's `build.gradle`, add a dependency to the `dependencies` inside the `buildscript` block:
 
 ```groovy
-classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
+classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.2'
+```
+
+Also, add the maven plugins repository to your `repositories`.
+
+Do this for the `repositories` block under `buildscript`:
+
+```groovy
+buildscript {
+    repositories {
+        // Add this maven block.
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
+```
+
+And also under `allprojects`, too:
+
+```groovy
+allprojects {
+    repositories {
+        // Add this maven block.
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
 ```
 
 **Sample project's `build.gradle`**
@@ -28,14 +60,31 @@ classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
 ```groovy
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    // ..other code..
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.3'
-        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.1'
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.0.2'
     }
 }
+
+allprojects {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
+
+... other stuff ...
 ```
 
 #### App's `build.gradle`
@@ -49,7 +98,7 @@ apply plugin: 'com.amazonaws.appsync'
 Add the following dependency:
 
 ```groovy
-implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.1'
+implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.2'
 ```
 
 **Sample app's `build.gradle`**
@@ -64,7 +113,7 @@ android {
 
 dependencies {
     // Typical dependencies
-    implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.1'
+    implementation 'com.amazonaws:aws-android-sdk-appsync:3.0.2'
 }
 ```
 
