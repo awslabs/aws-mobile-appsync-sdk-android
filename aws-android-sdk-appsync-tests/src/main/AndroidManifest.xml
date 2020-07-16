@@ -1,12 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.aws_android_sdk_appsync_tests" >
-
-    <uses-permission android:name="android.permission.WAKE_LOCK"/>
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+          package="com.example.aws_android_sdk_appsync_tests" >
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <application>
-        <service android:name="org.eclipse.paho.android.service.MqttService" />
-    </application>
-
-
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
 </manifest>
+

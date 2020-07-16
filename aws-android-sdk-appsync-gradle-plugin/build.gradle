@@ -13,8 +13,8 @@ dependencies {
 
     compileOnly gradleApi()
     compileOnly localGroovy()
-    implementation "com.moowork.gradle:gradle-node-plugin:1.0.0" // compileOnly
-    implementation 'com.android.tools.build:gradle:3.2.1' // compileOnly
+    implementation 'com.github.node-gradle:gradle-node-plugin:2.2.4'
+    implementation 'com.android.tools.build:gradle:3.5.3' // compileOnly
     implementation 'com.squareup.moshi:moshi:1.5.0' // impl
 
     implementation project(':aws-android-sdk-appsync-compiler') // impl
@@ -33,3 +33,4 @@ publishing {
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
+

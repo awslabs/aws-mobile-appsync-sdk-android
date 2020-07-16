@@ -98,40 +98,26 @@ class ApolloPlugin implements Plugin<Project> {
         apolloIRGenTask.group(TASK_GROUP)
         Task apolloClassGenTask = project.task("generateApolloClasses")
         apolloClassGenTask.group(TASK_GROUP)
-
-        if (isAndroidProject()) {
-            getVariants().all { v ->
-                addVariantTasks(v, apolloIRGenTask, apolloClassGenTask, v.sourceSets)
-            }
-            project.android.testVariants.each { tv ->
-                addVariantTasks(tv, apolloIRGenTask, apolloClassGenTask, tv.sourceSets)
-            }
-        } else {
-            getSourceSets().all { sourceSet ->
-                addSourceSetTasks(sourceSet, apolloIRGenTask, apolloClassGenTask)
-            }
+        getVariants().all { v ->
+            addVariantTasks(v, apolloIRGenTask, apolloClassGenTask, v.sourceSets)
         }
     }
 
     private void addVariantTasks(Object variant, Task apolloIRGenTask, Task apolloClassGenTask, Collection<?> sourceSets) {
-        ApolloIRGenTask variantIRTask = createApolloIRGenTask(variant.name, sourceSets)
-        ApolloClassGenTask variantClassTask = createApolloClassGenTask(variant.name)
-        variant.registerJavaGeneratingTask(variantClassTask, variantClassTask.outputDir)
-        apolloIRGenTask.dependsOn(variantIRTask)
-        apolloClassGenTask.dependsOn(variantClassTask)
-    }
-
-    private void addSourceSetTasks(SourceSet sourceSet, Task apolloIRGenTask, Task apolloClassGenTask) {
-        String taskName = "main".equals(sourceSet.name) ? "" : sourceSet.name
-
-        ApolloIRGenTask sourceSetIRTask = createApolloIRGenTask(sourceSet.name, [sourceSet])
-        ApolloClassGenTask sourceSetClassTask = createApolloClassGenTask(sourceSet.name)
-        apolloIRGenTask.dependsOn(sourceSetIRTask)
-        apolloClassGenTask.dependsOn(sourceSetClassTask)
-
-        JavaCompile compileTask = (JavaCompile) project.tasks.getByName("compile${taskName.capitalize()}Java")
-        compileTask.source += project.fileTree(sourceSetClassTask.outputDir)
-        compileTask.dependsOn(apolloClassGenTask)
+        ImmutableList.Builder<File> sourceSetFiles = ImmutableList.builder();
+        sourceSets.each { sourceSet ->
+            if (sourceSet.hasProperty('graphql')) {
+                sourceSetFiles.add(sourceSet.graphql.getFiles())
+            }
+        }
+        ImmutableList<File> files = sourceSetFiles.build()
+        if (!files.isEmpty()) {
+            ApolloIRGenTask variantIRTask = createApolloIRGenTask(variant.name, sourceSets)
+            ApolloClassGenTask variantClassTask = createApolloClassGenTask(variant.name)
+            variant.registerJavaGeneratingTask(variantClassTask, variantClassTask.outputDir)
+            apolloIRGenTask.dependsOn(variantIRTask)
+            apolloClassGenTask.dependsOn(variantClassTask)
+        }
     }
 
     private void setupNode() {
@@ -148,7 +134,9 @@ class ApolloPlugin implements Plugin<Project> {
             description = "Generate an IR file using apollo-codegen for ${sourceSetOrVariantName.capitalize()} GraphQL queries"
             dependsOn(ApolloCodeGenInstallTask.NAME)
             sourceSets.each { sourceSet ->
-                inputs.files(sourceSet.graphql).skipWhenEmpty()
+                if (sourceSet.hasProperty('graphql')) {
+                    inputs.files(sourceSet.graphql).skipWhenEmpty()
+                }
             }
         }
 
@@ -172,18 +160,15 @@ class ApolloPlugin implements Plugin<Project> {
     }
 
     private void createSourceSetExtensions() {
-        getSourceSets().all { sourceSet ->
-            sourceSet.extensions.create(GraphQLSourceDirectorySet.NAME, GraphQLSourceDirectorySet, sourceSet.name,
-                    fileResolver)
+        project.android.sourceSets.main { sourceSet ->
+            def sourceDirectorySet =
+                project.objects.sourceDirectorySet('graphql', "main GraphQL source")
+            sourceSet.extensions.add('graphql', sourceDirectorySet)
+            sourceSet.extensions.configure('graphql', { graphQlSet ->
+                graphQlSet.srcDir("src/main/graphql")
+                graphQlSet.include('**/*.graphql', '**/schema.json')
+            })
         }
-    }
-
-    private boolean isAndroidProject() {
-        return project.hasProperty('android') && project.android.sourceSets
-    }
-
-    private Object getSourceSets() {
-        return (isAndroidProject() ? project.android.sourceSets : project.sourceSets)
     }
 
     private DomainObjectCollection<BaseVariant> getVariants() {
@@ -191,3 +176,4 @@ class ApolloPlugin implements Plugin<Project> {
                 'libraryVariants') ? project.android.libraryVariants : project.android.applicationVariants
     }
 }
+

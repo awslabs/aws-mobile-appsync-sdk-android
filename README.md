@@ -21,22 +21,71 @@ In the project's `build.gradle`, add the following dependency in
 the build script:
 
 ```groovy
-    classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
+classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.10.1'
+```
+
+Also, add the maven plugins repository to your `repositories`.
+
+Do this for the `repositories` block under `buildscript`:
+
+```groovy
+buildscript {
+    repositories {
+        // Add this maven block.
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
+```
+
+And also under `allprojects`, too:
+
+```groovy
+allprojects {
+    repositories {
+        // Add this maven block.
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
 ```
 
 **Sample project's build.gradle**
 
 ```groovy
-    // Top-level build file where you can add configuration options common to all sub-projects/modules.
-    buildscript {
-        // ..other code..
-        dependencies {
-            classpath 'com.android.tools.build:gradle:3.0.1'
-            classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.8.+'
-            // NOTE: Do not place your application dependencies here; they belong
-            // in the individual module build.gradle files
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
         }
+        google()
+        jcenter()
     }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.10.1'
+    }
+}
+
+allprojects {
+    repositories {
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        google()
+        jcenter()
+    }
+}
+
+... other stuff ...
 ```
 
 #### App's build.gradle
@@ -44,27 +93,29 @@ the build script:
 In the app's `build.gradle`, add the following plugin:
 
 ```groovy
-    apply plugin: 'com.amazonaws.appsync'
+apply plugin: 'com.amazonaws.appsync'
 ```
 
 Add the following dependency:
 
 ```groovy
-    compile 'com.amazonaws:aws-android-sdk-appsync:2.8.+'
+implementation 'com.amazonaws:aws-android-sdk-appsync:2.10.1'
 ```
 
 **Sample app's build.gradle**
 
 ```groovy
-    apply plugin: 'com.android.application'
-    apply plugin: 'com.amazonaws.appsync'
-    android {
-        // Typical items
-    }
-    dependencies {
-        // Typical dependencies
-        compile 'com.amazonaws:aws-android-sdk-appsync:2.8.+'
-    }
+apply plugin: 'com.android.application'
+apply plugin: 'com.amazonaws.appsync'
+
+android {
+    // Typical items
+}
+
+dependencies {
+    // Typical dependencies
+    implementation 'com.amazonaws:aws-android-sdk-appsync:2.10.1'
+}
 ```
 
 ### App's AndroidManifest.xml
@@ -73,7 +124,7 @@ Add the permissions to access network state to determine if the device
 is offline.
 
 ```xml
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 ```
 
 ## Code generation
@@ -82,27 +133,27 @@ To interact with AppSync, your client needs to define GraphQL queries and mutati
 
 For example, create a file named `./app/src/main/graphql/com/amazonaws/demo/posts/posts.graphql`:
 
-```
-    query GetPost($id:ID!) {
-     getPost(id:$id) {
-         id
-         title
-         author
-         content
-         url
-         version
-     }
-    }
+```graphql
+query GetPost($id:ID!) {
+ getPost(id:$id) {
+     id
+     title
+     author
+     content
+     url
+     version
+ }
+}
 
-    mutation AddPost($id: ID!, $author: String!, $title: String, $content: String, $url: String, $ups: Int!, $downs: Int!, $expectedVersion: Int!) {
-      putPost(id: $id, author: $author, title: $title, content: $content, url: $url, ups: $ups, downs: $downs, version: $expectedVersion) {
-        id
-        title
-        author
-        url
-        content
-      }
-    }
+mutation AddPost($id: ID!, $author: String!, $title: String, $content: String, $url: String, $ups: Int!, $downs: Int!, $expectedVersion: Int!) {
+  putPost(id: $id, author: $author, title: $title, content: $content, url: $url, ups: $ups, downs: $downs, version: $expectedVersion) {
+    id
+    title
+    author
+    url
+    content
+  }
+}
 ```
 
 Next, fetch the ``schema.json`` file from the AppSync console and place it alongside the `posts.graphql` file.
@@ -118,11 +169,11 @@ are added in the build path.
 
 ```java
 AWSAppSyncClient client = AWSAppSyncClient.builder()
-                    .context(context)
-                    .apiKey(new BasicAPIKeyAuthProvider(Constants.APPSYNC_API_KEY)) // API Key based authorization
-                    .region(Constants.APPSYNC_REGION)
-                    .serverUrl(Constants.APPSYNC_API_URL)
-                    .build();
+    .context(context)
+    .apiKey(new BasicAPIKeyAuthProvider(Constants.APPSYNC_API_KEY)) // API Key based authorization
+    .region(Constants.APPSYNC_REGION)
+    .serverUrl(Constants.APPSYNC_API_URL)
+    .build();
 ```
 
 ### Configuration via a config file
@@ -131,7 +182,7 @@ Alternatively, you can use the `awsconfiguration.json` file to supply the config
 
 Create a file named `awsconfiguration.json` under `res/raw` directory of your app.
 
-```
+```json
 {
     "AppSync": {
         "Default": {
@@ -150,14 +201,14 @@ The `AWSConfiguration` represents the configuration information present in `awsc
 AWSConfiguration awsConfig = new AWSConfiguration(context);
 
 AWSAppSyncClient client = AWSAppSyncClient.builder()
-                    .context(context)
-                    .awsConfiguration(awsConfig)
-                    .build();
+    .context(context)
+    .awsConfiguration(awsConfig)
+    .build();
 ```
 
 You can override the `Default` configuration by using the `AWSConfiguration#setConfiguration()` method.
 
-```
+```json
 {
     "AppSync": {
         "Default": {
@@ -181,9 +232,9 @@ AWSConfiguration awsConfig = new AWSConfiguration(context);
 awsConfig.setConfiguration("Custom");
 
 AWSAppSyncClient client = AWSAppSyncClient.builder()
-                    .context(context)
-                    .awsConfiguration(awsConfig)
-                    .build();
+    .context(context)
+    .awsConfiguration(awsConfig)
+    .build();
 ```
 
 ## Authentication Modes
@@ -198,7 +249,7 @@ For authorization using the API key, update the `awsconfiguration.json` file and
 
 Add the following snippet to your `awsconfiguration.json` file.
 
-```
+```json
 {
     "AppSync": {
         "Default": {
@@ -218,9 +269,9 @@ Add the following code to use the information in the `Default` section from `aws
 
 ```java
 AWSAppSyncClient client = AWSAppSyncClient.builder()
-                    .context(context)
-                    .awsConfiguration(new AWSConfiguration(context))
-                    .build();
+    .context(context)
+    .awsConfiguration(new AWSConfiguration(context))
+    .build();
 ```
 
 ### AWS IAM
@@ -231,7 +282,7 @@ For authorization using the Amazon IAM credentials using Amazon IAM or Amazon ST
 
 Add the following snippet to your `awsconfiguration.json` file.
 
-```
+```json
 {
     "CredentialsProvider": {
         "CognitoIdentity": {
@@ -261,10 +312,10 @@ AWSConfiguration awsConfig = new AWSConfiguration(context);
 CognitoCachingCredentialsProvider credentialsProvider = new CognitoCachingCredentialsProvider(context, awsConfig);
 
 AWSAppSyncClient client = AWSAppSyncClient.builder()
-                    .context(context)
-                    .awsConfiguration(awsConfig)
-                    .credentialsProvider(credentialsProvider)
-                    .build();
+    .context(context)
+    .awsConfiguration(awsConfig)
+    .credentialsProvider(credentialsProvider)
+    .build();
 ```
 
 
@@ -276,7 +327,7 @@ For authorization using the Amazon Cognito UserPools, update the `awsconfigurati
 
 Add the following snippet to your `awsconfiguration.json` file.
 
-```
+```json
 {
     "CognitoUserPool": {
         "Default": {
@@ -300,7 +351,7 @@ Add the following snippet to your `awsconfiguration.json` file.
 
 Add the following dependency to your app in order to use Amazon Cognito UserPools:
 
-```
+```groovy
 dependencies {
     implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.9.+'
 }
@@ -316,10 +367,10 @@ CognitoUserPool cognitoUserPool = new CognitoUserPool(context, awsConfig);
 BasicCognitoUserPoolsAuthProvider basicCognitoUserPoolsAuthProvider = new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
 
 AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
-                    .context(context)
-                    .awsConfiguration(awsConfig)
-                    .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider)
-                    .build();
+    .context(context)
+    .awsConfiguration(awsConfig)
+    .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider)
+    .build();
 ```
 
 ### OIDC (OpenID Connect)
@@ -330,7 +381,7 @@ For authorization using any OIDC (OpenID Connect) Identity Provider, update the 
 
 Add the following snippet to your `awsconfiguration.json` file.
 
-```
+```json
 {
     "AppSync": {
         "Default": {
@@ -348,15 +399,15 @@ Add the following code to use the information in the `Default` section from `aws
 
 ```java
 AWSAppSyncClient client = AWSAppSyncClient.builder()
-                    .context(context)
-                    .awsConfiguration(new AWSConfiguration(context))
-                    .oidcAuthProvider(new OidcAuthProvider() {
-                        @Override
-                        public String getLatestAuthToken() {
-                            return "jwt-token-from-oidc-provider";
-                        }
-                    })
-                    .build();
+    .context(context)
+    .awsConfiguration(new AWSConfiguration(context))
+    .oidcAuthProvider(new OidcAuthProvider() {
+        @Override
+        public String getLatestAuthToken() {
+            return "jwt-token-from-oidc-provider";
+        }
+    })
+    .build();
 ```
 
 ## Make a call
@@ -364,15 +415,15 @@ AWSAppSyncClient client = AWSAppSyncClient.builder()
 ```java
 public void addPost() {
     AddPostMutation addPostMutation = AddPostMutation.builder()
-            .id(UUID.randomUUID().toString())
-            .title(title)
-            .author(author)
-            .url(url)
-            .content(content)
-            .ups(0)
-            .downs(0)
-            .expectedVersion(1)
-            .build();
+       .id(UUID.randomUUID().toString())
+       .title(title)
+       .author(author)
+       .url(url)
+       .content(content)
+       .ups(0)
+       .downs(0)
+       .expectedVersion(1)
+       .build();
     client.mutate(addPostMutation).enqueue(postsCallback);
 }
 
@@ -398,15 +449,15 @@ private GraphQLCall.Callback<AddPostMutation.Data> postsCallback = new GraphQLCa
 
 ## Running the Integration tests
 
-Integration test for the SDK are in ```aws-android-sdk-appsync-tests``` folder and is an independent gradle project. The tests depend on certain artifacts being published to the local maven repository. In order to publish required artifacts to the local maven repository and run the tests execute following commands from the project root:
+Integration test for the SDK are in `aws-android-sdk-appsync-tests` folder and is an independent gradle project. The tests depend on certain artifacts being published to the local maven repository. In order to publish required artifacts to the local maven repository and run the tests execute following commands from the project root:
 
-```
+```shell
 ./gradlew publishToMavenLocal
 cd aws-android-sdk-appsync-tests/
 ./gradlew connectedAndroidTest
 ```
 
-To run tests from Android Studio, run ```./gradlew publishToMavenLocal``` from project root, open ```aws-android-sdk-appsync-tests/``` folder in Android Studio and run the tests normally.
+To run tests from Android Studio, run `./gradlew publishToMavenLocal` from project root, open `aws-android-sdk-appsync-tests/` folder in Android Studio and run the tests normally.
 
 ## License
 
