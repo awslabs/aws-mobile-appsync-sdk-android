@@ -11,6 +11,7 @@ buildscript {
         google()
         jcenter()
     }
+
     dependencies {
         classpath "com.amazonaws:aws-android-sdk-appsync-gradle-plugin:$VERSION_NAME"
         classpath 'com.android.tools.build:gradle:4.0.0'

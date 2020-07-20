@@ -21,7 +21,7 @@ In the project's `build.gradle`, add the following dependency in
 the build script:
 
 ```groovy
-classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.10.1'
+classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.11.0'
 ```
 
 Also, add the maven plugins repository to your `repositories`.
@@ -71,7 +71,7 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:4.0.0'
-        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.10.1'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:2.11.0'
     }
 }
 
@@ -99,7 +99,7 @@ apply plugin: 'com.amazonaws.appsync'
 Add the following dependency:
 
 ```groovy
-implementation 'com.amazonaws:aws-android-sdk-appsync:2.10.1'
+implementation 'com.amazonaws:aws-android-sdk-appsync:2.11.0'
 ```
 
 **Sample app's build.gradle**
@@ -114,7 +114,7 @@ android {
 
 dependencies {
     // Typical dependencies
-    implementation 'com.amazonaws:aws-android-sdk-appsync:2.10.1'
+    implementation 'com.amazonaws:aws-android-sdk-appsync:2.11.0'
 }
 ```
 
