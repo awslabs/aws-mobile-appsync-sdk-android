@@ -39,6 +39,7 @@ import javax.annotation.Nonnull;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -142,14 +143,28 @@ public class AppSyncClientUnitTest {
     public void testClientDatabasePrefixFromBuilder() {
         String prefix = "prefix_from_builder";
         awsConfiguration.setConfiguration("Default");
+        // Create an instance with useClientDatabasePrefix = true
         final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
                                                                   .context(shadowContext)
                                                                   .clientDatabasePrefix(prefix)
                                                                   .useClientDatabasePrefix(true)
                                                                   .awsConfiguration(awsConfiguration)
                                                                   .build();
+
+        // Create an instance with useClientDatabasePrefix = false
+        final AWSAppSyncClient awsAppSyncClientWithoutPrefix = AWSAppSyncClient.builder()
+                                                                  .context(shadowContext)
+                                                                  .clientDatabasePrefix(prefix)
+                                                                  .useClientDatabasePrefix(false)
+                                                                  .awsConfiguration(awsConfiguration)
+                                                                  .build();
+        // Verify that prefix is set.
         assertNotNull(awsAppSyncClient);
         assertEquals(prefix, awsAppSyncClient.clientDatabasePrefix);
+
+        // Verify prefix is not set.
+        assertNotNull(awsAppSyncClientWithoutPrefix);
+        assertNull(awsAppSyncClientWithoutPrefix.clientDatabasePrefix);
     }
 
     @Test
