@@ -20,6 +20,8 @@ import com.apollographql.apollo.internal.RealAppSyncCall;
 import com.apollographql.apollo.internal.RealAppSyncSubscriptionCall;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -37,6 +39,7 @@ import javax.annotation.Nonnull;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -102,7 +105,8 @@ public class AppSyncClientUnitTest {
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
                 "      \"Region\": \"us-east-1\",\n" +
                 "      \"ApiKey\": \"da2-xxxx\",\n" +
-                "      \"AuthMode\": \"API_KEY\"\n" +
+                "      \"AuthMode\": \"API_KEY\",\n" +
+                "      \"ClientDatabasePrefix\": \"prefix_from_config\"\n" +
                 "    },\n" +
                 "    \"AwsIam\": {\n" +
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
@@ -133,6 +137,48 @@ public class AppSyncClientUnitTest {
                 .awsConfiguration(awsConfiguration)
                 .build();
         assertNotNull(awsAppSyncClient);
+    }
+
+    @Test
+    public void testClientDatabasePrefixFromBuilder() {
+        String prefix = "prefix_from_builder";
+        awsConfiguration.setConfiguration("Default");
+        // Create an instance with useClientDatabasePrefix = true
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+                                                                  .context(shadowContext)
+                                                                  .clientDatabasePrefix(prefix)
+                                                                  .useClientDatabasePrefix(true)
+                                                                  .awsConfiguration(awsConfiguration)
+                                                                  .build();
+
+        // Create an instance with useClientDatabasePrefix = false
+        final AWSAppSyncClient awsAppSyncClientWithoutPrefix = AWSAppSyncClient.builder()
+                                                                  .context(shadowContext)
+                                                                  .clientDatabasePrefix(prefix)
+                                                                  .useClientDatabasePrefix(false)
+                                                                  .awsConfiguration(awsConfiguration)
+                                                                  .build();
+        // Verify that prefix is set.
+        assertNotNull(awsAppSyncClient);
+        assertEquals(prefix, awsAppSyncClient.clientDatabasePrefix);
+
+        // Verify prefix is not set.
+        assertNotNull(awsAppSyncClientWithoutPrefix);
+        assertNull(awsAppSyncClientWithoutPrefix.clientDatabasePrefix);
+    }
+
+    @Test
+    public void testClientDatabasePrefixFromConfig() throws JSONException {
+        awsConfiguration.setConfiguration("ApiKey");
+        JSONObject appSyncJsonObject = awsConfiguration.optJsonObject("AppSync");
+        String prefix = appSyncJsonObject.getString("ClientDatabasePrefix");
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+                                                                  .context(shadowContext)
+                                                                  .useClientDatabasePrefix(true)
+                                                                  .awsConfiguration(awsConfiguration)
+                                                                  .build();
+        assertNotNull(awsAppSyncClient);
+        assertEquals(prefix, awsAppSyncClient.clientDatabasePrefix);
     }
 
     @Test
