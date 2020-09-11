@@ -17,6 +17,7 @@ import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncV4Signer;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
 import com.amazonaws.regions.Regions;
@@ -43,6 +44,7 @@ class SubscriptionAuthorizer {
     private final Context mApplicationContext;
     private final OidcAuthProvider mOidcAuthProvider;
     private final AWSCredentialsProvider mCredentialsProvider;
+    private final CognitoUserPoolsAuthProvider mCognitoUserPoolsAuthProvider;
     private final String mServerUrl;
     private final APIKeyAuthProvider mApiKeyProvider;
 
@@ -51,6 +53,7 @@ class SubscriptionAuthorizer {
         this.mApplicationContext = builder.mContext;
         this.mOidcAuthProvider = builder.mOidcAuthProvider;
         this.mCredentialsProvider = builder.mCredentialsProvider;
+        this.mCognitoUserPoolsAuthProvider = builder.mCognitoUserPoolsAuthProvider;
         this.mServerUrl = builder.mServerUrl;
         this.mApiKeyProvider = builder.mApiKey;
     }
@@ -150,15 +153,21 @@ class SubscriptionAuthorizer {
     }
 
     private JSONObject getAuthorizationDetailsForUserpools() {
-        CognitoUserPool cognitoUserPool = new CognitoUserPool(mApplicationContext, mAwsConfiguration);
-        BasicCognitoUserPoolsAuthProvider basicCognitoUserPoolsAuthProvider = new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
+        CognitoUserPoolsAuthProvider cognitoUserPoolsAuthProvider = getCognitoUserPoolsAuthProvider();
         try {
             return new JSONObject()
                 .put("host", getHost(mServerUrl))
-                .put("Authorization", basicCognitoUserPoolsAuthProvider.getLatestAuthToken());
+                .put("Authorization", cognitoUserPoolsAuthProvider.getLatestAuthToken());
         } catch (JSONException | MalformedURLException exception) {
             throw new RuntimeException("Error constructing authorization message JSON.", exception);
         }
+    }
+
+    private CognitoUserPoolsAuthProvider getCognitoUserPoolsAuthProvider() {
+        if (mCognitoUserPoolsAuthProvider != null) { return mCognitoUserPoolsAuthProvider; }
+
+        CognitoUserPool cognitoUserPool = new CognitoUserPool(mApplicationContext, mAwsConfiguration);
+        return new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
     }
 
     private AWSCredentialsProvider getCredentialsProvider() throws RuntimeException{
