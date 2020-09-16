@@ -1,5 +1,9 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 3.1.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.1.1)
+
+* Fixes [issue 306](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/306).
+
 ## [Release 3.1.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.1.0)
 
 * Updates the Gradle Plugin so that it can be used with Android Studio
