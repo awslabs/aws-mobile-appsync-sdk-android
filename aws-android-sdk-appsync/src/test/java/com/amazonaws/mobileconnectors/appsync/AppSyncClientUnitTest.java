@@ -253,6 +253,11 @@ public class AppSyncClientUnitTest {
             }
 
             @Override
+            public void onCreated() {
+
+            }
+
+            @Override
             public void onCompleted() {
                 fail("Execute should not complete in canceled state");
             }
