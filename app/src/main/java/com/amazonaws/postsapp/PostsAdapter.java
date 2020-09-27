@@ -165,7 +165,12 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             public void onFailure(@Nonnull ApolloException e) {
                 Log.e(TAG, "Error " + e.getLocalizedMessage());
             }
-            
+
+            @Override
+            public void onCreated() {
+                Log.d(TAG, "Received onCreated on subscription");
+            }
+
             @Override
             public void onCompleted() {
                 Log.d(TAG, "Received onCompleted on subscription");

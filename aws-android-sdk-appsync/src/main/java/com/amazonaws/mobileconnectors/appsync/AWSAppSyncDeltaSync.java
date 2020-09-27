@@ -524,6 +524,11 @@ class AWSAppSyncDeltaSync {
                 }
 
                 @Override
+                public void onCreated() {
+                    Log.e(TAG, "Delta Sync: onCreated executed for subscription");
+                }
+
+                @Override
                 public void onCompleted() {
                     Log.e(TAG, "Delta Sync: onCompleted executed for subscription");
 
