@@ -263,7 +263,8 @@ public class AWSAppSyncClient {
 
         webSocketConnectionManager = new WebSocketConnectionManager(builder.mServerUrl,
             subscriptionAuthorizer,
-            new ApolloResponseBuilder(builder.customTypeAdapters, mApolloClient.apolloStore().networkResponseNormalizer()));
+            new ApolloResponseBuilder(builder.customTypeAdapters, mApolloClient.apolloStore().networkResponseNormalizer()),
+            builder.mSubscriptionsAutoReconnect);
     }
 
     /**
