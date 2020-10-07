@@ -7,6 +7,7 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -44,6 +45,7 @@ final class WebSocketConnectionManager {
     private static final String TAG = WebSocketConnectionManager.class.getName();
     private static final int NORMAL_CLOSURE_STATUS = 1000;
 
+    private final Context applicationContext;
     private final String serverUrl;
     private final SubscriptionAuthorizer subscriptionAuthorizer;
     private final Map<String, SubscriptionResponseDispatcher<?, ?, ?>> subscriptions;
@@ -53,10 +55,12 @@ final class WebSocketConnectionManager {
     private WebSocket websocket;
 
     WebSocketConnectionManager(
+            Context context,
             String serverUrl,
             SubscriptionAuthorizer subscriptionAuthorizer,
             ApolloResponseBuilder apolloResponseBuilder,
             boolean subscriptionsAutoReconnect) {
+        this.applicationContext = context.getApplicationContext();
         this.serverUrl = serverUrl;
         this.subscriptionAuthorizer = subscriptionAuthorizer;
         this.subscriptions = new ConcurrentHashMap<>();
@@ -218,6 +222,7 @@ final class WebSocketConnectionManager {
     private static final int MSG_RECONNECT = 0;
     private HandlerThread reconnectThread = null;
     private Handler reconnectHandler = null;
+    private ConnectivityWatcher connectivityWatcher = null;
     private final Object reconnectionLock = new Object();
     private int reconnectionCount = 0;
 
@@ -240,13 +245,21 @@ final class WebSocketConnectionManager {
                         return false;
                     }
                 });
+
+                ConnectivityWatcher.Callback callback = new ConnectivityWatcher.Callback() {
+                    @Override
+                    public void onConnectivityChanged(boolean isNetworkConnected) {
+                        if (isNetworkConnected) reportNetworkUp();
+                    }
+                };
+                connectivityWatcher = new ConnectivityWatcher(applicationContext, callback);
+                connectivityWatcher.register();
             }
 
             reconnectionCount++;
             int delayMillis = RetryInterceptor.calculateBackoff(reconnectionCount);
             Log.v(TAG, "Scheduling reconnection after [" + delayMillis + "] ms.");
-            reconnectHandler.sendMessageDelayed(
-                reconnectHandler.obtainMessage(MSG_RECONNECT), delayMillis);
+            reconnectHandler.sendEmptyMessageDelayed(MSG_RECONNECT, delayMillis);
         }
     }
 
@@ -257,10 +270,24 @@ final class WebSocketConnectionManager {
             }
             Log.v(TAG, "Successful connection reported!");
 
+            connectivityWatcher.unregister();
+            connectivityWatcher = null;
             reconnectThread.quit();
             reconnectThread = null;
             reconnectHandler = null;
             reconnectionCount = 0;
+        }
+    }
+
+    private void reportNetworkUp() {
+        synchronized (reconnectionLock) {
+            if (reconnectionCount == 0) {
+                return;
+            }
+            Log.v(TAG, "Network is up. Trying to reconnect immediately.");
+
+            reconnectHandler.removeMessages(MSG_RECONNECT);
+            reconnectHandler.sendEmptyMessage(MSG_RECONNECT);
         }
     }
 

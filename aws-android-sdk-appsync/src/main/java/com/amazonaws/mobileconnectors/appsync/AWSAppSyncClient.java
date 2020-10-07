@@ -261,7 +261,9 @@ public class AWSAppSyncClient {
 
         SubscriptionAuthorizer subscriptionAuthorizer = new SubscriptionAuthorizer(builder);
 
-        webSocketConnectionManager = new WebSocketConnectionManager(builder.mServerUrl,
+        webSocketConnectionManager = new WebSocketConnectionManager(
+            applicationContext,
+            builder.mServerUrl,
             subscriptionAuthorizer,
             new ApolloResponseBuilder(builder.customTypeAdapters, mApolloClient.apolloStore().networkResponseNormalizer()),
             builder.mSubscriptionsAutoReconnect);
