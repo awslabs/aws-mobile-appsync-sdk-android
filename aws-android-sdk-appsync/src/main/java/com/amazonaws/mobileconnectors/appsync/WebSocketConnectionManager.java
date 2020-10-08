@@ -16,6 +16,7 @@ import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Subscription;
@@ -296,7 +297,15 @@ final class WebSocketConnectionManager {
         if (websocket != null) {
             websocket.cancel();
         }
-        createWebSocket();
+
+        try {
+            createWebSocket();
+        } catch (AmazonClientException e) {
+            Log.v(TAG, "Failed to create WebSocket: " + e);
+            scheduleReconnect();
+            return;
+        }
+
         for (Map.Entry<String, SubscriptionResponseDispatcher<?, ?, ?>> entry : subscriptions.entrySet()) {
             SubscriptionResponseDispatcher<?, ?, ?> dispatcher = entry.getValue();
             startSubscription(dispatcher.getSubscription(), dispatcher.getCallback(), entry.getKey());
