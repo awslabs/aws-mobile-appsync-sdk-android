@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowApplication;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.CountDownLatch;
@@ -250,11 +249,6 @@ public class AppSyncClientUnitTest {
             public void onFailure(@Nonnull ApolloException e) {
                 assertEquals(ApolloCanceledException.class, e.getClass());
                 waitForCall.countDown();
-            }
-
-            @Override
-            public void onCreated() {
-
             }
 
             @Override

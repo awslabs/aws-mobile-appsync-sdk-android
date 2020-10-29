@@ -167,11 +167,6 @@ public class PostsAdapter extends RecyclerView.Adapter<PostsAdapter.ViewHolder> 
             }
 
             @Override
-            public void onCreated() {
-                Log.d(TAG, "Received onCreated on subscription");
-            }
-
-            @Override
             public void onCompleted() {
                 Log.d(TAG, "Received onCompleted on subscription");
 

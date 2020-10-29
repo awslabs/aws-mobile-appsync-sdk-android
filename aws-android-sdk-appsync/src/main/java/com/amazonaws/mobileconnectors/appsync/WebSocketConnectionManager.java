@@ -204,7 +204,12 @@ final class WebSocketConnectionManager {
     private void notifySubscriptionCreated(String subscriptionId) {
         final SubscriptionResponseDispatcher<?,?,?> dispatcher = subscriptions.get(subscriptionId);
         if (dispatcher != null) {
-            dispatcher.getCallback().onCreated();
+
+            AppSyncSubscriptionCall.Callback<?> callback = dispatcher.getCallback();
+
+            if (callback instanceof AppSyncSubscriptionCall.CreationCallback<?>) {
+                ((AppSyncSubscriptionCall.CreationCallback<?>)callback).onCreated();
+            }
         }
     }
 
