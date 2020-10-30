@@ -29,6 +29,7 @@ import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+import org.robolectric.shadows.ShadowApplication;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.CountDownLatch;

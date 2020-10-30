@@ -175,7 +175,7 @@ final class WebSocketConnectionManager {
                 watchdog.start(webSocket, Integer.parseInt(connectionTimeoutString));
                 break;
             case SUBSCRIPTION_ACK:
-                notifySubscriptionCreated(jsonMessage.getString("id"));
+                notifySubscriptionStarted(jsonMessage.getString("id"));
                 Log.d(TAG, "Subscription created with id = " + jsonMessage.getString("id"));
                 break;
             case SUBSCRIPTION_COMPLETED:
@@ -201,7 +201,7 @@ final class WebSocketConnectionManager {
         }
     }
 
-    private void notifySubscriptionCreated(String subscriptionId) {
+    private void notifySubscriptionStarted(String subscriptionId) {
         final SubscriptionResponseDispatcher<?,?,?> dispatcher = subscriptions.get(subscriptionId);
         if (dispatcher != null) {
 
