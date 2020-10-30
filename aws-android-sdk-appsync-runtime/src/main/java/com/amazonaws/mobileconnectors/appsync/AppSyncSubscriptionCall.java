@@ -37,8 +37,16 @@ public interface AppSyncSubscriptionCall<T> extends Cancelable {
         void onFailure(@Nonnull ApolloException e);
 
         /**
-        This method is called when a subscription is terminated.
+         This method is called when a subscription is terminated.
          */
         void onCompleted();
+    }
+
+    interface StartedCallback<T> extends Callback<T> {
+
+        /**
+         This method is called when a subscription first connects successfully.
+         */
+        void onStarted();
     }
 }

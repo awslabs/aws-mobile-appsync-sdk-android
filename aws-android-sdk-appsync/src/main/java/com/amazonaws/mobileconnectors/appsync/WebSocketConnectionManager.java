@@ -175,6 +175,7 @@ final class WebSocketConnectionManager {
                 watchdog.start(webSocket, Integer.parseInt(connectionTimeoutString));
                 break;
             case SUBSCRIPTION_ACK:
+                notifySubscriptionStarted(jsonMessage.getString("id"));
                 Log.d(TAG, "Subscription created with id = " + jsonMessage.getString("id"));
                 break;
             case SUBSCRIPTION_COMPLETED:
@@ -197,6 +198,18 @@ final class WebSocketConnectionManager {
         // is that a failure, from its standpoint? Or not?
         for (SubscriptionResponseDispatcher<?,?,?> dispatcher : new HashSet<>(subscriptions.values())) {
             dispatcher.getCallback().onCompleted();
+        }
+    }
+
+    private void notifySubscriptionStarted(String subscriptionId) {
+        final SubscriptionResponseDispatcher<?,?,?> dispatcher = subscriptions.get(subscriptionId);
+        if (dispatcher != null) {
+
+            AppSyncSubscriptionCall.Callback<?> callback = dispatcher.getCallback();
+
+            if (callback instanceof AppSyncSubscriptionCall.StartedCallback<?>) {
+                ((AppSyncSubscriptionCall.StartedCallback<?>)callback).onStarted();
+            }
         }
     }
 
