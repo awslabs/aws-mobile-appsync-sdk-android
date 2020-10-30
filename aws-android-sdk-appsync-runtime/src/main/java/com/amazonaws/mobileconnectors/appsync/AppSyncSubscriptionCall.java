@@ -42,11 +42,11 @@ public interface AppSyncSubscriptionCall<T> extends Cancelable {
         void onCompleted();
     }
 
-    interface CreationCallback<T> extends Callback<T> {
+    interface StartedCallback<T> extends Callback<T> {
 
         /**
          This method is called when a subscription first connects successfully.
          */
-        void onCreated();
+        void onStarted();
     }
 }

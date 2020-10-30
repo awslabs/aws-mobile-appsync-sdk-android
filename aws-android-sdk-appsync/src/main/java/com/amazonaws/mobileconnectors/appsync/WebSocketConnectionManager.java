@@ -207,8 +207,8 @@ final class WebSocketConnectionManager {
 
             AppSyncSubscriptionCall.Callback<?> callback = dispatcher.getCallback();
 
-            if (callback instanceof AppSyncSubscriptionCall.CreationCallback<?>) {
-                ((AppSyncSubscriptionCall.CreationCallback<?>)callback).onCreated();
+            if (callback instanceof AppSyncSubscriptionCall.StartedCallback<?>) {
+                ((AppSyncSubscriptionCall.StartedCallback<?>)callback).onStarted();
             }
         }
     }
