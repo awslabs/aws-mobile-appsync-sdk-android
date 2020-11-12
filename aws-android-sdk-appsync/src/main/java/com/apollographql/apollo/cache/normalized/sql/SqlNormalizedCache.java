@@ -9,6 +9,7 @@ package com.apollographql.apollo.cache.normalized.sql;
 
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
 
@@ -205,20 +206,16 @@ public final class SqlNormalizedCache extends NormalizedCache {
     Cursor cursor = database.query(AppSyncSqlHelper.TABLE_RECORDS,
         allColumns, AppSyncSqlHelper.COLUMN_KEY + " = ?", new String[]{key},
         null, null, null);
-    if (cursor == null || !cursor.moveToFirst()) {
-      if (cursor != null && !cursor.isClosed())  {
-        cursor.close();
-      }
-      return Optional.absent();
-    }
-
     try {
+      if (cursor == null || !cursor.moveToFirst()) {
+        return Optional.absent();
+      }
       Record rec = cursorToRecord(cursor);
       return Optional.of(rec);
-    } catch (IOException exception) {
+    } catch (IOException | SQLiteException exception) {
       return Optional.absent();
     } finally {
-      if (!cursor.isClosed()) {
+      if (cursor != null && !cursor.isClosed()) {
         cursor.close();
       }
     }
