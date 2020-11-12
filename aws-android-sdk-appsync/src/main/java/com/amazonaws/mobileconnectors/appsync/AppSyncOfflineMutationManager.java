@@ -7,10 +7,7 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Handler;
@@ -28,7 +25,6 @@ import com.apollographql.apollo.internal.json.InputFieldJsonWriter;
 import com.apollographql.apollo.internal.json.JsonWriter;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -85,9 +81,9 @@ class AppSyncOfflineMutationManager {
 
         //Setup Network Monitoring objects
         this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
-        this.networkInfoReceiver = new NetworkInfoReceiver(context, this.networkUpdateHandler);
-        context.getApplicationContext().registerReceiver(networkInfoReceiver, new IntentFilter(
-                ConnectivityManager.CONNECTIVITY_ACTION));
+        this.connectivityWatcher = new ConnectivityWatcher(context,
+                new NetworkInfoReceiver(this.networkUpdateHandler));
+        this.connectivityWatcher.register();
 
         //Setup ancillary stuff
         this.scalarTypeAdapters = new ScalarTypeAdapters(customTypeAdapters);
@@ -101,10 +97,10 @@ class AppSyncOfflineMutationManager {
     }
 
     /*
-     * Registers a BroadcastReceiver to receive network status change events. It
+     * Registers a watcher to receive network status change events. It
      * will update transfer records in database directly.
      */
-    private NetworkInfoReceiver networkInfoReceiver;
+    private ConnectivityWatcher connectivityWatcher;
 
     void addMutationObjectInQueue(InMemoryOfflineMutationObject mutationObject) throws IOException {
 
@@ -279,39 +275,23 @@ class AppSyncOfflineMutationManager {
 
 
     /**
-     * A Broadcast receiver to receive network connection change events.
+     * A receiver to receive network connection change events.
      */
-    static class NetworkInfoReceiver extends BroadcastReceiver {
+    static class NetworkInfoReceiver implements ConnectivityWatcher.Callback {
         private final Handler handler;
-        private final ConnectivityManager connManager;
 
         /**
          * Constructs a NetworkInfoReceiver.
          *
          * @param handler a handle to send message to
          */
-        public NetworkInfoReceiver(Context context, Handler handler) {
+        NetworkInfoReceiver(Handler handler) {
             this.handler = handler;
-            connManager = (ConnectivityManager) context
-                    .getSystemService(Context.CONNECTIVITY_SERVICE);
         }
 
         @Override
-        public void onReceive(Context context, Intent intent) {
-            if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
-                final boolean networkConnected = isNetworkConnected();
-                handler.sendEmptyMessage(networkConnected ? MSG_CHECK : MSG_DISCONNECT);
-            }
-        }
-
-        /**
-         * Gets the status of network connectivity.
-         *
-         * @return true if network is connected, false otherwise.
-         */
-        boolean isNetworkConnected() {
-            final NetworkInfo info = connManager.getActiveNetworkInfo();
-            return info != null && info.isConnected();
+        public void onConnectivityChanged(boolean isNetworkConnected) {
+            handler.sendEmptyMessage(isNetworkConnected ? MSG_CHECK : MSG_DISCONNECT);
         }
     }
 

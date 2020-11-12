@@ -7,11 +7,17 @@
 
 package com.amazonaws.mobileconnectors.appsync;
 
+import android.content.Context;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.HandlerThread;
+import android.os.Message;
 import android.support.annotation.NonNull;
 import android.util.Base64;
 import android.util.Log;
 
+import com.amazonaws.AmazonClientException;
+import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
@@ -40,22 +46,28 @@ final class WebSocketConnectionManager {
     private static final String TAG = WebSocketConnectionManager.class.getName();
     private static final int NORMAL_CLOSURE_STATUS = 1000;
 
+    private final Context applicationContext;
     private final String serverUrl;
     private final SubscriptionAuthorizer subscriptionAuthorizer;
     private final Map<String, SubscriptionResponseDispatcher<?, ?, ?>> subscriptions;
     private final ApolloResponseBuilder apolloResponseBuilder;
     private final TimeoutWatchdog watchdog;
+    private final boolean subscriptionsAutoReconnect;
     private WebSocket websocket;
 
     WebSocketConnectionManager(
+            Context context,
             String serverUrl,
             SubscriptionAuthorizer subscriptionAuthorizer,
-            ApolloResponseBuilder apolloResponseBuilder) {
+            ApolloResponseBuilder apolloResponseBuilder,
+            boolean subscriptionsAutoReconnect) {
+        this.applicationContext = context.getApplicationContext();
         this.serverUrl = serverUrl;
         this.subscriptionAuthorizer = subscriptionAuthorizer;
         this.subscriptions = new ConcurrentHashMap<>();
         this.apolloResponseBuilder = apolloResponseBuilder;
         this.watchdog = new TimeoutWatchdog();
+        this.subscriptionsAutoReconnect = subscriptionsAutoReconnect;
     }
 
     /**
@@ -79,9 +91,22 @@ final class WebSocketConnectionManager {
         }
 
         String subscriptionId = UUID.randomUUID().toString();
+        startSubscription(subscription, callback, subscriptionId);
 
+        final SubscriptionResponseDispatcher<D, T, V> subscriptionResponseDispatcher =
+            new SubscriptionResponseDispatcher<>(subscription, callback, apolloResponseBuilder);
+        subscriptions.put(subscriptionId, subscriptionResponseDispatcher);
+
+        return subscriptionId;
+    }
+
+    private synchronized void startSubscription(
+            @NonNull Subscription<?, ?, ?> subscription,
+            @NonNull AppSyncSubscriptionCall.Callback<?> callback,
+            String subscriptionId) {
         try {
-            websocket.send(new JSONObject()
+            // Check result to avoid silent failure
+            boolean enqueued = websocket.send(new JSONObject()
                 .put("id", subscriptionId)
                 .put("type", "start")
                 .put("payload", new JSONObject()
@@ -92,15 +117,12 @@ final class WebSocketConnectionManager {
                         .put("authorization", subscriptionAuthorizer.getAuthorizationDetails(false, subscription))))
                 .toString()
             );
+            if (!enqueued) {
+                callback.onFailure(new ApolloException("WebSocket communication failed."));
+            }
         } catch (JSONException jsonException) {
             throw new RuntimeException("Failed to construct subscription registration message.", jsonException);
         }
-
-        final SubscriptionResponseDispatcher<D, T, V> subscriptionResponseDispatcher =
-            new SubscriptionResponseDispatcher<>(subscription, callback, apolloResponseBuilder);
-        subscriptions.put(subscriptionId, subscriptionResponseDispatcher);
-
-        return subscriptionId;
     }
 
     private WebSocket createWebSocket() {
@@ -121,23 +143,29 @@ final class WebSocketConnectionManager {
             .build()
             .newWebSocket(request, new WebSocketListener() {
                 @Override
-                public void onOpen(final WebSocket webSocket, final Response response) {
+                public void onOpen(@NonNull final WebSocket webSocket, @NonNull final Response response) {
+                    if (subscriptionsAutoReconnect) {
+                        reportSuccessfulConnection();
+                    }
                     sendConnectionInit(websocket);
                 }
 
                 @Override
-                public void onMessage(final WebSocket webSocket, final String message) {
+                public void onMessage(@NonNull final WebSocket webSocket, @NonNull final String message) {
                     processMessage(websocket, message);
                 }
 
                 @Override
-                public void onClosing(WebSocket webSocket, int code, String reason) {
+                public void onClosing(@NonNull WebSocket webSocket, int code, @NonNull String reason) {
                     webSocket.close(NORMAL_CLOSURE_STATUS, null);
                     notifyAllSubscriptionsCompleted();
                 }
 
                 @Override
-                public void onFailure(WebSocket webSocket, Throwable failure, Response response) {
+                public void onFailure(@NonNull WebSocket webSocket, @NonNull Throwable failure, Response response) {
+                    if (subscriptionsAutoReconnect) {
+                        scheduleReconnect();
+                    }
                     notifyFailure(failure);
                 }
             });
@@ -190,6 +218,98 @@ final class WebSocketConnectionManager {
                 break;
             default:
                 notifyFailure(new ApolloException("Got unknown message type: " + messageType));
+        }
+    }
+
+    private static final int MSG_RECONNECT = 0;
+    private HandlerThread reconnectThread = null;
+    private Handler reconnectHandler = null;
+    private ConnectivityWatcher connectivityWatcher = null;
+    private final Object reconnectionLock = new Object();
+    private int reconnectionCount = 0;
+
+    private void scheduleReconnect() {
+        synchronized (reconnectionLock) {
+            if (reconnectHandler != null && reconnectHandler.hasMessages(MSG_RECONNECT)) {
+                return;
+            }
+
+            if (reconnectionCount == 0) {
+                reconnectThread = new HandlerThread("AWSAppSyncWebSocketReconnectionThread");
+                reconnectThread.start();
+                reconnectHandler = new Handler(reconnectThread.getLooper(), new Handler.Callback() {
+                    @Override
+                    public boolean handleMessage(@NonNull Message msg) {
+                        if (msg.what == MSG_RECONNECT) {
+                            retryAllSubscriptions();
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+
+                ConnectivityWatcher.Callback callback = new ConnectivityWatcher.Callback() {
+                    @Override
+                    public void onConnectivityChanged(boolean isNetworkConnected) {
+                        if (isNetworkConnected) reportNetworkUp();
+                    }
+                };
+                connectivityWatcher = new ConnectivityWatcher(applicationContext, callback);
+                connectivityWatcher.register();
+            }
+
+            reconnectionCount++;
+            int delayMillis = RetryInterceptor.calculateBackoff(reconnectionCount);
+            Log.v(TAG, "Scheduling reconnection after [" + delayMillis + "] ms.");
+            reconnectHandler.sendEmptyMessageDelayed(MSG_RECONNECT, delayMillis);
+        }
+    }
+
+    private void reportSuccessfulConnection() {
+        synchronized (reconnectionLock) {
+            if (reconnectionCount == 0) {
+                return;
+            }
+            Log.v(TAG, "Successful connection reported!");
+
+            connectivityWatcher.unregister();
+            connectivityWatcher = null;
+            reconnectThread.quit();
+            reconnectThread = null;
+            reconnectHandler = null;
+            reconnectionCount = 0;
+        }
+    }
+
+    private void reportNetworkUp() {
+        synchronized (reconnectionLock) {
+            if (reconnectionCount == 0) {
+                return;
+            }
+            Log.v(TAG, "Network is up. Trying to reconnect immediately.");
+
+            reconnectHandler.removeMessages(MSG_RECONNECT);
+            reconnectHandler.sendEmptyMessage(MSG_RECONNECT);
+        }
+    }
+
+    private synchronized void retryAllSubscriptions() {
+        // WebSocket that has failed cannot be used any more so recreate one
+        if (websocket != null) {
+            websocket.cancel();
+        }
+
+        try {
+            createWebSocket();
+        } catch (AmazonClientException e) {
+            Log.v(TAG, "Failed to create WebSocket: " + e);
+            scheduleReconnect();
+            return;
+        }
+
+        for (Map.Entry<String, SubscriptionResponseDispatcher<?, ?, ?>> entry : subscriptions.entrySet()) {
+            SubscriptionResponseDispatcher<?, ?, ?> dispatcher = entry.getValue();
+            startSubscription(dispatcher.getSubscription(), dispatcher.getCallback(), entry.getKey());
         }
     }
 
