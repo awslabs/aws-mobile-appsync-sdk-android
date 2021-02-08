@@ -240,7 +240,7 @@ public class AppSyncCustomNetworkInvoker {
 
                                                    if (persistentMutationsCallback != null) {
                                                        persistentMutationsCallback.onResponse(new PersistentMutationsResponse(
-                                                               jsonObject.getJSONObject("data"),
+                                                               jsonObject.optJSONObject("data"),
                                                                jsonObject.optJSONArray("errors"),
                                                                persistentOfflineMutationObject.responseClassName,
                                                                persistentOfflineMutationObject.recordIdentifier));
