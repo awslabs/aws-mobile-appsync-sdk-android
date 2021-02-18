@@ -1,5 +1,9 @@
 # Change Log - AWS AppSync SDK for Android
 
+## [Release 3.1.3](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.1.3)
+
+* Fixes [issue 292](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/292).
+
 ## [Release 3.1.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.1.2)
 
 * Fixes following issues:
