@@ -58,6 +58,7 @@ public class RetryInterceptor implements Interceptor {
             if (retryAfterHeaderValue != null) {
                 try {
                     waitMillis = Integer.parseInt(retryAfterHeaderValue) * 1000;
+                    response.close();
                     continue;
                 } catch (NumberFormatException e) {
                     Log.w(TAG, "Could not parse Retry-After header: " + retryAfterHeaderValue);
@@ -69,6 +70,7 @@ public class RetryInterceptor implements Interceptor {
             if ((response.code() >= 500 && response.code() < 600)
                     || response.code() == 429 ) {
                 waitMillis = calculateBackoff(retryCount);
+                response.close();
                 continue;
             }
 
