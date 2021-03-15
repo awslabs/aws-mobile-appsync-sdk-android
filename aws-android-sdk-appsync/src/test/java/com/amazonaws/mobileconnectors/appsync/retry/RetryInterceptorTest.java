@@ -7,6 +7,10 @@
 
 package com.amazonaws.mobileconnectors.appsync.retry;
 
+import android.support.annotation.NonNull;
+
+import com.amazonaws.mobileconnectors.appsync.util.Await;
+
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -19,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -26,6 +31,7 @@ import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
+import okhttp3.Response;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 
@@ -62,33 +68,21 @@ public class RetryInterceptorTest {
      * @throws InterruptedException Not expected
      */
     @Test
-    public void successfulRequestWithoutFailuresTest() throws IOException, InterruptedException {
+    public void successfulRequestWithoutFailuresTest() throws Throwable {
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("{\"result\":\"all good\""));
 
-        Request request = new Request.Builder()
+        final Request request = new Request.Builder()
             .url("http://localhost:8888")
             .method("POST", RequestBody.create("{}", MediaType.get("application/json")))
             .build();
 
-        final AtomicBoolean successful = new AtomicBoolean(false);
-        final CountDownLatch requestLatch = new CountDownLatch(1);
-        okHttpClient.newCall(request).enqueue(new Callback() {
+        Response response = Await.result(new Await.ResultErrorEmitter<Response, Throwable>() {
             @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                requestLatch.countDown();
-            }
-
-            @Override
-            public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-                if (response.code() < 300) {
-                    assertTrue(response.body().string().contains("all good"));
-                    successful.set(true);
-                }
-                requestLatch.countDown();
+            public void emitTo(@NonNull Consumer<Response> onResult, @NonNull Consumer<Throwable> onError) {
+                okHttpClient.newCall(request).enqueue(new OkHttpCallback(onResult, onError));
             }
         });
-        requestLatch.await(TEST_TIMEOUT, TimeUnit.SECONDS);
-        assertTrue(successful.get());
+        assertTrue(response.body().string().contains("all good"));
     }
 
     /**
@@ -99,35 +93,50 @@ public class RetryInterceptorTest {
      * @throws InterruptedException Not expected
      */
     @Test
-    public void successfulRequestWithFailuresTest() throws IOException, InterruptedException {
+    public void successfulRequestWithFailuresTest() throws Throwable {
         mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("{\"error\":\"some exception\""));
         mockWebServer.enqueue(new MockResponse().setResponseCode(501).setBody("{\"error\":\"another exception\"").setHeader("Retry-After", "1"));
         mockWebServer.enqueue(new MockResponse().setResponseCode(500).setBody("{\"error\":\"some exception\""));
         mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("{\"result\":\"all good\""));
 
-        Request request = new Request.Builder()
+        final Request request = new Request.Builder()
             .url("http://localhost:8888")
             .method("POST", RequestBody.create("{}", MediaType.get("application/json")))
             .build();
 
-        final AtomicBoolean successful = new AtomicBoolean(false);
-        final CountDownLatch requestLatch = new CountDownLatch(1);
-        okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                requestLatch.countDown();
-            }
+        mockWebServer.enqueue(new MockResponse().setResponseCode(200).setBody("{\"result\":\"all good\""));
 
+        Response response = Await.result(new Await.ResultErrorEmitter<Response, Throwable>() {
             @Override
-            public void onResponse(@NotNull Call call, @NotNull okhttp3.Response response) throws IOException {
-                if (response.code() < 300) {
-                    assertTrue(response.body().string().contains("all good"));
-                    successful.set(true);
-                }
-                requestLatch.countDown();
+            public void emitTo(@NonNull Consumer<Response> onResult, @NonNull Consumer<Throwable> onError) {
+                okHttpClient.newCall(request).enqueue(new OkHttpCallback(onResult, onError));
             }
         });
-        requestLatch.await(10, TimeUnit.SECONDS);
-        assertTrue(successful.get());
+        assertTrue(response.body().string().contains("all good"));
+    }
+
+    /**
+     * Wrapper class that takes the two Consumer callbacks from the Await.result function
+     * and uses them to emit result or error.
+     */
+    static final class OkHttpCallback implements Callback {
+        private final AtomicBoolean success = new AtomicBoolean(false);
+        private final Consumer<Response> onResponse;
+        private final Consumer<Throwable> onError;
+
+        public OkHttpCallback(Consumer<Response> onResponse, Consumer<Throwable> onError) {
+            this.onResponse = onResponse;
+            this.onError = onError;
+        }
+
+        @Override
+        public void onFailure(@NotNull Call call, @NotNull IOException e) {
+            onError.accept(e);
+        }
+
+        @Override
+        public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+            onResponse.accept(response);
+        }
     }
 }
