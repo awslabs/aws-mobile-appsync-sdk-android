@@ -20,7 +20,7 @@ Step by step documentation can be found here: https://aws-amplify.github.io/docs
 In the project's `build.gradle`, add a dependency to the `dependencies` inside the `buildscript` block:
 
 ```groovy
-classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.1'
+classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.4'
 ```
 
 Also, add the maven plugins repository to your `repositories`.
@@ -69,8 +69,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
-        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.1'
+        classpath 'com.android.tools.build:gradle:4.1.3'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.4'
     }
 }
 
@@ -98,7 +98,7 @@ apply plugin: 'com.amazonaws.appsync'
 Add the following dependency:
 
 ```groovy
-implementation 'com.amazonaws:aws-android-sdk-appsync:3.1.1'
+implementation 'com.amazonaws:aws-android-sdk-appsync:3.1.4'
 ```
 
 **Sample app's `build.gradle`**
@@ -113,7 +113,7 @@ android {
 
 dependencies {
     // Typical dependencies
-    implementation 'com.amazonaws:aws-android-sdk-appsync:3.1.1'
+    implementation 'com.amazonaws:aws-android-sdk-appsync:3.1.4'
 }
 ```
 
@@ -355,7 +355,7 @@ Add the following dependency to your app in order to use Amazon Cognito UserPool
 
 ```groovy
 dependencies {
-    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.16.12'
+    implementation 'com.amazonaws:aws-android-sdk-cognitoidentityprovider:2.22.5'
 }
 ```
 
