@@ -355,3 +355,16 @@ Note: gradle version 0 and 1 are note supported.
 - Adding release automation workflow and scripts (#336)
 
 [See all changes between 3.1.3 and 3.1.4](https://github.com//compare/release_v3.1.3...release_v3.1.4)
+# Release 3.1.4
+
+### Bug Fixes
+- retry interceptor now closes previous response (#332)
+- use HTTPS endpoint for Github repo (#337)
+
+### 
+- Adding release automation workflow and scripts (#336)
+
+### Miscellaneous
+- release: AWS AppSync SDK for Android 3.1.4
+
+[See all changes between 3.1.3 and 3.1.4](https://github.com//compare/release_v3.1.3...release_v3.1.4)
