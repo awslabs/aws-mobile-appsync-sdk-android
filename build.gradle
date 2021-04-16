@@ -26,6 +26,19 @@ allprojects {
     }
 }
 
+subprojects { project ->
+    afterEvaluate {
+        if (System.getenv("ORG_GRADLE_PROJECT_signingKeyId") != null) {
+            System.out.println("Getting signing info from protected source.")
+            project.ext.'signing.keyId' = System.getenv("ORG_GRADLE_PROJECT_signingKeyId")
+            project.ext.'signing.password' = System.getenv('ORG_GRADLE_PROJECT_signingPassword')
+            project.ext.'signing.inMemoryKey' = System.getenv('ORG_GRADLE_PROJECT_signingInMemoryKey')
+            project.ext.SONATYPE_NEXUS_USERNAME =  System.getenv('ORG_GRADLE_PROJECT_SONATYPE_NEXUS_USERNAME')
+            project.ext.SONATYPE_NEXUS_PASSWORD = System.getenv('ORG_GRADLE_PROJECT_SONATYPE_NEXUS_PASSWORD')
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

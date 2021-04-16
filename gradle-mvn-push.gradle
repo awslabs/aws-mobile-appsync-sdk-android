@@ -105,6 +105,11 @@ afterEvaluate { project ->
 
   signing {
     required { isReleaseBuild() && gradle.taskGraph.hasTask("uploadArchives") }
+    if (project.hasProperty('signing.inMemoryKey')) {
+      def signingKey = findProperty("signing.inMemoryKey").replace("\\n","\n")
+      def signingPassword = findProperty("signing.password")
+      useInMemoryPgpKeys(signingKey, signingPassword)
+    }
     sign configurations.archives
   }
 
