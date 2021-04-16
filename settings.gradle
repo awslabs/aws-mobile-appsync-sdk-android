@@ -1,4 +1,4 @@
-include ':app'
+// include ':app'
 include ':aws-android-sdk-appsync'
 include ':aws-android-sdk-appsync-api'
 include ':aws-android-sdk-appsync-compiler'
