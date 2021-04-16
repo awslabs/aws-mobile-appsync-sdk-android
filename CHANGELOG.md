@@ -1,4 +1,13 @@
-# Change Log - AWS AppSync SDK for Android
+# Release 3.1.4
+
+### Bug Fixes
+- retry interceptor now closes previous response (#332)
+- use HTTPS endpoint for Github repo (#337)
+
+### 
+- Adding release automation workflow and scripts (#336)
+
+[See all changes between 3.1.3 and 3.1.4](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.1.3...release_v3.1.4)
 
 ## [Release 3.1.3](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.1.3)
 
@@ -345,13 +354,4 @@ Note: gradle version 0 and 1 are note supported.
 * Initial release with support for Cognito UserPools, Cognito Identity, and API key based authentication.
 * Optimistic updates allow the cache to be updated before a server response is received (i.e. slow network or offline)
 * Offline mutation allows mutations to be queued while client is offline until online again.
-# Release 3.1.4
 
-### Bug Fixes
-- retry interceptor now closes previous response (#332)
-- use HTTPS endpoint for Github repo (#337)
-
-### 
-- Adding release automation workflow and scripts (#336)
-
-[See all changes between 3.1.3 and 3.1.4](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.1.3...release_v3.1.4)
