@@ -47,6 +47,7 @@ class SubscriptionAuthorizer {
     private final CognitoUserPoolsAuthProvider mCognitoUserPoolsAuthProvider;
     private final String mServerUrl;
     private final APIKeyAuthProvider mApiKeyProvider;
+    private final AWSAppSyncClient.AuthMode mAuthMode;
 
     SubscriptionAuthorizer(AWSAppSyncClient.Builder builder) {
         this.mAwsConfiguration = builder.mAwsConfiguration;
@@ -56,6 +57,7 @@ class SubscriptionAuthorizer {
         this.mCognitoUserPoolsAuthProvider = builder.mCognitoUserPoolsAuthProvider;
         this.mServerUrl = builder.mServerUrl;
         this.mApiKeyProvider = builder.mApiKey;
+        this.mAuthMode = builder.detectAuthMode();
     }
 
     JSONObject getConnectionAuthorizationDetails() throws JSONException {
@@ -65,28 +67,20 @@ class SubscriptionAuthorizer {
     /**
      * Return authorization json to be used for connection and subscription registration.
      */
-     JSONObject getAuthorizationDetails(boolean connectionFlag,
-                                        Subscription subscription) throws JSONException {
-        // Get the Auth Mode from configuration json
-        String authMode;
-        try {
-            authMode = mAwsConfiguration.optJsonObject("AppSync").getString("AuthMode");
-        } catch (JSONException e) {
-            throw new RuntimeException("Failed to read AuthMode from awsconfiguration.json", e);
-        }
-
+    JSONObject getAuthorizationDetails(boolean connectionFlag,
+                                       Subscription subscription) throws JSONException {
         // Construct the Json based on the Auth Mode
-        switch (authMode) {
-            case "API_KEY" :
+        switch (mAuthMode) {
+            case API_KEY:
                 return getAuthorizationDetailsForApiKey();
-            case "AWS_IAM" :
+            case AWS_IAM:
                 return getAuthorizationDetailsForIAM(connectionFlag, subscription);
-            case "AMAZON_COGNITO_USER_POOLS" :
+            case AMAZON_COGNITO_USER_POOLS:
                 return getAuthorizationDetailsForUserpools();
-            case "OPENID_CONNECT" :
+            case OPENID_CONNECT:
                 return getAuthorizationDetailsForOidc();
-            default :
-                throw new RuntimeException("Invalid AuthMode read from awsconfiguration.json.");
+            default:
+                throw new RuntimeException("Unsupported AuthMode: " + mAuthMode);
         }
     }
 

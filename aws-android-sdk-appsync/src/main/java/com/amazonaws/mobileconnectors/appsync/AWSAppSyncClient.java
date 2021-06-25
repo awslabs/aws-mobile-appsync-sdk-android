@@ -46,6 +46,7 @@ import com.apollographql.apollo.fetcher.ResponseFetcher;
 import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 import com.apollographql.apollo.internal.util.Cancelable;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.security.MessageDigest;
@@ -101,7 +102,7 @@ public class AWSAppSyncClient {
     String clientDatabasePrefix;
     private final WebSocketConnectionManager webSocketConnectionManager;
 
-    private enum AuthMode {
+    enum AuthMode {
         API_KEY("API_KEY"),
         AWS_IAM("AWS_IAM"),
         AMAZON_COGNITO_USER_POOLS("AMAZON_COGNITO_USER_POOLS"),
@@ -519,28 +520,11 @@ public class AWSAppSyncClient {
                 throw new RuntimeException("A valid Android Context is required.");
             }
 
-            // Validate AuthMode
+            // Validate and select AuthMode
             Map<Object, AuthMode> authModeObjects = new HashMap<>();
-            authModeObjects.put(mApiKey, AuthMode.API_KEY);
-            authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
-            authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
-            authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
-            authModeObjects.remove(null);
-
-            // Validate if only one Auth object is passed in to the builder
-            if (authModeObjects.size() > 1) {
-                throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
-                        authModeObjects.values().toString() +
-                        ". Please pass in exactly one AuthMode into the builder.");
-            }
-
-            // Store references to the authMode object passed in to the builder and the
-            // corresponding AuthMode
-            Object selectedAuthModeObject = null;
+            Object selectedAuthModeObject = detectAuthModeObject(authModeObjects);
             AuthMode selectedAuthMode = null;
-            Iterator<Object> iterator = authModeObjects.keySet().iterator();
-            if (iterator.hasNext()) {
-                selectedAuthModeObject = iterator.next();
+            if (selectedAuthModeObject != null) {
                 selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
             }
 
@@ -662,6 +646,53 @@ public class AWSAppSyncClient {
             }
 
             return new AWSAppSyncClient(this);
+        }
+
+        AuthMode detectAuthMode() {
+            Map<Object, AuthMode> authModeObjects = new HashMap<>();
+            Object selectedAuthModeObject = detectAuthModeObject(authModeObjects);
+            if (selectedAuthModeObject != null) {
+                AuthMode selectedAuthMode = authModeObjects.get(selectedAuthModeObject);
+                if (selectedAuthMode != null) {
+                    return selectedAuthMode;
+                }
+            }
+
+            if (mAwsConfiguration == null) {
+                throw new RuntimeException("Failed to detect AuthMode");
+            }
+
+            try {
+                String authModeString = mAwsConfiguration.optJsonObject("AppSync").getString("AuthMode");
+                return AuthMode.fromName(authModeString);
+            } catch (JSONException e) {
+                throw new RuntimeException("Failed to read AuthMode from awsconfiguration.json", e);
+            }
+        }
+
+        private Object detectAuthModeObject(Map<Object, AuthMode> authModeObjects) {
+            // Validate AuthMode
+            authModeObjects.put(mApiKey, AuthMode.API_KEY);
+            authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
+            authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
+            authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
+            authModeObjects.remove(null);
+
+            // Validate if only one Auth object is passed in to the builder
+            if (authModeObjects.size() > 1) {
+                throw new RuntimeException("More than one AuthMode has been passed in to the builder. " +
+                        authModeObjects.values().toString() +
+                        ". Please pass in exactly one AuthMode into the builder.");
+            }
+
+            // Store references to the authMode object passed in to the builder and the
+            // corresponding AuthMode
+            Iterator<Object> iterator = authModeObjects.keySet().iterator();
+            if (iterator.hasNext()) {
+                return iterator.next();
+            }
+
+            return null;
         }
     }
 
