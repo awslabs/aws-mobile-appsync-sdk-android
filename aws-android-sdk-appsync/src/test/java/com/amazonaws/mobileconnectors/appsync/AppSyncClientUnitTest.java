@@ -10,6 +10,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.CognitoUserPool;
+import com.amazonaws.regions.Regions;
 import com.apollographql.apollo.ApolloClient;
 import com.apollographql.apollo.api.Response;
 import com.apollographql.apollo.api.Subscription;
@@ -132,11 +133,13 @@ public class AppSyncClientUnitTest {
     @Test
     public void testDefault() {
         awsConfiguration.setConfiguration("Default");
-        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
                 .context(shadowContext)
-                .awsConfiguration(awsConfiguration)
+                .awsConfiguration(awsConfiguration);
+        final AWSAppSyncClient awsAppSyncClient = builder
                 .build();
         assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.API_KEY);
     }
 
     @Test
@@ -184,24 +187,28 @@ public class AppSyncClientUnitTest {
     @Test
     public void testApiKeyAuthProvider() {
         awsConfiguration.setConfiguration("ApiKey");
-        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
                 .context(shadowContext)
                 .awsConfiguration(awsConfiguration)
-                .apiKey(new BasicAPIKeyAuthProvider(awsConfiguration))
+                .apiKey(new BasicAPIKeyAuthProvider(awsConfiguration));
+        final AWSAppSyncClient awsAppSyncClient = builder
                 .build();
         assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.API_KEY);
     }
 
     @Test
     public void testAwsIamAuthProvider() {
         awsConfiguration.setConfiguration("AwsIam");
         final CognitoCredentialsProvider credentialsProvider = new CognitoCredentialsProvider(awsConfiguration);
-        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
                 .context(shadowContext)
                 .awsConfiguration(awsConfiguration)
-                .credentialsProvider(credentialsProvider)
+                .credentialsProvider(credentialsProvider);
+        final AWSAppSyncClient awsAppSyncClient = builder
                 .build();
         assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.AWS_IAM);
     }
 
     @Test
@@ -209,18 +216,20 @@ public class AppSyncClientUnitTest {
         awsConfiguration.setConfiguration("AmazonCognitoUserPools");
         CognitoUserPool cognitoUserPool = new CognitoUserPool(shadowContext, awsConfiguration);
         BasicCognitoUserPoolsAuthProvider basicCognitoUserPoolsAuthProvider = new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
-        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
                 .context(shadowContext)
                 .awsConfiguration(awsConfiguration)
-                .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider)
+                .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider);
+        final AWSAppSyncClient awsAppSyncClient = builder
                 .build();
         assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.AMAZON_COGNITO_USER_POOLS);
     }
 
     @Test
     public void testOpenidConnectAuthProvider() {
         awsConfiguration.setConfiguration("OpenidConnect");
-        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
                 .context(shadowContext)
                 .awsConfiguration(awsConfiguration)
                 .oidcAuthProvider(new OidcAuthProvider() {
@@ -228,10 +237,78 @@ public class AppSyncClientUnitTest {
                     public String getLatestAuthToken() {
                         return null;
                     }
-                })
+                });
+        final AWSAppSyncClient awsAppSyncClient = builder
                 .build();
         assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.OPENID_CONNECT);
     }
+
+    // region Without Configuration
+    @Test
+    public void testApiKeyAuthProviderWithoutConfiguration() throws JSONException {
+        awsConfiguration.setConfiguration("ApiKey");
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
+                .context(shadowContext)
+                .region(Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region")))
+                .serverUrl(awsConfiguration.optJsonObject("AppSync").getString("ApiUrl"))
+                .apiKey(new BasicAPIKeyAuthProvider(awsConfiguration));
+        final AWSAppSyncClient awsAppSyncClient = builder
+                .build();
+        assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.API_KEY);
+    }
+
+    @Test
+    public void testAwsIamAuthProviderWithoutConfiguration() throws JSONException {
+        awsConfiguration.setConfiguration("AwsIam");
+        final CognitoCredentialsProvider credentialsProvider = new CognitoCredentialsProvider(awsConfiguration);
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
+                .context(shadowContext)
+                .region(Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region")))
+                .serverUrl(awsConfiguration.optJsonObject("AppSync").getString("ApiUrl"))
+                .credentialsProvider(credentialsProvider);
+        final AWSAppSyncClient awsAppSyncClient = builder
+                .build();
+        assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.AWS_IAM);
+    }
+
+    @Test
+    public void testAmazonCognitoUserPoolsAuthProviderWithoutConfiguration() throws JSONException {
+        awsConfiguration.setConfiguration("AmazonCognitoUserPools");
+        CognitoUserPool cognitoUserPool = new CognitoUserPool(shadowContext, awsConfiguration);
+        BasicCognitoUserPoolsAuthProvider basicCognitoUserPoolsAuthProvider = new BasicCognitoUserPoolsAuthProvider(cognitoUserPool);
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
+                .context(shadowContext)
+                .region(Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region")))
+                .serverUrl(awsConfiguration.optJsonObject("AppSync").getString("ApiUrl"))
+                .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider);
+        final AWSAppSyncClient awsAppSyncClient = builder
+                .build();
+        assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.AMAZON_COGNITO_USER_POOLS);
+    }
+
+    @Test
+    public void testOpenidConnectAuthProviderWithoutConfiguration() throws JSONException {
+        awsConfiguration.setConfiguration("OpenidConnect");
+        AWSAppSyncClient.Builder builder = AWSAppSyncClient.builder()
+                .context(shadowContext)
+                .region(Regions.fromName(awsConfiguration.optJsonObject("AppSync").getString("Region")))
+                .serverUrl(awsConfiguration.optJsonObject("AppSync").getString("ApiUrl"))
+                .oidcAuthProvider(new OidcAuthProvider() {
+                    @Override
+                    public String getLatestAuthToken() {
+                        return null;
+                    }
+                });
+        final AWSAppSyncClient awsAppSyncClient = builder
+                .build();
+        assertNotNull(awsAppSyncClient);
+        verifyDetectAuthMode(builder, AWSAppSyncClient.AuthMode.OPENID_CONNECT);
+    }
+    // endregion
 
     @Test
     public void testRealAppSyncSubscriptionCallErrorHandling() throws InterruptedException {
@@ -303,5 +380,9 @@ public class AppSyncClientUnitTest {
                 .apiKey(apiKeyAuthProvider)
                 .cognitoUserPoolsAuthProvider(basicCognitoUserPoolsAuthProvider)
                 .build();
+    }
+
+    private void verifyDetectAuthMode(AWSAppSyncClient.Builder builder, AWSAppSyncClient.AuthMode expected) {
+        assertEquals(expected, builder.detectAuthMode());
     }
 }
