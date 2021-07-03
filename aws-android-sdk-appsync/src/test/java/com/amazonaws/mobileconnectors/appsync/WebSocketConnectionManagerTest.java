@@ -5,8 +5,9 @@ import android.content.Context;
 import com.amazonaws.mobileconnectors.appsync.util.subscriptions.EnumFieldSubscription;
 import com.amazonaws.mobileconnectors.appsync.util.subscriptions.TestEnum;
 import com.apollographql.apollo.api.Subscription;
+import com.google.gson.Gson;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 import org.json.JSONException;
@@ -86,9 +87,19 @@ public class WebSocketConnectionManagerTest {
             JSONObject sentJSON = new JSONObject(sentStringCaptor.getValue());
             JSONObject payload = sentJSON.getJSONObject("payload");
             String data = payload.getString("data");
-            assertEquals("{\"query\":\"\",\"variables\":{\"testEnum\":\"TEST_ENUM\"}}", data);
+            EnumFieldTestSubscriptionData subscriptionData = new Gson().fromJson(data, EnumFieldTestSubscriptionData.class);
+            assertNotNull(subscriptionData.variables.testEnum);
         } catch (JSONException e) {
             fail("invalid JSON was sent: " + e.getLocalizedMessage());
+        }
+    }
+
+    static class EnumFieldTestSubscriptionData {
+        String query;
+        EnumFieldTestVariables variables;
+
+        static class EnumFieldTestVariables {
+            String testEnum;
         }
     }
 }
