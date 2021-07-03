@@ -21,10 +21,15 @@ import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
+import com.apollographql.apollo.internal.json.InputFieldJsonWriter;
+import com.apollographql.apollo.internal.json.JsonWriter;
+import com.apollographql.apollo.internal.response.ScalarTypeAdapters;
 
+import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashSet;
@@ -37,6 +42,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
+import okio.Buffer;
 
 /**
  * Manages the lifecycle of a single WebSocket connection,
@@ -45,6 +51,7 @@ import okhttp3.WebSocketListener;
 final class WebSocketConnectionManager {
     private static final String TAG = WebSocketConnectionManager.class.getName();
     private static final int NORMAL_CLOSURE_STATUS = 1000;
+    private final ScalarTypeAdapters scalarTypeAdapters;
 
     private final Context applicationContext;
     private final String serverUrl;
@@ -60,6 +67,7 @@ final class WebSocketConnectionManager {
             String serverUrl,
             SubscriptionAuthorizer subscriptionAuthorizer,
             ApolloResponseBuilder apolloResponseBuilder,
+            ScalarTypeAdapters scalarTypeAdapters,
             boolean subscriptionsAutoReconnect) {
         this.applicationContext = context.getApplicationContext();
         this.serverUrl = serverUrl;
@@ -67,6 +75,7 @@ final class WebSocketConnectionManager {
         this.subscriptions = new ConcurrentHashMap<>();
         this.apolloResponseBuilder = apolloResponseBuilder;
         this.watchdog = new TimeoutWatchdog();
+        this.scalarTypeAdapters = scalarTypeAdapters;
         this.subscriptionsAutoReconnect = subscriptionsAutoReconnect;
     }
 
@@ -110,9 +119,7 @@ final class WebSocketConnectionManager {
                 .put("id", subscriptionId)
                 .put("type", "start")
                 .put("payload", new JSONObject()
-                    .put("data", (new JSONObject()
-                        .put("query", subscription.queryDocument())
-                        .put("variables", new JSONObject(subscription.variables().valueMap()))).toString())
+                    .put("data", httpRequestBody(subscription))
                     .put("extensions", new JSONObject()
                         .put("authorization", subscriptionAuthorizer.getAuthorizationDetails(false, subscription))))
                 .toString()
@@ -407,6 +414,34 @@ final class WebSocketConnectionManager {
             .appendQueryParameter("payload", "e30=")
             .build()
             .toString();
+    }
+
+    /**
+     * Produces a JSON string of the subscription query and its marshalled variables formatted
+     * correctly for a websocket subscription initialization call.
+     * On IO exception from the JsonWriter, the JSON string is instead created using subscription
+     * variable valueMap. Which may throw a JSONException to be handled by the caller function.
+     * @param subscription the subscription object whose queryDocument and variables will be used
+     * @return A JSON String containing fields for the header and formatted input variables
+     * @throws JSONException
+     */
+    private String httpRequestBody(@NotNull Subscription subscription) throws JSONException {
+        try {
+            Buffer buffer = new Buffer();
+            JsonWriter jsonWriter = JsonWriter.of(buffer);
+            jsonWriter.beginObject();
+            jsonWriter.name("query").value(subscription.queryDocument().replaceAll("\\n", ""));
+            jsonWriter.name("variables").beginObject();
+            subscription.variables().marshaller().marshal(new InputFieldJsonWriter(jsonWriter, scalarTypeAdapters));
+            jsonWriter.endObject();
+            jsonWriter.endObject();
+            jsonWriter.close();
+            return buffer.readUtf8();
+        } catch (IOException e) {
+            return (new JSONObject()
+                    .put("query", subscription.queryDocument())
+                    .put("variables", new JSONObject(subscription.variables().valueMap()))).toString();
+        }
     }
 
     static final class SubscriptionResponseDispatcher<D extends Operation.Data, T, V extends Operation.Variables> {
