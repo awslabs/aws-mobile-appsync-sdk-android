@@ -19,6 +19,7 @@ import com.amazonaws.mobileconnectors.appsync.cache.normalized.sql.AppSyncSqlHel
 import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.AWSLambdaAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncSigV4SignerInterceptor;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
@@ -105,7 +106,8 @@ public class AWSAppSyncClient {
         API_KEY("API_KEY"),
         AWS_IAM("AWS_IAM"),
         AMAZON_COGNITO_USER_POOLS("AMAZON_COGNITO_USER_POOLS"),
-        OPENID_CONNECT("OPENID_CONNECT");
+        OPENID_CONNECT("OPENID_CONNECT"),
+        AWS_LAMBDA("AWS_LAMBDA");
 
         private final String name;
 
@@ -159,6 +161,8 @@ public class AWSAppSyncClient {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mCognitoUserPoolsAuthProvider, builder.mRegion.getName());
         } else if (builder.mOidcAuthProvider != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mOidcAuthProvider);
+        } else if (builder.mAWSLambdaAuthProvider != null) {
+            appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mAWSLambdaAuthProvider);
         } else if (builder.mApiKey != null) {
             appSyncSigV4SignerInterceptor = new AppSyncSigV4SignerInterceptor(builder.mApiKey, builder.mRegion.getName(),  getClientSubscriptionUUID(builder.mApiKey.getAPIKey()));
         } else {
@@ -309,6 +313,7 @@ public class AWSAppSyncClient {
         APIKeyAuthProvider mApiKey;
         CognitoUserPoolsAuthProvider mCognitoUserPoolsAuthProvider;
         OidcAuthProvider mOidcAuthProvider;
+        AWSLambdaAuthProvider mAWSLambdaAuthProvider;
         NormalizedCacheFactory mNormalizedCacheFactory;
         CacheKeyResolver mResolver;
         ConflictResolverInterface mConflictResolver;
@@ -362,6 +367,11 @@ public class AWSAppSyncClient {
 
         public Builder oidcAuthProvider(OidcAuthProvider oidcAuthProvider) {
             mOidcAuthProvider = oidcAuthProvider;
+            return this;
+        }
+
+        public Builder awsLamdbaAuthProvider(AWSLambdaAuthProvider awsLambdaAuthProvider) {
+            mAWSLambdaAuthProvider = awsLambdaAuthProvider;
             return this;
         }
 
@@ -525,6 +535,7 @@ public class AWSAppSyncClient {
             authModeObjects.put(mCredentialsProvider, AuthMode.AWS_IAM);
             authModeObjects.put(mCognitoUserPoolsAuthProvider, AuthMode.AMAZON_COGNITO_USER_POOLS);
             authModeObjects.put(mOidcAuthProvider, AuthMode.OPENID_CONNECT);
+            authModeObjects.put(mAWSLambdaAuthProvider, AuthMode.AWS_LAMBDA);
             authModeObjects.remove(null);
 
             // Validate if only one Auth object is passed in to the builder

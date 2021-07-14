@@ -45,6 +45,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
 
     private final CognitoUserPoolsAuthProvider cognitoUserPoolsAuthProvider;
     private final OidcAuthProvider oidcAuthProvider;
+    private final AWSLambdaAuthProvider awsLambdaAuthProvider;
     private final String awsRegion;
     private final AuthMode authMode;
 
@@ -52,7 +53,8 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         API_KEY,
         IAM,
         OIDC_AUTHORIZATION_TOKEN,
-        USERPOOLS_AUTHORIZATION_TOKEN
+        USERPOOLS_AUTHORIZATION_TOKEN,
+        AWS_LAMBDA_AUTHORIZATION_TOKEN
     }
 
     public AppSyncSigV4SignerInterceptor(APIKeyAuthProvider apiKey, final String awsRegion, final String subscriberUUID){
@@ -61,6 +63,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.credentialsProvider = null;
         this.cognitoUserPoolsAuthProvider = null;
         this.oidcAuthProvider = null;
+        this.awsLambdaAuthProvider = null;
         authMode = AuthMode.API_KEY;
         this.subscriberUUID = subscriberUUID;
     }
@@ -71,6 +74,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = null;
         this.oidcAuthProvider = null;
+        this.awsLambdaAuthProvider = null;
         authMode = AuthMode.IAM;
         subscriberUUID = null;
     }
@@ -81,6 +85,7 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = cognitoUserPoolsAuthProvider;
         this.oidcAuthProvider = null;
+        this.awsLambdaAuthProvider = null;
         authMode = AuthMode.USERPOOLS_AUTHORIZATION_TOKEN;
         subscriberUUID = null;
     }
@@ -91,7 +96,19 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
         this.apiKey = null;
         this.cognitoUserPoolsAuthProvider = null;
         this.oidcAuthProvider = oidcAuthProvider;
+        this.awsLambdaAuthProvider = null;
         authMode = AuthMode.OIDC_AUTHORIZATION_TOKEN;
+        subscriberUUID = null;
+    }
+
+    public AppSyncSigV4SignerInterceptor(AWSLambdaAuthProvider awsLambdaAuthProvider) {
+        this.credentialsProvider = null;
+        this.awsRegion = null;
+        this.apiKey = null;
+        this.cognitoUserPoolsAuthProvider = null;
+        this.oidcAuthProvider = null;
+        this.awsLambdaAuthProvider = awsLambdaAuthProvider;
+        authMode = AuthMode.AWS_LAMBDA_AUTHORIZATION_TOKEN;
         subscriberUUID = null;
     }
 
@@ -153,6 +170,13 @@ public class AppSyncSigV4SignerInterceptor implements Interceptor {
                 dr.addHeader(AUTHORIZATION, oidcAuthProvider.getLatestAuthToken());
             } catch (Exception e) {
                 IOException ioe = new IOException("Failed to retrieve OIDC token.", e);
+                throw ioe;
+            }
+        } else if (AuthMode.AWS_LAMBDA_AUTHORIZATION_TOKEN.equals(authMode)) {
+            try {
+                dr.addHeader(AUTHORIZATION, awsLambdaAuthProvider.getLatestAuthToken());
+            } catch (Exception e) {
+                IOException ioe = new IOException("Failed to retrieve AWS Lambda authorization token.", e);
                 throw ioe;
             }
         }
