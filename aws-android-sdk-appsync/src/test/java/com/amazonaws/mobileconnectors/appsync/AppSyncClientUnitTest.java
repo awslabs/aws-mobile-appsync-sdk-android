@@ -6,6 +6,7 @@ import android.content.res.Resources;
 import com.amazonaws.auth.CognitoCredentialsProvider;
 import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.AWSLambdaAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
@@ -19,7 +20,6 @@ import com.apollographql.apollo.internal.ApolloLogger;
 import com.apollographql.apollo.internal.RealAppSyncCall;
 import com.apollographql.apollo.internal.RealAppSyncSubscriptionCall;
 import com.apollographql.apollo.internal.subscription.SubscriptionManager;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -29,12 +29,10 @@ import org.mockito.Mockito;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
-import org.robolectric.shadows.ShadowApplication;
 
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.annotation.Nonnull;
 
 import static junit.framework.TestCase.assertEquals;
@@ -227,6 +225,22 @@ public class AppSyncClientUnitTest {
                     @Override
                     public String getLatestAuthToken() {
                         return null;
+                    }
+                })
+                .build();
+        assertNotNull(awsAppSyncClient);
+    }
+
+    @Test
+    public void testAWSLambdaAuthProvider() {
+        awsConfiguration.setConfiguration("OpenidConnect");
+        final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
+                .context(shadowContext)
+                .awsConfiguration(awsConfiguration)
+                .awsLamdbaAuthProvider(new AWSLambdaAuthProvider() {
+                    @Override
+                    public String getLatestAuthToken() {
+                        return "AWS_LAMBDA_AUTHORIZATION_TOKEN";
                     }
                 })
                 .build();
