@@ -253,4 +253,28 @@ public class ApolloIRGenTask extends NodeTask {
   public File getOutputFolder() {
     return outputFolder;
   }
+
+  public String getVariant() {
+    return variant;
+  }
+
+  public void setVariant(String variant) {
+    this.variant = variant;
+  }
+
+  public ImmutableList<String> getSourceSets() {
+    return sourceSets;
+  }
+
+  public void setSourceSets(ImmutableList<String> sourceSets) {
+    this.sourceSets = sourceSets;
+  }
+
+  public ApolloExtension getExtension() {
+    return extension;
+  }
+
+  public void setExtension(ApolloExtension extension) {
+    this.extension = extension;
+  }
 }
