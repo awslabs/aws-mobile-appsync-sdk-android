@@ -7,7 +7,10 @@
 
 package com.amazonaws.mobileconnectors.appsync.identity;
 
-import android.support.annotation.NonNull;
+import static androidx.test.InstrumentationRegistry.getTargetContext;
+
+import androidx.annotation.NonNull;
+
 import android.util.Log;
 
 import com.amazonaws.mobile.client.results.SignInResult;
@@ -21,8 +24,6 @@ import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.Auth
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.ChallengeContinuation;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.continuations.MultiFactorAuthenticationContinuation;
 import com.amazonaws.mobileconnectors.cognitoidentityprovider.handlers.AuthenticationHandler;
-
-import static android.support.test.InstrumentationRegistry.getTargetContext;
 
 public final class CustomCognitoUserPool {
     private static final String TAG = CustomCognitoUserPool.class.getSimpleName();

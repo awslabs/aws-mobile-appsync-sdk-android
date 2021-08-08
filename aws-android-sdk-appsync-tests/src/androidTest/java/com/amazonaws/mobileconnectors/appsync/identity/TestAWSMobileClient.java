@@ -8,7 +8,7 @@
 package com.amazonaws.mobileconnectors.appsync.identity;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.amazonaws.mobile.client.AWSMobileClient;
 import com.amazonaws.mobile.client.UserStateDetails;

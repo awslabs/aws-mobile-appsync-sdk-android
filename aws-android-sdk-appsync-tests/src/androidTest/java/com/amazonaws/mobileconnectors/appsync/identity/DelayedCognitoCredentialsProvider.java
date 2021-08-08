@@ -8,7 +8,8 @@
 package com.amazonaws.mobileconnectors.appsync.identity;
 
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
+
+import androidx.test.InstrumentationRegistry;
 
 import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;

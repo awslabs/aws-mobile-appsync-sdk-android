@@ -1,6 +1,6 @@
 package com.amazonaws.mobileconnectors.appsync.identity;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 
 import com.amazonaws.mobile.client.Callback;
 import com.amazonaws.mobileconnectors.appsync.util.Consumer;

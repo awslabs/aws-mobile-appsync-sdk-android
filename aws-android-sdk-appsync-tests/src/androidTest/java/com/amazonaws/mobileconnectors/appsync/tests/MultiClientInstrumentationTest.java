@@ -7,7 +7,8 @@
 
 package com.amazonaws.mobileconnectors.appsync.tests;
 
-import android.support.test.runner.AndroidJUnit4;
+import static androidx.test.InstrumentationRegistry.getTargetContext;
+
 import android.util.Log;
 
 import com.amazonaws.mobile.client.AWSMobileClient;
@@ -49,7 +50,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static android.support.test.InstrumentationRegistry.getTargetContext;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOffline;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
@@ -59,6 +59,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import androidx.test.runner.AndroidJUnit4;
 
 /**
  * Instrumented test, which will execute on an Android device.

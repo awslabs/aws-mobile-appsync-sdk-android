@@ -7,7 +7,7 @@
 
 package com.amazonaws.mobileconnectors.appsync.client;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.util.Log;
 
 import com.amazonaws.mobile.config.AWSConfiguration;
@@ -28,7 +28,7 @@ import org.json.JSONObject;
 
 import java.util.concurrent.TimeUnit;
 
-import static android.support.test.InstrumentationRegistry.getTargetContext;
+import static androidx.test.InstrumentationRegistry.getTargetContext;
 import static org.junit.Assert.assertNotNull;
 
 /**

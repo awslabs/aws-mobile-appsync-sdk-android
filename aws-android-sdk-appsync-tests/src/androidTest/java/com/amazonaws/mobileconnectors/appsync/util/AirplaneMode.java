@@ -6,16 +6,16 @@
  */
 package com.amazonaws.mobileconnectors.appsync.util;
 
+import static androidx.test.InstrumentationRegistry.getInstrumentation;
+
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.provider.Settings;
 
-import android.support.test.uiautomator.By;
-import android.support.test.uiautomator.BySelector;
-import android.support.test.uiautomator.UiDevice;
-import android.support.test.uiautomator.Until;
-
-import static android.support.test.InstrumentationRegistry.getInstrumentation;
+import androidx.test.uiautomator.By;
+import androidx.test.uiautomator.BySelector;
+import androidx.test.uiautomator.UiDevice;
+import androidx.test.uiautomator.Until;
 
 public final class AirplaneMode {
     private static final int TIMEOUT_MS = 500;

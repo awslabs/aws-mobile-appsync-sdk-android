@@ -7,7 +7,7 @@
 
 package com.amazonaws.mobileconnectors.appsync.retry;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 
@@ -20,8 +20,6 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.annotation.Config;
 
 import java.io.IOException;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 

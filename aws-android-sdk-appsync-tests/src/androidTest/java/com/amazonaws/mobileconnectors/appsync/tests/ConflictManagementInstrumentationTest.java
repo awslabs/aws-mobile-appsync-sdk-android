@@ -7,8 +7,6 @@
 
 package com.amazonaws.mobileconnectors.appsync.tests;
 
-import android.support.test.runner.AndroidJUnit4;
-
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
 import com.amazonaws.mobileconnectors.appsync.client.AWSAppSyncClients;
 import com.amazonaws.mobileconnectors.appsync.client.LatchedGraphQLCallback;
@@ -27,6 +25,8 @@ import org.junit.runner.RunWith;
 import static com.amazonaws.mobileconnectors.appsync.util.InternetConnectivity.goOnline;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
+import androidx.test.runner.AndroidJUnit4;
 
 /**
  * Instrumented test, which will execute on an Android device.
