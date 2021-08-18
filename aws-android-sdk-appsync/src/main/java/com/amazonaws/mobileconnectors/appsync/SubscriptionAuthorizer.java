@@ -15,6 +15,7 @@ import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.http.HttpMethodName;
 import com.amazonaws.mobile.config.AWSConfiguration;
 import com.amazonaws.mobileconnectors.appsync.sigv4.APIKeyAuthProvider;
+import com.amazonaws.mobileconnectors.appsync.sigv4.AWSLambdaAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.AppSyncV4Signer;
 import com.amazonaws.mobileconnectors.appsync.sigv4.BasicCognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
@@ -45,6 +46,7 @@ class SubscriptionAuthorizer {
     private final OidcAuthProvider mOidcAuthProvider;
     private final AWSCredentialsProvider mCredentialsProvider;
     private final CognitoUserPoolsAuthProvider mCognitoUserPoolsAuthProvider;
+    private final AWSLambdaAuthProvider mAWSLambdaAuthProvider;
     private final String mServerUrl;
     private final APIKeyAuthProvider mApiKeyProvider;
 
@@ -54,6 +56,7 @@ class SubscriptionAuthorizer {
         this.mOidcAuthProvider = builder.mOidcAuthProvider;
         this.mCredentialsProvider = builder.mCredentialsProvider;
         this.mCognitoUserPoolsAuthProvider = builder.mCognitoUserPoolsAuthProvider;
+        this.mAWSLambdaAuthProvider = builder.mAWSLambdaAuthProvider;
         this.mServerUrl = builder.mServerUrl;
         this.mApiKeyProvider = builder.mApiKey;
     }
@@ -85,6 +88,8 @@ class SubscriptionAuthorizer {
                 return getAuthorizationDetailsForUserpools();
             case "OPENID_CONNECT" :
                 return getAuthorizationDetailsForOidc();
+            case "AWS_LAMBDA" :
+                return getAuthorizationDetailsForAwsLambda();
             default :
                 throw new RuntimeException("Invalid AuthMode read from awsconfiguration.json.");
         }
@@ -192,6 +197,16 @@ class SubscriptionAuthorizer {
             return new JSONObject()
                 .put("host", getHost(mServerUrl))
                 .put("Authorization", mOidcAuthProvider.getLatestAuthToken());
+        } catch (JSONException | MalformedURLException e) {
+            throw new RuntimeException("Error constructing authorization message json", e);
+        }
+    }
+
+    private JSONObject getAuthorizationDetailsForAwsLambda() {
+        try {
+            return new JSONObject()
+                    .put("host", getHost(mServerUrl))
+                    .put("Authorization", mAWSLambdaAuthProvider.getLatestAuthToken());
         } catch (JSONException | MalformedURLException e) {
             throw new RuntimeException("Error constructing authorization message json", e);
         }
