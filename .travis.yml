@@ -1,5 +1,5 @@
 before_install:
-- openssl aes-256-cbc -K $encrypted_db266f166009_key -iv $encrypted_db266f166009_iv -in aws-android-sdk-appsync-tests/src/main/assets/awsconfiguration.json.enc -out aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json -d
+- openssl aes-256-cbc -K $encrypted_66d0d1b678eb_key -iv $encrypted_66d0d1b678eb_iv -in aws-android-sdk-appsync-tests/src/main/assets/awsconfiguration.json.enc -out aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json -d
 - ls -l aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - wc aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - chmod +x gradlew
