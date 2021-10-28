@@ -3,7 +3,7 @@ package com.amazonaws.postsapp;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -12,15 +12,9 @@ import android.widget.Toast;
 
 import com.amazonaws.amplify.generated.graphql.CreatePostMutation;
 import com.amazonaws.mobileconnectors.appsync.AWSAppSyncClient;
-import com.amazonaws.mobileconnectors.appsync.fetcher.AppSyncResponseFetchers;
 import com.apollographql.apollo.GraphQLCall;
 import com.apollographql.apollo.api.Response;
-import com.apollographql.apollo.cache.normalized.CacheKey;
 import com.apollographql.apollo.exception.ApolloException;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 import javax.annotation.Nonnull;
 

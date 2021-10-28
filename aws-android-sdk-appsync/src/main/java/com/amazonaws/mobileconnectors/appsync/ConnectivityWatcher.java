@@ -9,7 +9,7 @@ import android.net.Network;
 import android.net.NetworkInfo;
 import android.net.NetworkRequest;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
+import androidx.annotation.RequiresApi;
 
 class ConnectivityWatcher {
 

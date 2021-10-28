@@ -7,7 +7,7 @@
 
 package com.amazonaws.mobileconnectors.appsync.util;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;

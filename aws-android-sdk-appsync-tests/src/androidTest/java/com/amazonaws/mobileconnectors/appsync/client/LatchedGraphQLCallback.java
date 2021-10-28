@@ -7,8 +7,8 @@
 
 package com.amazonaws.mobileconnectors.appsync.client;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import com.amazonaws.mobileconnectors.appsync.util.Await;
 import com.apollographql.apollo.GraphQLCall;
