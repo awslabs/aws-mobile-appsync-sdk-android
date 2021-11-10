@@ -29,7 +29,7 @@ public class ApolloClassGenTask extends SourceTask {
   @Internal private String variant;
   @Internal private ApolloExtension apolloExtension;
   @OutputDirectory private File outputDir;
-  private NullableValueType nullableValueType;
+  @Internal private NullableValueType nullableValueType;
 
   public void init(String variant, ApolloExtension apolloExtension) {
     this.variant = variant;
