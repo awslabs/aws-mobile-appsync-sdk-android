@@ -58,6 +58,7 @@ data class TypeDeclaration(
             .build()
         addEnumConstant(value.name, typeSpec)
       }
+      addEnumConstant("UNKNOWN")
       return this
     }
 
