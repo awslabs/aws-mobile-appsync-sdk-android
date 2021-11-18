@@ -1,3 +1,13 @@
+## [Release 3.2.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.2.1)
+
+### Miscellaneous
+- Update README.md
+- Add support for Gradle 7 projects (#361)
+- Migrate project to AndroidX libraries (#362)
+- Add support for Gradle 7 projects (#372)
+
+[See all changes between 3.2.0 and 3.2.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.2.0...release_v3.2.1)
+
 ## [Release 3.2.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.2.0)
 
 ### Features
