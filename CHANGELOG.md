@@ -2,7 +2,6 @@
 
 ### Miscellaneous
 - Update README.md
-- rotate encryption vars and update encrpyted config file
 - Add support for Gradle 7 projects (#361)
 - Migrate project to AndroidX libraries (#362)
 - Add support for Gradle 7 projects (#372)
