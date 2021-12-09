@@ -1,5 +1,5 @@
 before_install:
-- openssl aes-256-cbc -K $encrypted_66d0d1b678eb_key -iv $encrypted_66d0d1b678eb_iv -in aws-android-sdk-appsync-tests/src/main/assets/awsconfiguration.json.enc -out aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json -d
+- openssl aes-256-cbc -K $encrypted_3a6b03bad5d0_key -iv $encrypted_3a6b03bad5d0_iv -in aws-android-sdk-appsync-tests/src/main/assets/awsconfiguration.json.enc -out aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json -d
 - ls -l aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - wc aws-android-sdk-appsync-tests/src/main/res/raw/awsconfiguration.json
 - chmod +x gradlew
@@ -23,7 +23,7 @@ script:
 - ./gradlew publishToMavenLocal
 - cd aws-android-sdk-appsync-tests
 - android list target
-- "./gradlew build connectedCheck --stacktrace "
+- ./gradlew build connectedCheck --stacktrace
 - cd ..
 after_failure:
   - cat aws-android-sdk-appsync-tests/build/outputs/androidTest-results/connected/*.xml
