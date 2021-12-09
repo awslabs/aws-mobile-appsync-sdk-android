@@ -119,7 +119,12 @@ public class AppSyncClientUnitTest {
                 "    \"OpenidConnect\": {\n" +
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
                 "      \"Region\": \"us-east-1\",\n" +
-                "      \"AuthMode\": \"OPENID_CONNECT\"\n" +
+                "      \"AuthMode\": \"OPENID_CONNECT\"\n" +"" +
+                "    },\n" +
+                "    \"Lambda\": {\n" +
+                "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
+                "      \"Region\": \"us-east-1\",\n" +
+                "      \"AuthMode\": \"AWS_LAMBDA\"\n" +
                 "    }\n" +
                 "  }\n" +
                 "}";
@@ -233,7 +238,7 @@ public class AppSyncClientUnitTest {
 
     @Test
     public void testAWSLambdaAuthProvider() {
-        awsConfiguration.setConfiguration("OpenidConnect");
+        awsConfiguration.setConfiguration("Lambda");
         final AWSAppSyncClient awsAppSyncClient = AWSAppSyncClient.builder()
                 .context(shadowContext)
                 .awsConfiguration(awsConfiguration)

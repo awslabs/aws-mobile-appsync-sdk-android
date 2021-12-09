@@ -398,11 +398,22 @@ final class WebSocketConnectionManager {
             throw new RuntimeException("Malformed Api Url: " + serverUrl);
         }
 
+        DomainType domainType = DomainType.from(serverUrl);
+
+        String authority = appSyncEndpoint.getHost();
+        if (domainType == DomainType.STANDARD) {
+            authority = authority.replace("appsync-api", "appsync-realtime-api");
+        }
+
+        String path = appSyncEndpoint.getPath();
+        if (domainType == DomainType.CUSTOM) {
+            path = path + "/realtime";
+        }
+
         return new Uri.Builder()
             .scheme("wss")
-            .authority(appSyncEndpoint.getHost()
-                .replace("appsync-api", "appsync-realtime-api"))
-            .appendPath(appSyncEndpoint.getPath())
+            .authority(authority)
+            .appendPath(path)
             .appendQueryParameter("header", Base64.encodeToString(rawHeader, Base64.DEFAULT))
             .appendQueryParameter("payload", "e30=")
             .build()
