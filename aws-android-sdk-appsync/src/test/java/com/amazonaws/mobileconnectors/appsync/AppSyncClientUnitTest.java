@@ -119,7 +119,7 @@ public class AppSyncClientUnitTest {
                 "    \"OpenidConnect\": {\n" +
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
                 "      \"Region\": \"us-east-1\",\n" +
-                "      \"AuthMode\": \"OPENID_CONNECT\"\n" +"" +
+                "      \"AuthMode\": \"OPENID_CONNECT\"\n" +
                 "    },\n" +
                 "    \"Lambda\": {\n" +
                 "      \"ApiUrl\": \"https://xxxx.appsync-api.us-east-1.amazonaws.com/graphql\",\n" +
