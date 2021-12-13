@@ -133,6 +133,12 @@ class SubscriptionAuthorizer {
         }
 
         String apiRegion = apiUrl.getAuthority().split("\\.")[2];
+
+        DomainType domainType = DomainType.from(mServerUrl);
+        if (DomainType.CUSTOM == domainType) {
+            apiRegion = getApiRegion();
+        }
+
         if (connectionFlag){
             new AppSyncV4Signer(apiRegion, AppSyncV4Signer.ResourcePath.IAM_CONNECTION_RESOURCE_PATH)
                 .sign(canonicalRequest, getCredentialsProvider().getCredentials());
@@ -247,6 +253,11 @@ class SubscriptionAuthorizer {
          return mApiKeyProvider != null
                  ? mApiKeyProvider.getAPIKey()
                  : mAwsConfiguration.optJsonObject("AppSync").getString("ApiKey");
+    }
+
+    private String getApiRegion() throws JSONException {
+        return mAwsConfiguration.optJsonObject("AppSync")
+                .getString("Region");
     }
 
     /**
