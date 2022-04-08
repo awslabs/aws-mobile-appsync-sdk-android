@@ -81,8 +81,12 @@ class AppSyncOfflineMutationManager {
 
         //Setup Network Monitoring objects
         this.networkUpdateHandler = new NetworkUpdateHandler(handlerThread.getLooper());
-        this.connectivityWatcher = new ConnectivityWatcher(context,
-                new NetworkInfoReceiver(this.networkUpdateHandler));
+        if (this.connectivityWatcher == null) {
+            this.connectivityWatcher = new ConnectivityWatcher(context,
+                    new NetworkInfoReceiver(this.networkUpdateHandler));
+        } else {
+            this.connectivityWatcher.unregister();
+        }
         this.connectivityWatcher.register();
 
         //Setup ancillary stuff

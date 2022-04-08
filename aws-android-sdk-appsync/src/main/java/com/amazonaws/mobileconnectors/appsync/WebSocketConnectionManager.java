@@ -254,7 +254,11 @@ final class WebSocketConnectionManager {
                         if (isNetworkConnected) reportNetworkUp();
                     }
                 };
-                connectivityWatcher = new ConnectivityWatcher(applicationContext, callback);
+                if (connectivityWatcher == null) {
+                    connectivityWatcher = new ConnectivityWatcher(applicationContext, callback);
+                } else {
+                    connectivityWatcher.unregister();
+                }
                 connectivityWatcher.register();
             }
 
