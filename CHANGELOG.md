@@ -1,3 +1,12 @@
+## [Release 3.3.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.3.1)
+
+### Miscellaneous
+- re-encrypt config file (#384)
+- Chore/Adding codeowners to the appsync repo (#388)
+- Add checks to prevent re-initialization of the connectivitywatcher and unregistering before registering the same watcher to prevent too many requests to networkcallback registration (#387)
+
+[See all changes between 3.3.0 and 3.3.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.3.0...release_v3.3.1)
+
 ## [Release 3.3.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.3.0)
 
 ### Features
