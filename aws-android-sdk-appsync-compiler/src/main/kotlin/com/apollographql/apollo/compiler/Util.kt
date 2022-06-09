@@ -24,7 +24,7 @@ fun String.escapeJavaReservedWord() = if (JAVA_RESERVED_WORDS.contains(this)) "$
 fun TypeName.overrideTypeName(typeNameOverrideMap: Map<String, String>): TypeName {
   if (this is ParameterizedTypeName) {
     val typeArguments = typeArguments.map { it.overrideTypeName(typeNameOverrideMap) }.toTypedArray()
-    return ParameterizedTypeName.get(rawType, *typeArguments)
+    return ParameterizedTypeName.get(rawType.overrideTypeName(typeNameOverrideMap) as ClassName, *typeArguments)
   } else if (this is ClassName) {
     return ClassName.get(packageName(), typeNameOverrideMap[simpleName()] ?: simpleName())
   } else if (this is WildcardTypeName) {
