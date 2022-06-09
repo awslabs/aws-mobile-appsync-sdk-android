@@ -20,7 +20,7 @@ Step by step documentation can be found here: https://aws-amplify.github.io/docs
 In the project's `build.gradle`, add a dependency to the `dependencies` inside the `buildscript` block:
 
 ```groovy
-classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.1'
+classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.3'
 ```
 
 Also, add the maven plugins repository to your `repositories`.
@@ -69,8 +69,8 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
-        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.1'
+        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath 'com.amazonaws:aws-android-sdk-appsync-gradle-plugin:3.1.3'
     }
 }
 
@@ -195,7 +195,7 @@ Create a file named `awsconfiguration.json` under your app's `res/raw` directory
 }
 ```
 
-The `AWSConfiguration` represents the configuration information present in `awsconfiguration.json` file. By default, the information under `Default` section will be used. 
+The `AWSConfiguration` represents the configuration information present in `awsconfiguration.json` file. By default, the information under `Default` section will be used.
 
 ```java
 AWSAppSyncClient client = AWSAppSyncClient.builder()
@@ -423,7 +423,7 @@ public void addPost() {
             // Error handling
         }
     };
-    
+
     AddPostMutation addPostMutation = AddPostMutation.builder()
         .id(UUID.randomUUID().toString())
         .title(title)
@@ -434,7 +434,7 @@ public void addPost() {
         .downs(0)
         .expectedVersion(1)
         .build();
-        
+
     client.mutate(addPostMutation).enqueue(postsCallback);
 }
 ```
