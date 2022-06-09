@@ -1,3 +1,12 @@
+## [Release 3.3.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.3.2)
+
+### Miscellaneous
+- rotate travis creds (#390)
+- Create notify_comments.yml (#392)
+- Fix duplicate Nullable annotation (#397)
+
+[See all changes between 3.3.1 and 3.3.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.3.1...release_v3.3.2)
+
 ## [Release 3.3.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.3.1)
 
 ### Miscellaneous
