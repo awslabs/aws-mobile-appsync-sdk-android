@@ -25,6 +25,7 @@ import com.amazonaws.mobileconnectors.appsync.sigv4.BasicAPIKeyAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.CognitoUserPoolsAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.sigv4.OidcAuthProvider;
 import com.amazonaws.mobileconnectors.appsync.subscription.RealSubscriptionManager;
+import com.amazonaws.mobileconnectors.appsync.utils.TLS12OkHttpHelper;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.util.BinaryUtils;
 import com.amazonaws.util.StringUtils;
@@ -176,6 +177,8 @@ public class AWSAppSyncClient {
         } else {
             okHttpClientBuilder = builder.mOkHttpClient.newBuilder();
         }
+
+        TLS12OkHttpHelper.fixTLSPre22(okHttpClientBuilder);
 
         //Add the signer and retry handler to the OKHTTP chain
         OkHttpClient okHttpClient = okHttpClientBuilder

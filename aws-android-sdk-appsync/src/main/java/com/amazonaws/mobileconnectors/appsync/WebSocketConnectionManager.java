@@ -18,6 +18,7 @@ import android.util.Log;
 
 import com.amazonaws.AmazonClientException;
 import com.amazonaws.mobileconnectors.appsync.retry.RetryInterceptor;
+import com.amazonaws.mobileconnectors.appsync.utils.TLS12OkHttpHelper;
 import com.apollographql.apollo.api.Operation;
 import com.apollographql.apollo.api.Subscription;
 import com.apollographql.apollo.exception.ApolloException;
@@ -138,7 +139,9 @@ final class WebSocketConnectionManager {
             .addHeader("Sec-WebSocket-Protocol", "graphql-ws")
             .build();
 
-        websocket = new OkHttpClient.Builder()
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        TLS12OkHttpHelper.fixTLSPre22(builder);
+        websocket = builder
             .retryOnConnectionFailure(true)
             .build()
             .newWebSocket(request, new WebSocketListener() {

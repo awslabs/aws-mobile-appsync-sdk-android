@@ -451,7 +451,9 @@ public final class ApolloClient
 
       Call.Factory callFactory = this.callFactory;
       if (callFactory == null) {
-        callFactory = new OkHttpClient();
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        TLS12OkHttpHelper.fixTLSPre22(builder);
+        callFactory = builder.build();
       }
 
       HttpCache httpCache = this.httpCache;
