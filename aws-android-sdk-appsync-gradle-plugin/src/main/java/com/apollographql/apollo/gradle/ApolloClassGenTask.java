@@ -77,7 +77,7 @@ public abstract class ApolloClassGenTask extends DefaultTask {
         ? NullableValueType.ANNOTATED
         : NullableValueType.Companion.findByValue(apolloExtension.getNullableValueType());
     outputDir = new File(getProject().getBuildDir() + File.separator + Joiner.on(File.separator).join(GraphQLCompiler.Companion
-        .getOUTPUT_DIRECTORY()));
+        .getOUTPUT_DIRECTORY()) + File.separator + variant);
   }
 
   @TaskAction
