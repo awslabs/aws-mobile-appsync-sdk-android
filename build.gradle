@@ -7,7 +7,7 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.5.3'
@@ -22,7 +22,7 @@ allprojects {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 
@@ -42,4 +42,3 @@ subprojects { project ->
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
-

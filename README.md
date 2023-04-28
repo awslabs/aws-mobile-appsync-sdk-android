@@ -42,7 +42,7 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 ```
@@ -57,7 +57,7 @@ allprojects {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 ```
@@ -72,7 +72,7 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
@@ -87,7 +87,7 @@ allprojects {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
 }
 

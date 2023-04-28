@@ -10,7 +10,7 @@ buildscript {
             url "https://plugins.gradle.org/m2/"
         }
         google()
-        jcenter()
+        mavenCentral()
     }
 
     dependencies {
@@ -49,7 +49,7 @@ repositories {
         url "https://plugins.gradle.org/m2/"
     }
     google()
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -63,4 +63,3 @@ dependencies {
     androidTestImplementation ("com.amazonaws:aws-android-sdk-auth-userpools:$aws_version@aar") { transitive = true }
     androidTestImplementation ("com.amazonaws:aws-android-sdk-cognitoauth:$aws_version@aar")
 }
-
