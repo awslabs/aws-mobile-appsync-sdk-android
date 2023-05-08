@@ -1,3 +1,13 @@
+## [Release 3.4.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.4.0)
+
+### Features
+- Add support for Gradle 8 ([#411](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/411))
+
+### Miscellaneous
+- Add guidance with links to use Amplify over AppSync SDK ([#402](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/402))
+
+[See all changes between 3.3.2 and 3.4.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.3.2...release_v3.4.0)
+
 ## [Release 3.3.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.3.2)
 
 ### Miscellaneous
