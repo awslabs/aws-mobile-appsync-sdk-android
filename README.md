@@ -12,6 +12,10 @@ For front-end web and mobile development, we recommend using the [Amplify](https
 
 The AWS AppSync SDK for Android enables you to access your AWS AppSync backend and perform operations like queries, mutations, and subscription. The SDK also includes support for offline operations. This SDK is derrived from the Apollo project found [here](https://github.com/apollographql/apollo-android). Please log questions for this client SDK in this repo and questions for the AppSync service in the [official AWS AppSync forum](https://forums.aws.amazon.com/forum.jspa?forumID=280&start=0).
 
+## Platform Support
+
+AWS AppSync SDK for Android supports Android API level 21 (Android 5.0) and above.
+
 ## Samples
 
 1. A sample app using the events sample schema can be found here: https://github.com/aws-samples/aws-mobile-appsync-events-starter-android
