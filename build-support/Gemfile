@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "~> 2.2.8"
+ruby "2.2.8"
 
 gem "fastlane"
 gem "addressable", ">= 2.8.0"
