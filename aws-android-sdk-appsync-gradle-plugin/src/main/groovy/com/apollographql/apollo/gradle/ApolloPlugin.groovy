@@ -30,7 +30,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import javax.inject.Inject
 
 class ApolloPlugin implements Plugin<Project> {
-    private static final String NODE_VERSION = "6.7.0"
+    private static final String NODE_VERSION = "20.10.0"
     public static final String TASK_GROUP = "apollo"
     private static final String AMAZON_DEP_GROUP = "com.amazonaws"
     private static final String RUNTIME_DEP_NAME = "aws-android-sdk-appsync-runtime"
