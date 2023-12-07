@@ -1,3 +1,12 @@
+## [Release 3.4.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.4.1)
+
+### Miscellaneous
+- Pin GitHub Actions by commit-hash ([#418](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/418))
+- Update Node Version for Codegen ([#420](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/420))
+- Update release_pr.yml ([#421](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/421))
+
+[See all changes between 3.4.0 and 3.4.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.4.0...release_v3.4.1)
+
 ## [Release 3.4.0](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.4.0)
 
 ### Features
