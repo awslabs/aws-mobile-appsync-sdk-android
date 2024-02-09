@@ -270,6 +270,7 @@ public class AWSAppSyncClient {
             builder.mServerUrl,
             subscriptionAuthorizer,
             new ApolloResponseBuilder(builder.customTypeAdapters, mApolloClient.apolloStore().networkResponseNormalizer()),
+            new ScalarTypeAdapters(builder.customTypeAdapters),
             builder.mSubscriptionsAutoReconnect);
     }
 
