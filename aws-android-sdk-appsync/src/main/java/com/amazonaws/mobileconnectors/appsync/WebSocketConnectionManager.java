@@ -28,6 +28,7 @@ import org.json.JSONObject;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -126,17 +127,21 @@ final class WebSocketConnectionManager {
     }
 
     private WebSocket createWebSocket() {
-        String requestUrl;
+        Request.Builder requestBuilder = new Request.Builder()
+            .url(getConnectionRequestUrl())
+            .addHeader("Sec-WebSocket-Protocol", "graphql-ws");
+
         try {
-            requestUrl = getConnectionRequestUrl();
+            JSONObject authorizationDetails = subscriptionAuthorizer.getConnectionAuthorizationDetails();
+            for (Iterator<String> it = authorizationDetails.keys(); it.hasNext(); ) {
+                String key = it.next();
+                requestBuilder.addHeader(key, authorizationDetails.getString(key));
+            }
         } catch (JSONException jsonException) {
-            throw new RuntimeException("Failed to get connection url : ", jsonException);
+            throw new RuntimeException("Failed to add authorization details to request", jsonException);
         }
 
-        Request request = new Request.Builder()
-            .url(requestUrl)
-            .addHeader("Sec-WebSocket-Protocol", "graphql-ws")
-            .build();
+        Request request = requestBuilder.build();
 
         websocket = new OkHttpClient.Builder()
             .retryOnConnectionFailure(true)
@@ -386,11 +391,7 @@ final class WebSocketConnectionManager {
      * AppSync endpoint : https://xxxxxxxxxxxx.appsync-api.ap-southeast-2.amazonaws.com/graphql
      * Discovered WebSocket endpoint : wss:// xxxxxxxxxxxx.appsync-realtime-api.ap-southeast-2.amazonaws.com/graphql
      */
-    private String getConnectionRequestUrl() throws JSONException {
-        // Construct the authorization header for connection request
-        final byte[] rawHeader = subscriptionAuthorizer.getConnectionAuthorizationDetails()
-            .toString()
-            .getBytes();
+    private String getConnectionRequestUrl() {
 
         URL appSyncEndpoint = null;
         try {
@@ -418,8 +419,6 @@ final class WebSocketConnectionManager {
             .scheme("wss")
             .authority(authority)
             .appendPath(path)
-            .appendQueryParameter("header", Base64.encodeToString(rawHeader, Base64.DEFAULT))
-            .appendQueryParameter("payload", "e30=")
             .build()
             .toString();
     }
