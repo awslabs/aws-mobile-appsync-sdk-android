@@ -1,3 +1,13 @@
+## [Release 3.4.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.4.2)
+
+### Miscellaneous
+- Update README.md ([#423](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/423))
+- update-rexml ([#426](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/426))
+- update rexml ([#427](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/427))
+- Pass authorization details in headers instead of query parameters ([#428](https://github.com/awslabs/aws-mobile-appsync-sdk-android/issues/428))
+
+[See all changes between 3.4.1 and 3.4.2](https://github.com/awslabs/aws-mobile-appsync-sdk-android/compare/release_v3.4.1...release_v3.4.2)
+
 ## [Release 3.4.1](https://github.com/awslabs/aws-mobile-appsync-sdk-android/releases/tag/release_v3.4.1)
 
 ### Miscellaneous
