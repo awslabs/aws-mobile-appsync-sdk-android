@@ -99,11 +99,15 @@ class ResponseFieldSpec(
 
   private fun readEnumCode(readerParam: CodeBlock, fieldParam: CodeBlock): CodeBlock {
     val readValueCode = CodeBlock.builder()
-        .addStatement("final \$T \$L", normalizedFieldSpec.type, fieldSpec.name)
+        .addStatement("\$T \$L", normalizedFieldSpec.type, fieldSpec.name)
         .beginControlFlow("if (\$LStr != null)", fieldSpec.name)
+        .beginControlFlow("try")
         .addStatement("\$L = \$T.valueOf(\$LStr)", fieldSpec.name, normalizedFieldSpec.type, fieldSpec.name)
+        .nextControlFlow("catch (IllegalArgumentException exception)")
+        .addStatement("\$L = \$T.UNKNOWN", fieldSpec.name, normalizedFieldSpec.type)
+        .endControlFlow()
         .nextControlFlow("else")
-        .addStatement("\$L = null", fieldSpec.name)
+        .addStatement("\$L = \$T.UNKNOWN", fieldSpec.name, normalizedFieldSpec.type)
         .endControlFlow()
         .build()
     return CodeBlock
