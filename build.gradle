@@ -17,6 +17,10 @@ buildscript {
 }
 
 allprojects {
+    tasks.withType(Test).configureEach {
+        forkEvery = 100
+    }
+
     repositories {
         maven {
             url "https://plugins.gradle.org/m2/"
