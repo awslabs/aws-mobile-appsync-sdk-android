@@ -26,12 +26,12 @@ def isReleaseBuild() {
 
 def getReleaseRepositoryUrl() {
   return hasProperty('RELEASE_REPOSITORY_URL') ? RELEASE_REPOSITORY_URL :
-      "https://aws.oss.sonatype.org/service/local/staging/deploy/maven2/"
+      "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
 }
 
 def getSnapshotRepositoryUrl() {
   return hasProperty('SNAPSHOT_REPOSITORY_URL') ? SNAPSHOT_REPOSITORY_URL :
-      "https://aws.oss.sonatype.org/content/repositories/snapshots/"
+      "https://ossrh-staging-api.central.sonatype.com/content/repositories/snapshots/"
 }
 
 def getRepositoryUsername() {
@@ -55,6 +55,7 @@ afterEvaluate { project ->
           pom.artifactId = POM_ARTIFACT_ID
           pom.version = VERSION_NAME
 
+          name = 'ossrh-staging-api'
           repository(url: getReleaseRepositoryUrl()) {
             authentication(userName: getRepositoryUsername(), password: getRepositoryPassword())
           }
