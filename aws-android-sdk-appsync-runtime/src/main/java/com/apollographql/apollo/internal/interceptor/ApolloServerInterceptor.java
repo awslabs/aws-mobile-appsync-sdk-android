@@ -88,7 +88,7 @@ import static com.apollographql.apollo.api.internal.Utils.checkNotNull;
           return;
         }
         if (httpCall != null) {
-            httpCall.enqueue(new Callback() {
+            httpCall.clone().enqueue(new Callback() {
                 @Override public void onFailure(@Nonnull Call call, @Nonnull IOException e) {
                     if (disposed) return;
                     logger.e(e, "Failed to execute http call for operation %s", request.operation.name().name());
